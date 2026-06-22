@@ -1,0 +1,86 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: pdm-gateway
+  threads:
+    virtual:
+      enabled: true
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+        namespace: pdm
+    sentinel:
+      transport:
+        dashboard: 127.0.0.1:8858
+      datasource:
+        flow:
+          nacos:
+            server-addr: 127.0.0.1:8848
+            namespace: pdm
+            group-id: SENTINEL_GROUP
+            data-id: ${spring.application.name}-flow-rules
+            rule-type: flow
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: pdm-auth
+          uri: lb://pdm-auth
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - StripPrefix=0
+        - id: pdm-resident
+          uri: lb://pdm-resident
+          predicates:
+            - Path=/api/resident/**
+          filters:
+            - StripPrefix=0
+        - id: pdm-household
+          uri: lb://pdm-household
+          predicates:
+            - Path=/api/household/**,/api/area/**
+          filters:
+            - StripPrefix=0
+        - id: pdm-keyperson
+          uri: lb://pdm-keyperson
+          predicates:
+            - Path=/api/keyperson/**
+          filters:
+            - StripPrefix=0
+        - id: pdm-floating-population
+          uri: lb://pdm-floating-population
+          predicates:
+            - Path=/api/fp/**
+          filters:
+            - StripPrefix=0
+        - id: pdm-missingperson
+          uri: lb://pdm-missingperson
+          predicates:
+            - Path=/api/missing/**
+          filters:
+            - StripPrefix=0
+        - id: pdm-log
+          uri: lb://pdm-log
+          predicates:
+            - Path=/api/log/**
+          filters:
+            - StripPrefix=0
+        - id: pdm-notification
+          uri: lb://pdm-notification
+          predicates:
+            - Path=/api/alert/**
+          filters:
+            - StripPrefix=0
+
+jwt:
+  secret: YTk5ZjY3ZDIxMzQ1NmY4OTBiMTIzNDU2Nzg5MGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6 # TODO: use config center
+
+logging:
+  level:
+    com.pdm.gateway: DEBUG

@@ -1,0 +1,53 @@
+# Integration test profile — used with Testcontainers
+spring:
+  application:
+    name: pdm-auth-test
+  threads:
+    virtual:
+      enabled: true
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # url/username/password are dynamically set by Testcontainers
+
+  data:
+    redis:
+      timeout: 3000ms
+      # host/port are dynamically set by Testcontainers
+
+  elasticsearch:
+    # uris are dynamically set by Testcontainers
+
+  cloud:
+    nacos:
+      discovery:
+        enabled: false
+      config:
+        enabled: false
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:sql/test-schema.sql
+      data-locations: classpath:sql/test-data.sql
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+
+jwt:
+  secret: dGVzdC1zZWNyZXQta2V5LWZvci1pbnRlZ3JhdGlvbi10ZXN0cy1vbmx5LW5vdC1mb3ItcHJvZHVjdGlvbg==
+
+aes:
+  key: dGVzdC1hZXMta2V5LWZvci1pbnRlZ3JhdGlvbi10ZXN0cy1vbmx5LW5vdC1mb3ItcHJvZHVjdGlvbg==
+
+logging:
+  level:
+    com.pdm: DEBUG
+    org.testcontainers: INFO
+    org.springframework.test: DEBUG

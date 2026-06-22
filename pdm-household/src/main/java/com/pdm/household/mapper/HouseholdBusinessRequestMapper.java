@@ -1,0 +1,8 @@
+package com.pdm.household.mapper;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.pdm.household.entity.HouseholdBusinessRequest;
+import org.apache.ibatis.annotations.Mapper;
+
+@Mapper
+public interface HouseholdBusinessRequestMapper extends BaseMapper<HouseholdBusinessRequest> {}

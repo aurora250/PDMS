@@ -1,0 +1,36 @@
+package com.pdm.floatingpopulation.service;
+
+import com.pdm.floatingpopulation.entity.FpRegisterRecord;
+import com.pdm.floatingpopulation.entity.ResidentPermit;
+import com.pdm.floatingpopulation.entity.ResidentPermitRenewal;
+import com.pdm.floatingpopulation.entity.ResidentRegistration;
+
+import java.util.List;
+import java.util.Map;
+
+public interface FloatingPopulationService {
+
+    FpRegisterRecord registerFp(FpRegisterRecord record);
+
+    FpRegisterRecord updateFp(String rid, FpRegisterRecord record);
+
+    void cancelFp(String rid);
+
+    ResidentPermit applyPermit(ResidentPermit permit);
+
+    ResidentPermit approvePermit(Long id, String reviewerUuid);
+
+    ResidentPermit issuePermit(Long id);
+
+    ResidentPermitRenewal renewPermit(Long id, ResidentPermitRenewal renewal);
+
+    ResidentRegistration registerResidence(ResidentRegistration registration);
+
+    ResidentRegistration changeResidence(String rid, ResidentRegistration registration);
+
+    void cancelResidence(String rid);
+
+    List<Map<String, Object>> getHeatmapData();
+
+    List<Map<String, Object>> getTrendData();
+}

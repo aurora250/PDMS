@@ -1,0 +1,11 @@
+username,password,role
+admin,Admin@123,系统管理员
+police01,Police@123,民警
+police02,Police@456,民警
+street01,Street@123,街道办
+collector01,Collect@123,采集员
+supervisor01,Super@123,市局负责人
+reviewer01,Review@123,数据审查员
+user01,User@1234,普通用户
+user02,User@5678,普通用户
+user03,User@9012,普通用户
