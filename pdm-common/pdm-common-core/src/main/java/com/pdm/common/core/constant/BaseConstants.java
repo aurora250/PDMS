@@ -2,7 +2,8 @@ package com.pdm.common.core.constant;
 
 public final class BaseConstants {
 
-    private BaseConstants() {}
+    private BaseConstants() {
+    }
 
     /** JWT Token 有效期: 2小时 (毫秒) */
     public static final long JWT_EXPIRATION_MS = 2 * 60 * 60 * 1000L;

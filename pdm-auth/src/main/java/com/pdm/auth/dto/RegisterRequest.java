@@ -1,10 +1,10 @@
 package com.pdm.auth.dto;
 
+import java.io.Serializable;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
-
-import java.io.Serializable;
 
 @Data
 public class RegisterRequest implements Serializable {

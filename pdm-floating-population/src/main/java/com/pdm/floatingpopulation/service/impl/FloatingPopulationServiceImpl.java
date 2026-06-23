@@ -1,7 +1,5 @@
 package com.pdm.floatingpopulation.service.impl;
 
-import cn.hutool.core.util.IdUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.pdm.common.core.exception.BusinessException;
 import com.pdm.common.core.result.ErrorCode;
 import com.pdm.floatingpopulation.entity.FpRegisterRecord;
@@ -13,13 +11,18 @@ import com.pdm.floatingpopulation.mapper.ResidentPermitMapper;
 import com.pdm.floatingpopulation.mapper.ResidentPermitRenewalMapper;
 import com.pdm.floatingpopulation.mapper.ResidentRegistrationMapper;
 import com.pdm.floatingpopulation.service.FloatingPopulationService;
-import lombok.RequiredArgsConstructor;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+
+import cn.hutool.core.util.IdUtil;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -175,20 +178,17 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
     public List<Map<String, Object>> getHeatmapData() {
         // Return simplified heatmap data grouped by area
         List<ResidentRegistration> list = residentRegistrationMapper.selectList(null);
-        return list.stream().map(r -> Map.<String, Object>of(
-                "areaId", r.getAreaId(),
-                "addressType", r.getAddressType(),
-                "uuid", r.getUuid()
-        )).toList();
+        return list.stream().map(r -> Map.<String, Object>of("areaId", r.getAreaId(), "addressType", r.getAddressType(),
+                "uuid", r.getUuid())).toList();
     }
 
     @Override
     public List<Map<String, Object>> getTrendData() {
         // Return simplified trend data grouped by register date
         List<FpRegisterRecord> list = fpRegisterRecordMapper.selectList(null);
-        return list.stream().map(r -> Map.<String, Object>of(
-                "registerDate", r.getRegisterDate() != null ? r.getRegisterDate().toString() : null,
-                "rid", r.getRid()
-        )).toList();
+        return list.stream()
+                .map(r -> Map.<String, Object>of("registerDate",
+                        r.getRegisterDate() != null ? r.getRegisterDate().toString() : null, "rid", r.getRid()))
+                .toList();
     }
 }

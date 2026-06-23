@@ -1,10 +1,12 @@
 package com.pdm.household.mapper;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.pdm.household.entity.HouseholdRegister;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 @Mapper
 public interface HouseholdRegisterMapper extends BaseMapper<HouseholdRegister> {

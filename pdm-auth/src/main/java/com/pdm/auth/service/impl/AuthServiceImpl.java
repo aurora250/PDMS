@@ -1,6 +1,5 @@
 package com.pdm.auth.service.impl;
 
-import cn.hutool.core.util.IdUtil;
 import com.pdm.auth.entity.User;
 import com.pdm.auth.mapper.UserMapper;
 import com.pdm.auth.service.AuthService;
@@ -10,8 +9,7 @@ import com.pdm.common.core.result.ErrorCode;
 import com.pdm.common.dto.LoginRequest;
 import com.pdm.common.dto.LoginResponse;
 import com.pdm.common.security.JwtTokenProvider;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -19,6 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
+
+import cn.hutool.core.util.IdUtil;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -42,8 +44,7 @@ public class AuthServiceImpl implements AuthService {
         checkAccountStatus(user);
 
         // Check lock
-        if (user.getLockedUntil() != null
-                && user.getLockedUntil().isAfter(LocalDateTime.now())) {
+        if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(LocalDateTime.now())) {
             throw new BusinessException(ErrorCode.ACCOUNT_LOCKED);
         }
 
@@ -52,8 +53,7 @@ public class AuthServiceImpl implements AuthService {
             int failCount = (user.getFailedLoginCount() == null ? 0 : user.getFailedLoginCount()) + 1;
             user.setFailedLoginCount(failCount);
             if (failCount >= BaseConstants.MAX_LOGIN_FAIL_COUNT) {
-                user.setLockedUntil(
-                        LocalDateTime.now().plusMinutes(BaseConstants.LOGIN_LOCK_DURATION_MINUTES));
+                user.setLockedUntil(LocalDateTime.now().plusMinutes(BaseConstants.LOGIN_LOCK_DURATION_MINUTES));
                 user.setFailedLoginCount(0);
             }
             userMapper.updateById(user);
@@ -66,38 +66,24 @@ public class AuthServiceImpl implements AuthService {
         user.setLastLoginTime(LocalDateTime.now());
         user.setLastLoginIp(ipAddress);
 
-        String accessToken =
-                jwtTokenProvider.generateAccessToken(
-                        user.getUserUuid(), user.getUsername(), user.getUserRole());
+        String accessToken = jwtTokenProvider.generateAccessToken(user.getUserUuid(), user.getUsername(),
+                user.getUserRole());
         String refreshToken = jwtTokenProvider.generateRefreshToken(user.getUserUuid());
         user.setToken(accessToken);
         userMapper.updateById(user);
 
-        boolean mustChangePassword =
-                user.getMustChangePassword() != null && user.getMustChangePassword();
+        boolean mustChangePassword = user.getMustChangePassword() != null && user.getMustChangePassword();
 
-        return LoginResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .expiresIn(BaseConstants.JWT_EXPIRATION_MS / 1000)
-                .userUuid(user.getUserUuid())
-                .username(user.getUsername())
-                .role(user.getUserRole())
-                .mustChangePassword(mustChangePassword)
-                .build();
+        return LoginResponse.builder().accessToken(accessToken).refreshToken(refreshToken)
+                .expiresIn(BaseConstants.JWT_EXPIRATION_MS / 1000).userUuid(user.getUserUuid())
+                .username(user.getUsername()).role(user.getUserRole()).mustChangePassword(mustChangePassword).build();
     }
 
     @Override
     public void logout(String token, String userUuid) {
         // Add token to blacklist in Redis
         long ttl = BaseConstants.JWT_EXPIRATION_MS / 1000;
-        redisTemplate
-                .opsForValue()
-                .set(
-                        BaseConstants.TOKEN_BLACKLIST_PREFIX + userUuid,
-                        token,
-                        ttl,
-                        TimeUnit.SECONDS);
+        redisTemplate.opsForValue().set(BaseConstants.TOKEN_BLACKLIST_PREFIX + userUuid, token, ttl, TimeUnit.SECONDS);
     }
 
     @Override
@@ -111,19 +97,13 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(ErrorCode.DATA_NOT_FOUND);
         }
 
-        String newAccessToken =
-                jwtTokenProvider.generateAccessToken(
-                        user.getUserUuid(), user.getUsername(), user.getUserRole());
+        String newAccessToken = jwtTokenProvider.generateAccessToken(user.getUserUuid(), user.getUsername(),
+                user.getUserRole());
         user.setToken(newAccessToken);
         userMapper.updateById(user);
 
-        return LoginResponse.builder()
-                .accessToken(newAccessToken)
-                .expiresIn(BaseConstants.JWT_EXPIRATION_MS / 1000)
-                .userUuid(user.getUserUuid())
-                .username(user.getUsername())
-                .role(user.getUserRole())
-                .build();
+        return LoginResponse.builder().accessToken(newAccessToken).expiresIn(BaseConstants.JWT_EXPIRATION_MS / 1000)
+                .userUuid(user.getUserUuid()).username(user.getUsername()).role(user.getUserRole()).build();
     }
 
     @Override
@@ -144,12 +124,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void registerUser(
-            String userUuid,
-            String username,
-            String rawPassword,
-            String phone,
-            String residentUuid) {
+    public void registerUser(String userUuid, String username, String rawPassword, String phone, String residentUuid) {
         if (userMapper.countByUsername(username) > 0) {
             throw new BusinessException(ErrorCode.DATA_DUPLICATE, "用户名已存在");
         }
@@ -178,20 +153,15 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void validatePasswordStrength(String password) {
-        if (password == null
-                || password.length() < BaseConstants.PASSWORD_MIN_LENGTH
+        if (password == null || password.length() < BaseConstants.PASSWORD_MIN_LENGTH
                 || password.length() > BaseConstants.PASSWORD_MAX_LENGTH) {
             throw new BusinessException(ErrorCode.PASSWORD_WEAK);
         }
         boolean hasUpper = password.chars().anyMatch(Character::isUpperCase);
         boolean hasLower = password.chars().anyMatch(Character::isLowerCase);
         boolean hasDigit = password.chars().anyMatch(Character::isDigit);
-        boolean hasSpecial =
-                password.chars()
-                        .anyMatch(
-                                c ->
-                                        !Character.isLetterOrDigit(c)
-                                                && !Character.isWhitespace(c));
+        boolean hasSpecial = password.chars()
+                .anyMatch(c -> !Character.isLetterOrDigit(c) && !Character.isWhitespace(c));
         if (!hasUpper || !hasLower || !hasDigit || !hasSpecial) {
             throw new BusinessException(ErrorCode.PASSWORD_WEAK);
         }

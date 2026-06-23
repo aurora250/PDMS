@@ -1,20 +1,23 @@
 package com.pdm.notification.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.pdm.common.dto.PageResult;
 import com.pdm.notification.entity.Alert;
 import com.pdm.notification.mapper.AlertMapper;
 import com.pdm.notification.service.NotificationService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -50,14 +53,11 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public List<Alert> getPendingAlerts() {
         return alertMapper.selectList(
-                new LambdaQueryWrapper<Alert>()
-                        .eq(Alert::getIsHandled, 0)
-                        .orderByDesc(Alert::getCreateTime));
+                new LambdaQueryWrapper<Alert>().eq(Alert::getIsHandled, 0).orderByDesc(Alert::getCreateTime));
     }
 
     @Override
-    public PageResult<Alert> search(String alertType, String severity, Integer isHandled,
-                                      int page, int size) {
+    public PageResult<Alert> search(String alertType, String severity, Integer isHandled, int page, int size) {
         LambdaQueryWrapper<Alert> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(alertType)) {
             wrapper.eq(Alert::getAlertType, alertType);
@@ -71,8 +71,7 @@ public class NotificationServiceImpl implements NotificationService {
         wrapper.orderByDesc(Alert::getCreateTime);
 
         IPage<Alert> result = alertMapper.selectPage(new Page<>(page, size), wrapper);
-        return PageResult.of(result.getRecords(), result.getTotal(), (int) result.getCurrent(),
-                (int) result.getSize());
+        return PageResult.of(result.getRecords(), result.getTotal(), (int) result.getCurrent(), (int) result.getSize());
     }
 
     @Override

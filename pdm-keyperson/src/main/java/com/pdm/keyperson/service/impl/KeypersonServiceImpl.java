@@ -1,7 +1,5 @@
 package com.pdm.keyperson.service.impl;
 
-import cn.hutool.core.util.IdUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.pdm.common.core.exception.BusinessException;
 import com.pdm.common.core.result.ErrorCode;
 import com.pdm.keyperson.entity.KeyPerson;
@@ -11,7 +9,9 @@ import com.pdm.keyperson.mapper.KeyPersonMapper;
 import com.pdm.keyperson.mapper.PetitionRecordMapper;
 import com.pdm.keyperson.mapper.VisitPlanMapper;
 import com.pdm.keyperson.service.KeypersonService;
-import lombok.RequiredArgsConstructor;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +19,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+
+import cn.hutool.core.util.IdUtil;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -140,10 +143,7 @@ public class KeypersonServiceImpl implements KeypersonService {
     public List<Map<String, Object>> getGisData() {
         // Return simplified GIS data from key_person table
         List<KeyPerson> list = keyPersonMapper.selectList(null);
-        return list.stream().map(kp -> Map.<String, Object>of(
-                "uuid", kp.getUuid(),
-                "controlLevel", kp.getControlLevel(),
-                "controlType", kp.getControlType()
-        )).toList();
+        return list.stream().map(kp -> Map.<String, Object>of("uuid", kp.getUuid(), "controlLevel",
+                kp.getControlLevel(), "controlType", kp.getControlType())).toList();
     }
 }

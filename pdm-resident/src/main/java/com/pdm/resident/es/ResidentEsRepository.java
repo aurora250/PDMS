@@ -1,14 +1,16 @@
 package com.pdm.resident.es;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import com.pdm.common.es.EsBaseRepository;
 import com.pdm.resident.entity.Resident;
+
 import org.springframework.stereotype.Repository;
 
 import java.io.IOException;
 import java.util.List;
+
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 
 @Repository
 public class ResidentEsRepository extends EsBaseRepository<Resident> {
@@ -29,55 +31,26 @@ public class ResidentEsRepository extends EsBaseRepository<Resident> {
         return Resident.class;
     }
 
-    public List<Resident> multiConditionSearch(
-            String name,
-            String gender,
-            String nation,
-            String educationLevel,
-            String maritalStatus,
-            String householdStatus,
-            int from,
-            int size)
-            throws IOException {
+    public List<Resident> multiConditionSearch(String name, String gender, String nation, String educationLevel,
+            String maritalStatus, String householdStatus, int from, int size) throws IOException {
         BoolQuery.Builder boolBuilder = new BoolQuery.Builder();
         if (name != null) {
-            boolBuilder.must(
-                    Query.of(q -> q.match(m -> m.field("name").query(name))));
+            boolBuilder.must(Query.of(q -> q.match(m -> m.field("name").query(name))));
         }
         if (gender != null) {
-            boolBuilder.must(
-                    Query.of(q -> q.term(t -> t.field("gender").value(gender))));
+            boolBuilder.must(Query.of(q -> q.term(t -> t.field("gender").value(gender))));
         }
         if (nation != null) {
-            boolBuilder.must(
-                    Query.of(q -> q.term(t -> t.field("nation").value(nation))));
+            boolBuilder.must(Query.of(q -> q.term(t -> t.field("nation").value(nation))));
         }
         if (educationLevel != null) {
-            boolBuilder.must(
-                    Query.of(
-                            q ->
-                                    q.term(
-                                            t ->
-                                                    t.field("educationLevel")
-                                                            .value(educationLevel))));
+            boolBuilder.must(Query.of(q -> q.term(t -> t.field("educationLevel").value(educationLevel))));
         }
         if (maritalStatus != null) {
-            boolBuilder.must(
-                    Query.of(
-                            q ->
-                                    q.term(
-                                            t ->
-                                                    t.field("maritalStatus")
-                                                            .value(maritalStatus))));
+            boolBuilder.must(Query.of(q -> q.term(t -> t.field("maritalStatus").value(maritalStatus))));
         }
         if (householdStatus != null) {
-            boolBuilder.must(
-                    Query.of(
-                            q ->
-                                    q.term(
-                                            t ->
-                                                    t.field("householdStatus")
-                                                            .value(householdStatus))));
+            boolBuilder.must(Query.of(q -> q.term(t -> t.field("householdStatus").value(householdStatus))));
         }
         return search(boolBuilder.build()._toQuery(), from, size);
     }

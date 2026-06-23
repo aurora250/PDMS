@@ -1,7 +1,9 @@
 package com.pdm.auth.mapper;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.pdm.auth.entity.User;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -15,7 +17,6 @@ public interface UserMapper extends BaseMapper<User> {
     @Select("SELECT * FROM user WHERE user_uuid = #{userUuid} AND is_deleted = 0")
     User selectByUserUuid(@Param("userUuid") String userUuid);
 
-    @Select(
-            "SELECT COUNT(*) FROM user WHERE username = #{username} AND is_deleted = 0")
+    @Select("SELECT COUNT(*) FROM user WHERE username = #{username} AND is_deleted = 0")
     int countByUsername(@Param("username") String username);
 }

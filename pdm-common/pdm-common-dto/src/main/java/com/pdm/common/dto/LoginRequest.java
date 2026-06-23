@@ -1,9 +1,9 @@
 package com.pdm.common.dto;
 
+import java.io.Serializable;
+
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
-
-import java.io.Serializable;
 
 @Data
 public class LoginRequest implements Serializable {

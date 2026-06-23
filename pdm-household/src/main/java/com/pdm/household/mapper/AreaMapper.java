@@ -1,10 +1,13 @@
 package com.pdm.household.mapper;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.pdm.household.entity.Area;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+
 import java.util.List;
 
 @Mapper

@@ -1,12 +1,14 @@
 package com.pdm.notification.entity;
 
+import com.pdm.common.mybatis.BaseEntity;
+
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.pdm.common.mybatis.BaseEntity;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 import java.time.LocalDateTime;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)

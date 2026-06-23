@@ -1,19 +1,22 @@
 package com.pdm.auth.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.pdm.auth.entity.User;
 import com.pdm.auth.mapper.UserMapper;
 import com.pdm.auth.service.UserService;
 import com.pdm.common.core.exception.BusinessException;
 import com.pdm.common.core.result.ErrorCode;
-import lombok.RequiredArgsConstructor;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -25,11 +28,7 @@ public class UserServiceImpl implements UserService {
     public Page<User> listUsers(int page, int size, String keyword, String role, String status) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(keyword)) {
-            wrapper.and(
-                    w ->
-                            w.like(User::getUsername, keyword)
-                                    .or()
-                                    .like(User::getUserUuid, keyword));
+            wrapper.and(w -> w.like(User::getUsername, keyword).or().like(User::getUserUuid, keyword));
         }
         if (StringUtils.hasText(role)) {
             wrapper.eq(User::getUserRole, role);

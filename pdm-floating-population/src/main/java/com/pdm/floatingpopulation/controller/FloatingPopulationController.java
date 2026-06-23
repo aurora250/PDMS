@@ -6,11 +6,13 @@ import com.pdm.floatingpopulation.entity.ResidentPermit;
 import com.pdm.floatingpopulation.entity.ResidentPermitRenewal;
 import com.pdm.floatingpopulation.entity.ResidentRegistration;
 import com.pdm.floatingpopulation.service.FloatingPopulationService;
-import lombok.RequiredArgsConstructor;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
@@ -41,7 +43,8 @@ public class FloatingPopulationController {
     }
 
     @PutMapping("/permit/{id}/approve")
-    public Result<ResidentPermit> approvePermit(@PathVariable Long id, @RequestHeader("X-User-Uuid") String reviewerUuid) {
+    public Result<ResidentPermit> approvePermit(@PathVariable Long id,
+            @RequestHeader("X-User-Uuid") String reviewerUuid) {
         return Result.success(floatingPopulationService.approvePermit(id, reviewerUuid));
     }
 
@@ -51,7 +54,8 @@ public class FloatingPopulationController {
     }
 
     @PostMapping("/permit/{id}/renew")
-    public Result<ResidentPermitRenewal> renewPermit(@PathVariable Long id, @RequestBody ResidentPermitRenewal renewal) {
+    public Result<ResidentPermitRenewal> renewPermit(@PathVariable Long id,
+            @RequestBody ResidentPermitRenewal renewal) {
         return Result.success(floatingPopulationService.renewPermit(id, renewal));
     }
 
@@ -61,7 +65,8 @@ public class FloatingPopulationController {
     }
 
     @PutMapping("/residence/{rid}")
-    public Result<ResidentRegistration> changeResidence(@PathVariable String rid, @RequestBody ResidentRegistration registration) {
+    public Result<ResidentRegistration> changeResidence(@PathVariable String rid,
+            @RequestBody ResidentRegistration registration) {
         return Result.success(floatingPopulationService.changeResidence(rid, registration));
     }
 

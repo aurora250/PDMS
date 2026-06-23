@@ -1,6 +1,7 @@
 package com.pdm.resident.dto;
 
 import com.pdm.common.dto.PageRequest;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

@@ -1,8 +1,8 @@
 package com.pdm.keyperson.service;
 
 import com.pdm.keyperson.entity.KeyPerson;
-import com.pdm.keyperson.entity.VisitPlan;
 import com.pdm.keyperson.entity.PetitionRecord;
+import com.pdm.keyperson.entity.VisitPlan;
 
 import java.time.LocalDate;
 import java.util.List;

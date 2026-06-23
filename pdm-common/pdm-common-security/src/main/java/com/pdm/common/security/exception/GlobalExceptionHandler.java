@@ -3,8 +3,7 @@ package com.pdm.common.security.exception;
 import com.pdm.common.core.exception.BusinessException;
 import com.pdm.common.core.result.ErrorCode;
 import com.pdm.common.core.result.Result;
-import jakarta.validation.ConstraintViolationException;
-import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -14,6 +13,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestControllerAdvice
@@ -25,14 +27,13 @@ public class GlobalExceptionHandler {
         return Result.fail(e.getCode(), e.getMessage());
     }
 
-    @ExceptionHandler({MethodArgumentNotValidException.class, BindException.class})
+    @ExceptionHandler({ MethodArgumentNotValidException.class, BindException.class })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Void> handleValidationException(Exception e) {
         String message = "参数校验失败";
         if (e instanceof MethodArgumentNotValidException ex) {
             message = ex.getBindingResult().getFieldErrors().stream()
-                    .map(f -> f.getField() + ": " + f.getDefaultMessage())
-                    .reduce((a, b) -> a + "; " + b)
+                    .map(f -> f.getField() + ": " + f.getDefaultMessage()).reduce((a, b) -> a + "; " + b)
                     .orElse(message);
         }
         return Result.fail(ErrorCode.PARAM_ERROR.getCode(), message);

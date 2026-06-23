@@ -3,10 +3,12 @@ package com.pdm.auth.controller;
 import com.pdm.auth.entity.PermissionGroup;
 import com.pdm.auth.service.PermissionGroupService;
 import com.pdm.common.core.result.Result;
-import lombok.RequiredArgsConstructor;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/auth/permission-groups")
@@ -26,10 +28,8 @@ public class PermissionGroupController {
     }
 
     @PutMapping("/{id}")
-    public Result<PermissionGroup> updatePermissions(
-            @PathVariable Long id, @RequestBody PermissionGroup group) {
-        return Result.success(
-                permissionGroupService.updateGroupPermissions(id, group.getPermissions()));
+    public Result<PermissionGroup> updatePermissions(@PathVariable Long id, @RequestBody PermissionGroup group) {
+        return Result.success(permissionGroupService.updateGroupPermissions(id, group.getPermissions()));
     }
 
     @DeleteMapping("/{id}")

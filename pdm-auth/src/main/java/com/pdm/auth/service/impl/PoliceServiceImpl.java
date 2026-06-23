@@ -1,19 +1,22 @@
 package com.pdm.auth.service.impl;
 
-import cn.hutool.core.util.IdUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.pdm.auth.entity.Police;
 import com.pdm.auth.mapper.PoliceMapper;
 import com.pdm.auth.service.PoliceService;
 import com.pdm.common.core.exception.BusinessException;
 import com.pdm.common.core.result.ErrorCode;
-import lombok.RequiredArgsConstructor;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+
+import cn.hutool.core.util.IdUtil;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -38,13 +41,8 @@ public class PoliceServiceImpl implements PoliceService {
     public Page<Police> listPolice(int page, int size, String keyword) {
         LambdaQueryWrapper<Police> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(keyword)) {
-            wrapper.and(
-                    w ->
-                            w.like(Police::getPoliceNumber, keyword)
-                                    .or()
-                                    .like(Police::getPoliceStation, keyword)
-                                    .or()
-                                    .like(Police::getDepartment, keyword));
+            wrapper.and(w -> w.like(Police::getPoliceNumber, keyword).or().like(Police::getPoliceStation, keyword).or()
+                    .like(Police::getDepartment, keyword));
         }
         wrapper.orderByDesc(Police::getCreateTime);
         return policeMapper.selectPage(Page.of(page, size), wrapper);

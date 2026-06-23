@@ -1,22 +1,22 @@
 package com.pdm.common.core.util;
 
-import javax.crypto.Cipher;
-import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
 
-/**
- * AES-256-GCM 加密工具 — 用于敏感字段加密存储. 密钥必须通过环境变量或配置中心注入, 严禁硬编码.
- */
+import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+
+/** AES-256-GCM 加密工具 — 用于敏感字段加密存储. 密钥必须通过环境变量或配置中心注入, 严禁硬编码. */
 public final class Aes256Utils {
 
     private static final String ALGORITHM = "AES/GCM/NoPadding";
     private static final int GCM_IV_LENGTH = 12;
     private static final int GCM_TAG_LENGTH = 128;
 
-    private Aes256Utils() {}
+    private Aes256Utils() {
+    }
 
     public static String encrypt(String plainText, String base64Key) throws Exception {
         byte[] keyBytes = Base64.getDecoder().decode(base64Key);

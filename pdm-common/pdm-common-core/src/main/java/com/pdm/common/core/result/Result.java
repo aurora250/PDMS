@@ -1,11 +1,12 @@
 package com.pdm.common.core.result;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+
+import java.io.Serializable;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.io.Serializable;
 
 @Data
 @NoArgsConstructor
@@ -41,8 +42,7 @@ public class Result<T> implements Serializable {
     }
 
     public static <T> Result<T> fail(ErrorCode errorCode) {
-        return new Result<>(
-                errorCode.getCode(), errorCode.getMessage(), null, System.currentTimeMillis());
+        return new Result<>(errorCode.getCode(), errorCode.getMessage(), null, System.currentTimeMillis());
     }
 
     public boolean isSuccess() {

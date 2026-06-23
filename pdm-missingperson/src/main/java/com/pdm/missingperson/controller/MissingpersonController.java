@@ -6,10 +6,12 @@ import com.pdm.common.dto.PageResult;
 import com.pdm.missingperson.entity.MissingPerson;
 import com.pdm.missingperson.entity.MissingPersonRecovery;
 import com.pdm.missingperson.service.MissingpersonService;
-import lombok.RequiredArgsConstructor;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/missing")
@@ -35,15 +37,11 @@ public class MissingpersonController {
     }
 
     @GetMapping("/search")
-    public Result<PageResult<MissingPerson>> search(
-            @RequestParam(required = false) String residentUuid,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String name,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size) {
+    public Result<PageResult<MissingPerson>> search(@RequestParam(required = false) String residentUuid,
+            @RequestParam(required = false) String status, @RequestParam(required = false) String name,
+            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int size) {
         PageRequest pageRequest = new PageRequest(page, size, null, "DESC");
-        return Result.success(
-                missingpersonService.search(residentUuid, status, name, pageRequest));
+        return Result.success(missingpersonService.search(residentUuid, status, name, pageRequest));
     }
 
     @GetMapping("/statistics")

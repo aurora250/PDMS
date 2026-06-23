@@ -1,7 +1,9 @@
 package com.pdm.resident.mapper;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.pdm.resident.entity.Resident;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;

@@ -9,6 +9,7 @@ import com.pdm.common.core.result.ErrorCode;
 import com.pdm.common.dto.LoginRequest;
 import com.pdm.common.dto.LoginResponse;
 import com.pdm.common.security.JwtTokenProvider;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -17,6 +18,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,24 +28,26 @@ import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
-
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("认证服务 — 单元测试")
 class AuthServiceImplTest {
 
-    @Mock private UserMapper userMapper;
-    @Mock private PasswordEncoder passwordEncoder;
-    @Mock private JwtTokenProvider jwtTokenProvider;
-    @Mock private RedisTemplate<String, String> redisTemplate;
-    @Mock private ValueOperations<String, String> valueOperations;
-    @InjectMocks private AuthServiceImpl authService;
+    @Mock
+    private UserMapper userMapper;
+    @Mock
+    private PasswordEncoder passwordEncoder;
+    @Mock
+    private JwtTokenProvider jwtTokenProvider;
+    @Mock
+    private RedisTemplate<String, String> redisTemplate;
+    @Mock
+    private ValueOperations<String, String> valueOperations;
+    @InjectMocks
+    private AuthServiceImpl authService;
 
     private User testUser;
 
@@ -75,10 +80,8 @@ class AuthServiceImplTest {
 
             when(userMapper.selectByUsername("admin")).thenReturn(testUser);
             when(passwordEncoder.matches("Admin@123!", testUser.getPassword())).thenReturn(true);
-            when(jwtTokenProvider.generateAccessToken("uuid-001", "admin", "系统管理员"))
-                    .thenReturn("access-token-xxx");
-            when(jwtTokenProvider.generateRefreshToken("uuid-001"))
-                    .thenReturn("refresh-token-xxx");
+            when(jwtTokenProvider.generateAccessToken("uuid-001", "admin", "系统管理员")).thenReturn("access-token-xxx");
+            when(jwtTokenProvider.generateRefreshToken("uuid-001")).thenReturn("refresh-token-xxx");
 
             LoginResponse response = authService.login(request, "127.0.0.1");
 
@@ -105,8 +108,7 @@ class AuthServiceImplTest {
             when(userMapper.selectByUsername("admin")).thenReturn(testUser);
             when(passwordEncoder.matches("WrongPassword", testUser.getPassword())).thenReturn(false);
 
-            BusinessException ex = assertThrows(BusinessException.class,
-                    () -> authService.login(request, "127.0.0.1"));
+            BusinessException ex = assertThrows(BusinessException.class, () -> authService.login(request, "127.0.0.1"));
             assertEquals(ErrorCode.USERNAME_OR_PASSWORD_ERROR.getCode(), ex.getCode());
         }
 
@@ -119,8 +121,7 @@ class AuthServiceImplTest {
 
             when(userMapper.selectByUsername("nonexistent")).thenReturn(null);
 
-            BusinessException ex = assertThrows(BusinessException.class,
-                    () -> authService.login(request, "127.0.0.1"));
+            BusinessException ex = assertThrows(BusinessException.class, () -> authService.login(request, "127.0.0.1"));
             assertEquals(ErrorCode.USERNAME_OR_PASSWORD_ERROR.getCode(), ex.getCode());
         }
 
@@ -134,8 +135,7 @@ class AuthServiceImplTest {
 
             when(userMapper.selectByUsername("admin")).thenReturn(testUser);
 
-            BusinessException ex = assertThrows(BusinessException.class,
-                    () -> authService.login(request, "127.0.0.1"));
+            BusinessException ex = assertThrows(BusinessException.class, () -> authService.login(request, "127.0.0.1"));
             assertEquals(ErrorCode.ACCOUNT_FROZEN.getCode(), ex.getCode());
         }
 
@@ -149,8 +149,7 @@ class AuthServiceImplTest {
 
             when(userMapper.selectByUsername("admin")).thenReturn(testUser);
 
-            BusinessException ex = assertThrows(BusinessException.class,
-                    () -> authService.login(request, "127.0.0.1"));
+            BusinessException ex = assertThrows(BusinessException.class, () -> authService.login(request, "127.0.0.1"));
             assertEquals(ErrorCode.ACCOUNT_LOCKED.getCode(), ex.getCode());
         }
 
@@ -165,8 +164,7 @@ class AuthServiceImplTest {
             when(userMapper.selectByUsername("admin")).thenReturn(testUser);
             when(passwordEncoder.matches("WrongPassword", testUser.getPassword())).thenReturn(false);
 
-            assertThrows(BusinessException.class,
-                    () -> authService.login(request, "127.0.0.1"));
+            assertThrows(BusinessException.class, () -> authService.login(request, "127.0.0.1"));
 
             // Should be locked now
             assertNotNull(testUser.getLockedUntil());
@@ -217,8 +215,7 @@ class AuthServiceImplTest {
             when(userMapper.selectByUserUuid("uuid-001")).thenReturn(testUser);
             when(passwordEncoder.matches("OldPass1!", testUser.getPassword())).thenReturn(true);
 
-            assertThrows(BusinessException.class,
-                    () -> authService.changePassword("uuid-001", "OldPass1!", "short"));
+            assertThrows(BusinessException.class, () -> authService.changePassword("uuid-001", "OldPass1!", "short"));
             assertThrows(BusinessException.class,
                     () -> authService.changePassword("uuid-001", "OldPass1!", "nouppercase1!"));
             assertThrows(BusinessException.class,
@@ -235,11 +232,8 @@ class AuthServiceImplTest {
         void shouldBlacklistTokenOnLogout() {
             authService.logout("token-xxx", "uuid-001");
 
-            verify(valueOperations).set(
-                    eq(BaseConstants.TOKEN_BLACKLIST_PREFIX + "uuid-001"),
-                    eq("token-xxx"),
-                    anyLong(),
-                    eq(TimeUnit.SECONDS));
+            verify(valueOperations).set(eq(BaseConstants.TOKEN_BLACKLIST_PREFIX + "uuid-001"), eq("token-xxx"),
+                    anyLong(), eq(TimeUnit.SECONDS));
         }
     }
 }

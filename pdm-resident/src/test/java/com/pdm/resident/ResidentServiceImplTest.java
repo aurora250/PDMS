@@ -1,6 +1,5 @@
 package com.pdm.resident;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pdm.common.core.exception.BusinessException;
 import com.pdm.common.core.result.ErrorCode;
 import com.pdm.resident.entity.Resident;
@@ -10,6 +9,9 @@ import com.pdm.resident.mapper.ResidentChangeRequestMapper;
 import com.pdm.resident.mapper.ResidentMapper;
 import com.pdm.resident.mapper.ResidentRelationMapper;
 import com.pdm.resident.service.impl.ResidentServiceImpl;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -18,26 +20,30 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
-
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("常住人口服务 — 单元测试")
 class ResidentServiceImplTest {
 
-    @Mock private ResidentMapper residentMapper;
-    @Mock private ResidentRelationMapper relationMapper;
-    @Mock private ResidentChangeRequestMapper changeRequestMapper;
-    @Mock private ResidentEsRepository residentEsRepository;
-    @Mock private ObjectMapper objectMapper;
-    @InjectMocks private ResidentServiceImpl residentService;
+    @Mock
+    private ResidentMapper residentMapper;
+    @Mock
+    private ResidentRelationMapper relationMapper;
+    @Mock
+    private ResidentChangeRequestMapper changeRequestMapper;
+    @Mock
+    private ResidentEsRepository residentEsRepository;
+    @Mock
+    private ObjectMapper objectMapper;
+    @InjectMocks
+    private ResidentServiceImpl residentService;
 
     private Resident testResident;
 
@@ -129,8 +135,7 @@ class ResidentServiceImplTest {
             when(relationMapper.selectByPersonUuid("person-A")).thenReturn(null);
             when(relationMapper.selectByPersonUuid("person-B")).thenReturn(fatherRel);
 
-            BusinessException ex = assertThrows(BusinessException.class,
-                    () -> residentService.setRelations(relation));
+            BusinessException ex = assertThrows(BusinessException.class, () -> residentService.setRelations(relation));
             assertEquals(ErrorCode.RELATION_CIRCULAR.getCode(), ex.getCode());
         }
 

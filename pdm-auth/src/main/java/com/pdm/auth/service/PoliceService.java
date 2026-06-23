@@ -1,7 +1,8 @@
 package com.pdm.auth.service;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.pdm.auth.entity.Police;
+
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 public interface PoliceService {
 

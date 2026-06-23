@@ -325,14 +325,16 @@
                     <version>${spotless.version}</version>
                     <configuration>
                         <java>
-                            <googleJavaFormat>
-                                <version>1.22.0</version>
-                                <style>GOOGLE</style>
-                            </googleJavaFormat>
+                            <eclipse>
+                                <version>4.31</version>
+                                <file>${session.executionRootDirectory}/format.xml</file>
+                            </eclipse>
                             <removeUnusedImports/>
                             <importOrder>
                                 <order>com.pdm,com,org,java,javax,\#</order>
                             </importOrder>
+                            <trimTrailingWhitespace/>
+                            <endWithNewline/>
                         </java>
                     </configuration>
                 </plugin>

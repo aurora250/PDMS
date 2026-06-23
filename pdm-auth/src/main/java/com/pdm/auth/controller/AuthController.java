@@ -1,16 +1,18 @@
 package com.pdm.auth.controller;
 
+import com.pdm.auth.service.AuthService;
 import com.pdm.common.core.result.Result;
 import com.pdm.common.dto.LoginRequest;
 import com.pdm.common.dto.LoginResponse;
-import com.pdm.auth.service.AuthService;
 import com.pdm.common.security.UserContextHolder;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -20,10 +22,8 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public Result<LoginResponse> login(
-            @Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
-        LoginResponse response =
-                authService.login(request, httpRequest.getRemoteAddr());
+    public Result<LoginResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+        LoginResponse response = authService.login(request, httpRequest.getRemoteAddr());
         return Result.success(response);
     }
 
@@ -42,10 +42,7 @@ public class AuthController {
 
     @PutMapping("/change-password")
     public Result<Void> changePassword(@RequestBody Map<String, String> body) {
-        authService.changePassword(
-                UserContextHolder.getUserUuid(),
-                body.get("oldPassword"),
-                body.get("newPassword"));
+        authService.changePassword(UserContextHolder.getUserUuid(), body.get("oldPassword"), body.get("newPassword"));
         return Result.success();
     }
 }

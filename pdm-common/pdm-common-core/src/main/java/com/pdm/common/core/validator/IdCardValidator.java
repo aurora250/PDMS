@@ -3,20 +3,15 @@ package com.pdm.common.core.validator;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
-/**
- * 身份证号校验器 — 符合 GB 11643-1999 标准.
- * 校验规则: 18位长度, 前17位数字, 最后一位校验码, 自动提取出生日期和性别.
- */
+/** 身份证号校验器 — 符合 GB 11643-1999 标准. 校验规则: 18位长度, 前17位数字, 最后一位校验码, 自动提取出生日期和性别. */
 public final class IdCardValidator {
 
-    private static final int[] WEIGHT =
-            {7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2};
-    private static final char[] CHECK_CODE =
-            {'1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2'};
-    private static final DateTimeFormatter DATE_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final int[] WEIGHT = { 7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2 };
+    private static final char[] CHECK_CODE = { '1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2' };
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
-    private IdCardValidator() {}
+    private IdCardValidator() {
+    }
 
     public static boolean isValid(String idCardNo) {
         if (idCardNo == null || idCardNo.length() != 18) {

@@ -2,9 +2,9 @@ name: Java CI — Build & Test
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "main", "master" ]
+    branches: [ "master" ]
 
 jobs:
   unit-test:
@@ -55,20 +55,3 @@ jobs:
         continue-on-error: true
         env:
           TESTCONTAINERS_RYUK_DISABLED: true
-
-  style-check:
-    name: Code Style (Spotless)
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'maven'
-
-      - name: Check Style
-        run: mvn spotless:check

@@ -1,16 +1,18 @@
 package com.pdm.common.security;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import javax.crypto.SecretKey;
 import java.security.SecureRandom;
 import java.util.Base64;
 
+import javax.crypto.SecretKey;
+
 import static org.junit.jupiter.api.Assertions.*;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.security.Keys;
 
 @DisplayName("JWT Token 提供器")
 class JwtTokenProviderTest {
@@ -88,8 +90,8 @@ class JwtTokenProviderTest {
         String token = shortProvider.generateAccessToken("user-001", "admin", "系统管理员");
         assertTrue(shortProvider.isTokenExpiringSoon(token));
 
-        assertFalse(jwtTokenProvider.isTokenExpiringSoon(
-                jwtTokenProvider.generateAccessToken("user-001", "admin", "系统管理员")));
+        assertFalse(jwtTokenProvider
+                .isTokenExpiringSoon(jwtTokenProvider.generateAccessToken("user-001", "admin", "系统管理员")));
     }
 
     @Test

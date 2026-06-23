@@ -1,15 +1,17 @@
 package com.pdm.common.security;
 
 import com.pdm.common.core.constant.BaseConstants;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.crypto.SecretKey;
+
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
-
-import javax.crypto.SecretKey;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 @Slf4j
 public class JwtTokenProvider {
@@ -33,12 +35,8 @@ public class JwtTokenProvider {
         claims.put("role", role);
         claims.put("type", "access");
 
-        return Jwts.builder()
-                .claims(claims)
-                .subject(userUuid)
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + expirationMs))
-                .signWith(secretKey, Jwts.SIG.HS256)
+        return Jwts.builder().claims(claims).subject(userUuid).issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + expirationMs)).signWith(secretKey, Jwts.SIG.HS256)
                 .compact();
     }
 
@@ -46,21 +44,13 @@ public class JwtTokenProvider {
         Map<String, Object> claims = new HashMap<>();
         claims.put("type", "refresh");
 
-        return Jwts.builder()
-                .claims(claims)
-                .subject(userUuid)
-                .issuedAt(new Date())
+        return Jwts.builder().claims(claims).subject(userUuid).issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expirationMs * 12)) // 24h
-                .signWith(secretKey, Jwts.SIG.HS256)
-                .compact();
+                .signWith(secretKey, Jwts.SIG.HS256).compact();
     }
 
     public Claims parseToken(String token) {
-        return Jwts.parser()
-                .verifyWith(secretKey)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload();
     }
 
     public boolean validateToken(String token) {

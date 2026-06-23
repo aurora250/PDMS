@@ -1,7 +1,9 @@
 package com.pdm.notification.mapper;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.pdm.notification.entity.Alert;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
