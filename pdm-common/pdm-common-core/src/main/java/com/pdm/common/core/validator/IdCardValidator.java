@@ -5,8 +5,7 @@ import java.time.format.DateTimeFormatter;
 
 /**
  * 身份证号校验器 — 符合 GB 11643-1999 标准.
- *
- * <p>校验规则: 18位长度, 前17位数字, 最后一位校验码, 自动提取出生日期和性别.
+ * 校验规则: 18位长度, 前17位数字, 最后一位校验码, 自动提取出生日期和性别.
  */
 public final class IdCardValidator {
 

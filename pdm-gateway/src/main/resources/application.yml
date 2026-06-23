@@ -9,17 +9,17 @@ spring:
       enabled: true
   cloud:
     nacos:
+      config:
+        enabled: false
       discovery:
-        server-addr: 127.0.0.1:8848
-        namespace: pdm
+        server-addr: nacos:8848
     sentinel:
       transport:
-        dashboard: 127.0.0.1:8858
+        dashboard: nacos:8858
       datasource:
         flow:
           nacos:
-            server-addr: 127.0.0.1:8848
-            namespace: pdm
+            server-addr: nacos:8848
             group-id: SENTINEL_GROUP
             data-id: ${spring.application.name}-flow-rules
             rule-type: flow
@@ -79,7 +79,7 @@ spring:
             - StripPrefix=0
 
 jwt:
-  secret: YTk5ZjY3ZDIxMzQ1NmY4OTBiMTIzNDU2Nzg5MGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6 # TODO: use config center
+  secret: YTk5ZjY3ZDIxMzQ1NmY4OTBiMTIzNDU2Nzg5MGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6
 
 logging:
   level:

@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS `user` (
     user_uuid VARCHAR(36) NOT NULL COMMENT '系统用户通用全局唯一业务标识',
     username VARCHAR(50) NOT NULL COMMENT '登录系统使用的用户名，全局唯一',
     password VARCHAR(255) NOT NULL COMMENT '账号登录密码，BCrypt加密存储',
-    token VARCHAR(255) COMMENT '会话登录令牌，JWT',
+    token TEXT COMMENT '会话登录令牌，JWT',
     resident_uuid VARCHAR(36) NOT NULL COMMENT '实名认证绑定的户籍人员UUID',
     user_role ENUM('系统管理员','用户管理员','数据审查员','采集员','街道办','民警','市局负责人','普通用户')
         NOT NULL COMMENT '用户角色',
@@ -480,5 +480,5 @@ INSERT INTO permission_group (group_name, description, permissions) VALUES
 -- 默认管理员账号 (密码: Admin@123)
 INSERT INTO user (user_uuid, username, password, resident_uuid, user_role, permission_group_id, phone, account_status, must_change_password, register_materials)
 VALUES ('admin-0000-0000-0000-000000000001', 'admin',
-        '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5EHsM', 'R00000000000000000001',
+        '$2b$10$prAIsqHtIZifAJkviOkbRe4IAJm4CEd7cS6tozqAZtw.O3DpWfVOC', 'R00000000000000000001',
         '系统管理员', 1, '13800000000', '有效', 1, 'system-init');
