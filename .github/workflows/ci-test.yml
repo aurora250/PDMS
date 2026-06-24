@@ -21,11 +21,8 @@ jobs:
           java-version: '21'
           cache: 'maven'
 
-      - name: Compile
-        run: mvn compile -q -DskipTests
-
-      - name: Run Unit Tests
-        run: mvn test -pl 'pdm-common/pdm-common-core,pdm-common/pdm-common-security,pdm-auth,pdm-resident,pdm-household,pdm-keyperson,pdm-floating-population,pdm-missingperson,pdm-log,pdm-notification'
+      - name: Build & Run Unit Tests
+        run: mvn test -pl 'pdm-common/pdm-common-core,pdm-common/pdm-common-security,pdm-auth,pdm-resident,pdm-household,pdm-keyperson,pdm-floating-population,pdm-missingperson,pdm-log,pdm-notification' -am
 
       - name: Test Report
         uses: dorny/test-reporter@v1
@@ -51,7 +48,7 @@ jobs:
           cache: 'maven'
 
       - name: Run Integration Tests
-        run: mvn verify -pl pdm-auth -Pintegration -Dskip.unit.tests=true
+        run: mvn verify -pl pdm-auth -am -Pintegration -Dskip.unit.tests=true
         continue-on-error: true
         env:
           TESTCONTAINERS_RYUK_DISABLED: true

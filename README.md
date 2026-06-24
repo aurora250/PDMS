@@ -8,7 +8,7 @@ People Database Management System — 面向公安机关的人口数据库综合
 - **Spring Boot 3.3** + Spring Cloud 2023.0.2 (Gateway + Nacos)
 - **Spring Security** + JWT 无状态认证
 - **MyBatis-Plus 3.5.7** + PostgreSQL 16
-- **手动分库**（pdm_db + 4 个 shard 库）
+- **手动分库**（pdm_db + 4 个 shard 库）gi
 - **Elasticsearch 8.x** 全文检索
 - **Redis 7.x** 缓存/分布式锁
 - **Nginx** 反向代理
