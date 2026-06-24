@@ -12,7 +12,7 @@ import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("user")
+@TableName("sys_user")
 public class User extends BaseEntity {
 
     @TableField("user_uuid")

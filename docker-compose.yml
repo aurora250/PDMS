@@ -7,24 +7,22 @@
 services:
   # ==================== 基础设施 ====================
 
-  mysql:
-    image: mysql:8.0
-    container_name: pdm-mysql
+  postgresql:
+    image: postgres:16-alpine
+    container_name: pdm-postgresql
     ports:
-      - "13306:3306"
+      - "15432:5432"
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: pdm_db
-      MYSQL_CHARACTER_SET_SERVER: utf8mb4
-      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+      POSTGRES_USER: pdm
+      POSTGRES_PASSWORD: pdm123
+      POSTGRES_DB: pdm_db
     volumes:
-      - pdm-mysql-data:/var/lib/mysql
+      - pdm-postgresql-data:/var/lib/postgresql/data
+      - ./sql/init-databases.sh:/docker-entrypoint-initdb.d/00-init-databases.sh
+      - ./sql/init-shard-schema.sql:/docker-entrypoint-initdb.d/02-init-shard-schema.sql
       - ./sql/init-schema.sql:/docker-entrypoint-initdb.d/01-init-schema.sql
-      - ./sql/init-shard-schema.sql:/docker-entrypoint-initdb.d/02-shard-schema.sql
-      - ./sql/init-databases.sql:/docker-entrypoint-initdb.d/03-init-databases.sql
-    command: --default-authentication-plugin=mysql_native_password
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      test: ["CMD-SHELL", "pg_isready -U pdm -d pdm_db"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -122,12 +120,12 @@ services:
     ports:
       - "8081:8081"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/pdm_db?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/pdm_db
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
     depends_on:
-      mysql:
+      postgresql:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -149,13 +147,13 @@ services:
     ports:
       - "8082:8082"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/pdm_shard_0?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/pdm_shard_0
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
     depends_on:
-      mysql:
+      postgresql:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
@@ -177,12 +175,12 @@ services:
     ports:
       - "8083:8083"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/pdm_shard_1?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/pdm_shard_1
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
     depends_on:
-      mysql:
+      postgresql:
         condition: service_healthy
       nacos:
         condition: service_healthy
@@ -202,13 +200,13 @@ services:
     ports:
       - "8084:8084"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/pdm_shard_2?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/pdm_shard_2
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
     depends_on:
-      mysql:
+      postgresql:
         condition: service_healthy
       nacos:
         condition: service_healthy
@@ -228,13 +226,13 @@ services:
     ports:
       - "8085:8085"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/pdm_shard_3?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/pdm_shard_3
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
     depends_on:
-      mysql:
+      postgresql:
         condition: service_healthy
       nacos:
         condition: service_healthy
@@ -254,13 +252,13 @@ services:
     ports:
       - "8086:8086"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/pdm_shard_3?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/pdm_shard_3
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
     depends_on:
-      mysql:
+      postgresql:
         condition: service_healthy
       nacos:
         condition: service_healthy
@@ -280,12 +278,12 @@ services:
     ports:
       - "8087:8087"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/pdm_db?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/pdm_db
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
     depends_on:
-      mysql:
+      postgresql:
         condition: service_healthy
       nacos:
         condition: service_healthy
@@ -305,12 +303,12 @@ services:
     ports:
       - "8088:8088"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/pdm_db?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/pdm_db
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
     depends_on:
-      mysql:
+      postgresql:
         condition: service_healthy
       nacos:
         condition: service_healthy
@@ -325,8 +323,10 @@ services:
     container_name: pdm-nginx
     ports:
       - "18080:80"
+      - "18443:443"
     volumes:
       - ./docker/nginx-docker.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/ssl:/etc/nginx/ssl:ro
     depends_on:
       - pdm-gateway
     networks:
@@ -340,7 +340,7 @@ networks:
     driver: bridge
 
 volumes:
-  pdm-mysql-data:
+  pdm-postgresql-data:
   pdm-es-data:
   pdm-redis-data:
   pdm-nacos-data:
