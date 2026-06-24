@@ -7,8 +7,8 @@ People Database Management System — 面向公安机关的人口数据库综合
 - **Java 21** + Virtual Threads
 - **Spring Boot 3.3** + Spring Cloud 2023.0.2 (Gateway + Nacos)
 - **Spring Security** + JWT 无状态认证
-- **MyBatis-Plus 3.5.7** + MySQL 8.0
-- **Apache ShardingSphere-JDBC** 分库分表
+- **MyBatis-Plus 3.5.7** + PostgreSQL 16
+- **手动分库**（pdm_db + 4 个 shard 库）gi
 - **Elasticsearch 8.x** 全文检索
 - **Redis 7.x** 缓存/分布式锁
 - **Nginx** 反向代理
@@ -39,23 +39,51 @@ PeopleDatabaseManagement/
 
 ## 快速启动
 
-### 1. 启动基础设施
+### 1. 启动全部基础设施（首次自动初始化数据库）
 
 ```bash
-cd docker
-docker-compose up -d
+# 在项目根目录执行
+docker compose up -d
 ```
 
-### 2. 初始化数据库
+PostgreSQL 容器**首次启动**时会自动执行 `sql/` 目录下的初始化脚本：
+
+| 脚本 | 作用 |
+|------|------|
+| `init-databases.sh` | 创建 4 个 shard 库 (`pdm_shard_0` ~ `pdm_shard_3`) |
+| `init-schema.sql` | 在 `pdm_db` 中创建系统表（用户、权限、区域、日志等） |
+| `init-shard-schema.sql` | 在每个 shard 库中创建业务表（居民、关系、居住证等） |
+
+### 2. 手动重新初始化数据库（仅当需要重置时）
+
+> ⚠️ 以下操作会**删除所有数据**！
 
 ```bash
-mysql -h127.0.0.1 -uroot -proot < sql/init-schema.sql
+# 停止容器并删除数据卷
+docker compose down -v
+
+# 重新启动（自动初始化）
+docker compose up -d postgresql
 ```
 
-### 3. 启动微服务
+如果只想在**已运行的容器内**手动执行某个脚本：
+
+```bash
+docker compose exec postgresql bash /docker-entrypoint-initdb.d/00-init-databases.sh
+```
+
+### 3. 构建并启动微服务
 
 ```bash
 mvn clean package -DskipTests
+
+# 使用 Docker Compose 启动所有微服务
+docker compose up -d
+```
+
+或逐个启动：
+
+```bash
 java -jar pdm-gateway/target/pdm-gateway-1.0-SNAPSHOT.jar &
 java -jar pdm-auth/target/pdm-auth-1.0-SNAPSHOT.jar &
 # ... 依次启动其他服务
