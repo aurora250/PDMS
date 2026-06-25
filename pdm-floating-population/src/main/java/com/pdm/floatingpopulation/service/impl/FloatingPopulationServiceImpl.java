@@ -153,15 +153,24 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
             throw new BusinessException(ErrorCode.DATA_NOT_FOUND);
         }
         // 只更新非空字段，避免覆盖已有数据
-        if (registration.getCurrentAddress() != null) existing.setCurrentAddress(registration.getCurrentAddress());
-        if (registration.getOriginalAddress() != null) existing.setOriginalAddress(registration.getOriginalAddress());
-        if (registration.getAreaId() != null) existing.setAreaId(registration.getAreaId());
-        if (registration.getAddressType() != null) existing.setAddressType(registration.getAddressType());
-        if (registration.getHouseOwnership() != null) existing.setHouseOwnership(registration.getHouseOwnership());
-        if (registration.getPurpose() != null) existing.setPurpose(registration.getPurpose());
-        if (registration.getExpectedDuration() != null) existing.setExpectedDuration(registration.getExpectedDuration());
-        if (registration.getWorkUnit() != null) existing.setWorkUnit(registration.getWorkUnit());
-        if (registration.getRegisterDate() != null) existing.setRegisterDate(registration.getRegisterDate());
+        if (registration.getCurrentAddress() != null)
+            existing.setCurrentAddress(registration.getCurrentAddress());
+        if (registration.getOriginalAddress() != null)
+            existing.setOriginalAddress(registration.getOriginalAddress());
+        if (registration.getAreaId() != null)
+            existing.setAreaId(registration.getAreaId());
+        if (registration.getAddressType() != null)
+            existing.setAddressType(registration.getAddressType());
+        if (registration.getHouseOwnership() != null)
+            existing.setHouseOwnership(registration.getHouseOwnership());
+        if (registration.getPurpose() != null)
+            existing.setPurpose(registration.getPurpose());
+        if (registration.getExpectedDuration() != null)
+            existing.setExpectedDuration(registration.getExpectedDuration());
+        if (registration.getWorkUnit() != null)
+            existing.setWorkUnit(registration.getWorkUnit());
+        if (registration.getRegisterDate() != null)
+            existing.setRegisterDate(registration.getRegisterDate());
         residentRegistrationMapper.updateById(existing);
         return existing;
     }
@@ -191,13 +200,11 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
     @Override
     public List<Map<String, Object>> getTrendData() {
         List<FpRegisterRecord> list = fpRegisterRecordMapper.selectList(null);
-        return list.stream()
-                .map(r -> {
-                    Map<String, Object> item = new java.util.HashMap<>();
-                    item.put("registerDate", r.getRegisterDate() != null ? r.getRegisterDate().toString() : null);
-                    item.put("rid", r.getRid());
-                    return item;
-                })
-                .toList();
+        return list.stream().map(r -> {
+            Map<String, Object> item = new java.util.HashMap<>();
+            item.put("registerDate", r.getRegisterDate() != null ? r.getRegisterDate().toString() : null);
+            item.put("rid", r.getRid());
+            return item;
+        }).toList();
     }
 }
