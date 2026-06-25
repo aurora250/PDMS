@@ -1,8 +1,10 @@
 package com.pdm.missingperson.entity;
 
-import com.pdm.common.mybatis.BaseEntity;
+import com.pdm.common.mybatis.BaseNamedEntity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 import java.time.LocalDate;
@@ -13,7 +15,11 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("missing_person_recovery")
-public class MissingPersonRecovery extends BaseEntity {
+public class MissingPersonRecovery extends BaseNamedEntity {
+
+    @TableId(type = IdType.AUTO)
+    @TableField("rid")
+    private Long rid;
 
     @TableField("missing_record_rid")
     private Long missingRecordRid;

@@ -36,7 +36,6 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
     @Override
     @Transactional
     public FpRegisterRecord registerFp(FpRegisterRecord record) {
-        record.setRid("FP" + IdUtil.fastSimpleUUID().substring(0, 20));
         record.setRegisterDate(LocalDate.now());
         record.setResidencePermitNo(null);
         fpRegisterRecordMapper.insert(record);
@@ -45,14 +44,11 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
 
     @Override
     @Transactional
-    public FpRegisterRecord updateFp(String rid, FpRegisterRecord record) {
-        LambdaQueryWrapper<FpRegisterRecord> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(FpRegisterRecord::getRid, rid);
-        FpRegisterRecord existing = fpRegisterRecordMapper.selectOne(wrapper);
+    public FpRegisterRecord updateFp(Long rid, FpRegisterRecord record) {
+        FpRegisterRecord existing = fpRegisterRecordMapper.selectById(rid);
         if (existing == null) {
             throw new BusinessException(ErrorCode.FP_RECORD_NOT_FOUND);
         }
-        record.setId(existing.getId());
         record.setRid(rid);
         fpRegisterRecordMapper.updateById(record);
         return record;
@@ -60,21 +56,25 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
 
     @Override
     @Transactional
-    public void cancelFp(String rid) {
-        LambdaQueryWrapper<FpRegisterRecord> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(FpRegisterRecord::getRid, rid);
-        FpRegisterRecord existing = fpRegisterRecordMapper.selectOne(wrapper);
+    public void cancelFp(Long rid) {
+        FpRegisterRecord existing = fpRegisterRecordMapper.selectById(rid);
         if (existing == null) {
             throw new BusinessException(ErrorCode.FP_RECORD_NOT_FOUND);
         }
-        fpRegisterRecordMapper.deleteById(existing.getId());
+        fpRegisterRecordMapper.deleteById(rid);
     }
 
     @Override
     @Transactional
     public ResidentPermit applyPermit(ResidentPermit permit) {
         permit.setPermitNo("RP" + IdUtil.fastSimpleUUID().substring(0, 20));
-        permit.setStatus("待审批");
+        permit.setStatus("有效");
+        if (permit.getIssueDate() == null) {
+            permit.setIssueDate(LocalDate.now());
+        }
+        if (permit.getExpiryDate() == null) {
+            permit.setExpiryDate(LocalDate.now().plusYears(1));
+        }
         residentPermitMapper.insert(permit);
         return permit;
     }
@@ -86,7 +86,7 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
         if (permit == null) {
             throw new BusinessException(ErrorCode.RESIDENT_PERMIT_NOT_FOUND);
         }
-        permit.setStatus("待签发");
+        permit.setStatus("有效");
         residentPermitMapper.updateById(permit);
         return permit;
     }
@@ -125,7 +125,6 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
         if (!"有效".equals(permit.getStatus())) {
             throw new BusinessException(ErrorCode.RESIDENT_PERMIT_EXPIRED);
         }
-        renewal.setRenewalId("RN" + IdUtil.fastSimpleUUID().substring(0, 20));
         renewal.setPermitNo(permit.getPermitNo());
         renewal.setOldExpiryDate(permit.getExpiryDate());
         renewal.setNewExpiryDate(permit.getExpiryDate().plusYears(1));
@@ -141,7 +140,6 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
     @Override
     @Transactional
     public ResidentRegistration registerResidence(ResidentRegistration registration) {
-        registration.setRid("RS" + IdUtil.fastSimpleUUID().substring(0, 20));
         registration.setRegisterDate(LocalDate.now());
         residentRegistrationMapper.insert(registration);
         return registration;
@@ -149,46 +147,57 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
 
     @Override
     @Transactional
-    public ResidentRegistration changeResidence(String rid, ResidentRegistration registration) {
-        LambdaQueryWrapper<ResidentRegistration> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ResidentRegistration::getRid, rid);
-        ResidentRegistration existing = residentRegistrationMapper.selectOne(wrapper);
+    public ResidentRegistration changeResidence(Long rid, ResidentRegistration registration) {
+        ResidentRegistration existing = residentRegistrationMapper.selectById(rid);
         if (existing == null) {
             throw new BusinessException(ErrorCode.DATA_NOT_FOUND);
         }
-        registration.setId(existing.getId());
-        registration.setRid(rid);
-        residentRegistrationMapper.updateById(registration);
-        return registration;
+        // 只更新非空字段，避免覆盖已有数据
+        if (registration.getCurrentAddress() != null) existing.setCurrentAddress(registration.getCurrentAddress());
+        if (registration.getOriginalAddress() != null) existing.setOriginalAddress(registration.getOriginalAddress());
+        if (registration.getAreaId() != null) existing.setAreaId(registration.getAreaId());
+        if (registration.getAddressType() != null) existing.setAddressType(registration.getAddressType());
+        if (registration.getHouseOwnership() != null) existing.setHouseOwnership(registration.getHouseOwnership());
+        if (registration.getPurpose() != null) existing.setPurpose(registration.getPurpose());
+        if (registration.getExpectedDuration() != null) existing.setExpectedDuration(registration.getExpectedDuration());
+        if (registration.getWorkUnit() != null) existing.setWorkUnit(registration.getWorkUnit());
+        if (registration.getRegisterDate() != null) existing.setRegisterDate(registration.getRegisterDate());
+        residentRegistrationMapper.updateById(existing);
+        return existing;
     }
 
     @Override
     @Transactional
-    public void cancelResidence(String rid) {
-        LambdaQueryWrapper<ResidentRegistration> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ResidentRegistration::getRid, rid);
-        ResidentRegistration existing = residentRegistrationMapper.selectOne(wrapper);
+    public void cancelResidence(Long rid) {
+        ResidentRegistration existing = residentRegistrationMapper.selectById(rid);
         if (existing == null) {
             throw new BusinessException(ErrorCode.DATA_NOT_FOUND);
         }
-        residentRegistrationMapper.deleteById(existing.getId());
+        residentRegistrationMapper.deleteById(rid);
     }
 
     @Override
     public List<Map<String, Object>> getHeatmapData() {
-        // Return simplified heatmap data grouped by area
         List<ResidentRegistration> list = residentRegistrationMapper.selectList(null);
-        return list.stream().map(r -> Map.<String, Object>of("areaId", r.getAreaId(), "addressType", r.getAddressType(),
-                "uuid", r.getUuid())).toList();
+        return list.stream().map(r -> {
+            Map<String, Object> item = new java.util.HashMap<>();
+            item.put("areaId", r.getAreaId());
+            item.put("addressType", r.getAddressType());
+            item.put("uuid", r.getUuid());
+            return item;
+        }).toList();
     }
 
     @Override
     public List<Map<String, Object>> getTrendData() {
-        // Return simplified trend data grouped by register date
         List<FpRegisterRecord> list = fpRegisterRecordMapper.selectList(null);
         return list.stream()
-                .map(r -> Map.<String, Object>of("registerDate",
-                        r.getRegisterDate() != null ? r.getRegisterDate().toString() : null, "rid", r.getRid()))
+                .map(r -> {
+                    Map<String, Object> item = new java.util.HashMap<>();
+                    item.put("registerDate", r.getRegisterDate() != null ? r.getRegisterDate().toString() : null);
+                    item.put("rid", r.getRid());
+                    return item;
+                })
                 .toList();
     }
 }

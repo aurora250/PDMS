@@ -147,7 +147,7 @@ services:
     ports:
       - "8082:8082"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/pdm_shard_0
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/pdm_db
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
@@ -175,7 +175,7 @@ services:
     ports:
       - "8083:8083"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/pdm_shard_1
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/pdm_db
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
@@ -200,7 +200,7 @@ services:
     ports:
       - "8084:8084"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/pdm_shard_2
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/pdm_db
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
@@ -226,7 +226,7 @@ services:
     ports:
       - "8085:8085"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/pdm_shard_3
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/pdm_db
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
@@ -252,7 +252,7 @@ services:
     ports:
       - "8086:8086"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/pdm_shard_3
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgresql:5432/pdm_db
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200

@@ -64,11 +64,11 @@ POST /api/auth/login
         "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
         "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
         "tokenType": "Bearer",
-        "expiresIn": 3600,
+        "expiresIn": 7200,
         "userUuid": "uuid-xxx",
         "username": "admin",
-        "role": "ADMIN",
-        "mustChangePassword": false
+        "role": "系统管理员",
+        "mustChangePassword": true
     }
 }
 ```
@@ -127,11 +127,11 @@ POST /api/auth/refresh
         "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
         "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
         "tokenType": "Bearer",
-        "expiresIn": 3600,
+        "expiresIn": 7200,
         "userUuid": "uuid-xxx",
         "username": "admin",
-        "role": "ADMIN",
-        "mustChangePassword": false
+        "role": "系统管理员",
+        "mustChangePassword": true
     }
 }
 ```
@@ -278,7 +278,7 @@ POST /api/auth/police
     "jurisdiction": "某某社区",
     "areaId": 110101,
     "department": "治安大队",
-    "policeRank": "二级警司",
+    "policeRank": "警司",
     "dutyStatus": "在岗"
 }
 ```
@@ -331,7 +331,7 @@ PUT /api/auth/police/{policeNumber}
     "policeStation": "某某派出所",
     "jurisdiction": "某某社区-扩大范围",
     "department": "刑侦大队",
-    "policeRank": "一级警司",
+    "policeRank": "警督",
     "dutyStatus": "在岗"
 }
 ```
@@ -353,7 +353,7 @@ PUT /api/auth/police/{policeNumber}/status
 **Request Body:**
 ```json
 {
-    "dutyStatus": "离岗"
+    "dutyStatus": "调岗"
 }
 ```
 
@@ -404,7 +404,7 @@ PUT /api/auth/users/{uuid}
 {
     "phone": "13800138000",
     "email": "user@example.com",
-    "userRole": "OPERATOR",
+    "userRole": "采集员",
     "permissionGroupId": 2
 }
 ```
@@ -419,14 +419,14 @@ PUT /api/auth/users/{uuid}/status
 
 | 项目 | 内容 |
 |------|------|
-| **描述** | 修改用户账户状态(启用/禁用/锁定) |
+| **描述** | 修改用户账户状态(有效/冻结/注销/锁定) |
 | **认证** | `Authorization: Bearer {{accessToken}}` |
 | **路径参数** | `uuid` — 用户UUID |
 
 **Request Body:**
 ```json
 {
-    "status": "DISABLED"
+    "status": "冻结"
 }
 ```
 
@@ -479,8 +479,8 @@ POST /api/resident
     "photo": "",
     "residence": "北京市东城区某某路1号",
     "areaId": 110101,
-    "householdType": "常住",
-    "householdStatus": "在户",
+    "householdType": "居民户口",
+    "householdStatus": "正常",
     "householdAddress": "北京市东城区某某路1号",
     "householdAreaId": 110101
 }
@@ -626,7 +626,7 @@ POST /api/resident/change-request
     "changeField": "educationLevel",
     "originalData": "本科",
     "modifiedData": "硕士",
-    "status": "PENDING"
+    "status": "请求"
 }
 ```
 
@@ -635,7 +635,7 @@ POST /api/resident/change-request
 ### 2.9 审批人口变更申请
 
 ```
-PUT /api/resident/change-request/{rid}/approve?status=APPROVED
+PUT /api/resident/change-request/{rid}/approve?status=通过
 ```
 
 | 项目 | 内容 |
@@ -643,7 +643,7 @@ PUT /api/resident/change-request/{rid}/approve?status=APPROVED
 | **描述** | 审批人口变更申请 |
 | **认证** | `Authorization: Bearer {{accessToken}}`, `X-User-Uuid: {{handlerUuid}}` |
 | **路径参数** | `rid` — 变更申请ID |
-| **查询参数** | `status` — APPROVED / REJECTED |
+| **查询参数** | `status` — 通过 / 驳回 |
 | **请求头** | `X-User-Uuid` — 审批人UUID |
 
 ---
@@ -704,7 +704,7 @@ POST /api/household/book/apply
     "establishDate": "2026-06-23",
     "hukouAddress": "北京市东城区某某路1号",
     "hukouAreaId": 110101,
-    "status": "ACTIVE",
+    "status": "有效",
     "memberUuidList": "uuid1,uuid2,uuid3"
 }
 ```
@@ -768,11 +768,11 @@ POST /api/household/business
     "handlerUuid": "",
     "applicantUuid": "550e8400-e29b-41d4-a716-446655440001",
     "attachment": "[]",
-    "businessType": "BIRTH_REGISTRATION",
+    "businessType": "登记",
     "handleDate": "2026-06-23",
     "handleBasis": "《户口登记条例》第7条",
     "fee": 0.00,
-    "status": "PENDING",
+    "status": "审批中",
     "rejectReason": "",
     "remark": ""
 }
@@ -795,7 +795,7 @@ PUT /api/household/business/{rid}/approve
 **Request Body:**
 ```json
 {
-    "status": "APPROVED",
+    "status": "批准",
     "rejectReason": ""
 }
 ```
@@ -823,11 +823,11 @@ POST /api/household/migration
     "outgoingAddress": "北京市东城区某某路1号",
     "outgoingAreaId": 110101,
     "attachment": "[]",
-    "businessType": "MIGRATION_IN",
+    "businessType": "市内",
     "handleDate": "2026-06-23",
     "handleBasis": "《户口登记条例》第10条",
     "fee": 5.00,
-    "status": "PENDING",
+    "status": "准迁证审批中",
     "rejectReason": "",
     "approvalPermitNo": "",
     "migrationPermitNo": "",
@@ -852,7 +852,7 @@ PUT /api/household/migration/{rid}/approve
 **Request Body:**
 ```json
 {
-    "status": "APPROVED",
+    "status": "迁移审批通过",
     "rejectReason": ""
 }
 ```
@@ -891,7 +891,7 @@ POST /api/household/approval-permit
     "issueDate": "2026-06-23",
     "expiryDate": "2026-09-23",
     "issuingAuthority": "北京市公安局东城分局",
-    "status": "ACTIVE"
+    "status": "有效"
 }
 ```
 
@@ -915,7 +915,7 @@ POST /api/household/migration-permit
     "issueDate": "2026-06-23",
     "expiryDate": "2026-07-23",
     "outgoingPoliceStation": "某某派出所",
-    "status": "ACTIVE"
+    "status": "有效"
 }
 ```
 
@@ -954,8 +954,8 @@ POST /api/keyperson
 ```json
 {
     "uuid": "550e8400-e29b-41d4-a716-446655440010",
-    "controlLevel": "A",
-    "controlType": "重点上访人员",
+    "controlLevel": "一级",
+    "controlType": "信访重点人员",
     "designatedAt": "2026-06-23T10:00:00",
     "revokedAt": null,
     "responsiblePoliceNo": "P20260001"
@@ -979,7 +979,7 @@ PUT /api/keyperson/{uuid}
 **Request Body:**
 ```json
 {
-    "controlLevel": "B"
+    "controlLevel": "二级"
 }
 ```
 
@@ -1002,7 +1002,7 @@ DELETE /api/keyperson/{uuid}
 ### 4.4 多条件搜索重点人员
 
 ```
-GET /api/keyperson/search?controlLevel=A&controlType=重点上访人员
+GET /api/keyperson/search?controlLevel=一级&controlType=信访重点人员
 ```
 
 | 项目 | 内容 |
@@ -1027,12 +1027,11 @@ POST /api/keyperson/visit-plan
 **Request Body:**
 ```json
 {
-    "planId": "VP-2026-00001",
     "keyPersonUuid": "550e8400-e29b-41d4-a716-446655440010",
     "plannedDate": "2026-07-01",
     "actualDate": null,
-    "visitType": "定期走访",
-    "status": "PLANNED",
+    "visitType": "入户走访",
+    "status": "待走访",
     "assignedPoliceNo": "P20260001",
     "isAlerted": 0
 }
@@ -1118,7 +1117,6 @@ POST /api/fp/register
 **Request Body:**
 ```json
 {
-    "rid": "FP-2026-00001",
     "residencePermitNo": "",
     "uuid": "550e8400-e29b-41d4-a716-446655440020",
     "agentUuid": "",
@@ -1186,9 +1184,11 @@ POST /api/fp/permit/apply
     "uuid": "550e8400-e29b-41d4-a716-446655440020",
     "issueDate": null,
     "expiryDate": "2027-06-23",
-    "status": "PENDING"
+    "status": "有效"
 }
 ```
+
+> **说明**: `rid` 为数据库自动生成的 BIGSERIAL 主键，无需手动设置。
 
 ---
 
@@ -1235,7 +1235,6 @@ POST /api/fp/permit/{id}/renew
 **Request Body:**
 ```json
 {
-    "renewalId": "RN-2026-00001",
     "permitNo": "RP-2026-00001",
     "oldExpiryDate": "2027-06-23",
     "newExpiryDate": "2028-06-23",
@@ -1261,15 +1260,14 @@ POST /api/fp/residence/register
 **Request Body:**
 ```json
 {
-    "rid": "RR-2026-00001",
     "uuid": "550e8400-e29b-41d4-a716-446655440020",
     "originalAddress": "河南省某市某县某村",
     "currentAddress": "北京市朝阳区某某小区3号楼501",
     "areaId": 110105,
-    "addressType": "租赁",
+    "addressType": "租赁房屋",
     "houseOwnership": "租赁-整租",
     "purpose": "务工",
-    "expectedDuration": "长期(>1年)",
+    "expectedDuration": "长租",
     "workUnit": "某某科技有限公司",
     "registerDate": "2026-06-23"
 }
@@ -1377,7 +1375,7 @@ POST /api/missing
     "medicalHistory": "无",
     "possibleWay": "疑似被拐卖",
     "contactPhone": "13800138001",
-    "status": "MISSING"
+    "status": "失踪中"
 }
 ```
 
@@ -1422,14 +1420,14 @@ POST /api/missing/recovery
 ### 6.4 搜索失踪人口
 
 ```
-GET /api/missing/search?name=张三&status=MISSING&page=1&size=20
+GET /api/missing/search?name=张三&status=失踪中&page=1&size=20
 ```
 
 | 项目 | 内容 |
 |------|------|
 | **描述** | 多条件分页搜索失踪人口 |
 | **认证** | `Authorization: Bearer {{accessToken}}` |
-| **查询参数** | `residentUuid`(可选), `status`(可选: MISSING/RECOVERED), `name`(可选), `page`(默认1), `size`(默认20) |
+| **查询参数** | `residentUuid`(可选), `status`(可选: 失踪中/已经寻回), `name`(可选), `page`(默认1), `size`(默认20) |
 
 ---
 
@@ -1467,14 +1465,14 @@ GET /api/missing/statistics
 ### 7.1 查询审计日志
 
 ```
-GET /api/log/audit?page=1&size=20&startTime=2026-06-01T00:00:00&endTime=2026-06-23T23:59:59&operationType=UPDATE
+GET /api/log/audit?page=1&size=20&startTime=2026-06-01T00:00:00&endTime=2026-06-23T23:59:59&operationType=修改
 ```
 
 | 项目 | 内容 |
 |------|------|
 | **描述** | 分页查询操作审计日志 |
 | **认证** | `Authorization: Bearer {{accessToken}}` |
-| **查询参数** | `startTime`(可选,ISO格式), `endTime`(可选), `operatorUuid`(可选), `operationType`(可选: CREATE/UPDATE/DELETE/QUERY), `page`(默认1), `size`(默认20) |
+| **查询参数** | `startTime`(可选,ISO格式), `endTime`(可选), `operatorUuid`(可选), `operationType`(可选: 新增/修改/删除), `page`(默认1), `size`(默认20) |
 
 ---
 
@@ -1530,11 +1528,11 @@ GET /api/alert/pending
     "data": [
         {
             "id": 1,
-            "alertType": "VISIT_OVERDUE",
+            "alertType": "走访逾期",
             "targetType": "KEY_PERSON",
             "targetId": "uuid-xxx",
             "alertContent": "重点人员超过30天未走访",
-            "severity": "HIGH",
+            "severity": "高",
             "isHandled": 0,
             "handledBy": null,
             "handledAt": null,
@@ -1564,14 +1562,14 @@ PUT /api/alert/{id}/handle?handledBy=admin
 ### 8.3 搜索预警
 
 ```
-GET /api/alert/search?alertType=VISIT_OVERDUE&severity=HIGH&isHandled=0&page=1&size=20
+GET /api/alert/search?alertType=走访逾期&severity=高&isHandled=0&page=1&size=20
 ```
 
 | 项目 | 内容 |
 |------|------|
 | **描述** | 多条件分页搜索预警记录 |
 | **认证** | `Authorization: Bearer {{accessToken}}` |
-| **查询参数** | `alertType`(可选: VISIT_OVERDUE/PERMIT_EXPIRY/KEY_PERSON_ANOMALY), `severity`(可选: HIGH/MEDIUM/LOW), `isHandled`(可选: 0未处理/1已处理), `page`(默认1), `size`(默认20) |
+| **查询参数** | `alertType`(可选: 居住证到期/走访逾期/重点人员匹配/证件到期/其他), `severity`(可选: 高/中/低), `isHandled`(可选: 0未处理/1已处理), `page`(默认1), `size`(默认20) |
 
 ---
 

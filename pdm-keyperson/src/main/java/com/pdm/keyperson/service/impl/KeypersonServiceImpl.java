@@ -104,7 +104,6 @@ public class KeypersonServiceImpl implements KeypersonService {
             intervalDays = 90;
         }
 
-        visitPlan.setPlanId("VP" + IdUtil.fastSimpleUUID().substring(0, 20));
         visitPlan.setPlannedDate(LocalDate.now().plusDays(intervalDays));
         visitPlan.setStatus("待走访");
         visitPlan.setIsAlerted(0);
@@ -124,7 +123,15 @@ public class KeypersonServiceImpl implements KeypersonService {
         visitPlanMapper.updateById(plan);
 
         if (petitionRecord != null) {
+            petitionRecord.setKeyPersonUuid(plan.getKeyPersonUuid());
+            petitionRecord.setHandlerPoliceNo(plan.getAssignedPoliceNo());
             petitionRecord.setPetitionTime(LocalDateTime.now());
+            if (petitionRecord.getAddress() == null) {
+                petitionRecord.setAddress("");
+            }
+            if (petitionRecord.getEvaluation() == null) {
+                petitionRecord.setEvaluation("已完成走访");
+            }
             petitionRecordMapper.insert(petitionRecord);
         }
 

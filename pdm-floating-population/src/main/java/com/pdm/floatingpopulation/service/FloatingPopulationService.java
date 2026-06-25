@@ -12,9 +12,9 @@ public interface FloatingPopulationService {
 
     FpRegisterRecord registerFp(FpRegisterRecord record);
 
-    FpRegisterRecord updateFp(String rid, FpRegisterRecord record);
+    FpRegisterRecord updateFp(Long rid, FpRegisterRecord record);
 
-    void cancelFp(String rid);
+    void cancelFp(Long rid);
 
     ResidentPermit applyPermit(ResidentPermit permit);
 
@@ -26,9 +26,9 @@ public interface FloatingPopulationService {
 
     ResidentRegistration registerResidence(ResidentRegistration registration);
 
-    ResidentRegistration changeResidence(String rid, ResidentRegistration registration);
+    ResidentRegistration changeResidence(Long rid, ResidentRegistration registration);
 
-    void cancelResidence(String rid);
+    void cancelResidence(Long rid);
 
     List<Map<String, Object>> getHeatmapData();
 

@@ -27,12 +27,12 @@ public class FloatingPopulationController {
     }
 
     @PutMapping("/register/{rid}")
-    public Result<FpRegisterRecord> updateFp(@PathVariable String rid, @RequestBody FpRegisterRecord record) {
+    public Result<FpRegisterRecord> updateFp(@PathVariable Long rid, @RequestBody FpRegisterRecord record) {
         return Result.success(floatingPopulationService.updateFp(rid, record));
     }
 
     @DeleteMapping("/register/{rid}")
-    public Result<Void> cancelFp(@PathVariable String rid) {
+    public Result<Void> cancelFp(@PathVariable Long rid) {
         floatingPopulationService.cancelFp(rid);
         return Result.success();
     }
@@ -65,13 +65,13 @@ public class FloatingPopulationController {
     }
 
     @PutMapping("/residence/{rid}")
-    public Result<ResidentRegistration> changeResidence(@PathVariable String rid,
+    public Result<ResidentRegistration> changeResidence(@PathVariable Long rid,
             @RequestBody ResidentRegistration registration) {
         return Result.success(floatingPopulationService.changeResidence(rid, registration));
     }
 
     @DeleteMapping("/residence/{rid}")
-    public Result<Void> cancelResidence(@PathVariable String rid) {
+    public Result<Void> cancelResidence(@PathVariable Long rid) {
         floatingPopulationService.cancelResidence(rid);
         return Result.success();
     }

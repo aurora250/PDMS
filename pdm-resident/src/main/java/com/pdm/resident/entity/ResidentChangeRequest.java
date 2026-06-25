@@ -1,8 +1,10 @@
 package com.pdm.resident.entity;
 
-import com.pdm.common.mybatis.BaseEntity;
+import com.pdm.common.mybatis.BaseNamedEntity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 import java.time.LocalDate;
@@ -13,8 +15,9 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("resident_change_request")
-public class ResidentChangeRequest extends BaseEntity {
+public class ResidentChangeRequest extends BaseNamedEntity {
 
+    @TableId(type = IdType.AUTO)
     @TableField("rid")
     private Long rid;
 

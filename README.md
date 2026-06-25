@@ -8,7 +8,6 @@ People Database Management System — 面向公安机关的人口数据库综合
 - **Spring Boot 3.3** + Spring Cloud 2023.0.2 (Gateway + Nacos)
 - **Spring Security** + JWT 无状态认证
 - **MyBatis-Plus 3.5.7** + PostgreSQL 16
-- **手动分库**（pdm_db + 4 个 shard 库）gi
 - **Elasticsearch 8.x** 全文检索
 - **Redis 7.x** 缓存/分布式锁
 - **Nginx** 反向代理
@@ -22,7 +21,7 @@ PeopleDatabaseManagement/
 │   ├── pdm-common-core/           # 核心工具类、异常、常量
 │   ├── pdm-common-dto/            # 通用DTO/VO
 │   ├── pdm-common-security/       # JWT、Security公共配置
-│   ├── pdm-common-mybatis/        # MyBatis-Plus配置
+│   ├── pdm-common-mybatis/        # MyBatis-Plus配置 + BaseEntity/BaseNamedEntity
 │   └── pdm-common-es/             # ES公共操作封装
 ├── pdm-gateway/                   # API网关 (8080)
 ├── pdm-auth/                      # 认证授权服务 (8081)
@@ -34,65 +33,79 @@ PeopleDatabaseManagement/
 ├── pdm-log/                       # 日志审计 (8087)
 ├── pdm-notification/              # 预警通知 (8088)
 ├── sql/                           # 数据库初始化脚本
-└── docker/                        # Docker部署配置
+├── scripts/                       # 运维脚本 & API测试
+├── docs/                          # 文档
+└── docker/                        # Docker & Nginx配置
 ```
 
 ## 快速启动
 
-### 1. 启动全部基础设施（首次自动初始化数据库）
+### 1. 一键启动全部服务
 
 ```bash
-# 在项目根目录执行
 docker compose up -d
 ```
 
-PostgreSQL 容器**首次启动**时会自动执行 `sql/` 目录下的初始化脚本：
-
-| 脚本 | 作用 |
-|------|------|
-| `init-databases.sh` | 创建 4 个 shard 库 (`pdm_shard_0` ~ `pdm_shard_3`) |
-| `init-schema.sql` | 在 `pdm_db` 中创建系统表（用户、权限、区域、日志等） |
-| `init-shard-schema.sql` | 在每个 shard 库中创建业务表（居民、关系、居住证等） |
-
-### 2. 手动重新初始化数据库（仅当需要重置时）
-
-> ⚠️ 以下操作会**删除所有数据**！
+### 2. 查看服务状态
 
 ```bash
-# 停止容器并删除数据卷
-docker compose down -v
-
-# 重新启动（自动初始化）
-docker compose up -d postgresql
+docker compose ps
 ```
 
-如果只想在**已运行的容器内**手动执行某个脚本：
-
-```bash
-docker compose exec postgresql bash /docker-entrypoint-initdb.d/00-init-databases.sh
-```
-
-### 3. 构建并启动微服务
-
-```bash
-mvn clean package -DskipTests
-
-# 使用 Docker Compose 启动所有微服务
-docker compose up -d
-```
-
-或逐个启动：
-
-```bash
-java -jar pdm-gateway/target/pdm-gateway-1.0-SNAPSHOT.jar &
-java -jar pdm-auth/target/pdm-auth-1.0-SNAPSHOT.jar &
-# ... 依次启动其他服务
-```
-
-### 4. 默认账号
+### 3. 默认账号
 
 - 用户名: `admin`
 - 密码: `Admin@123`
+- 角色: 系统管理员 (首次登录需修改密码)
+
+## 服务端口
+
+| 服务 | 端口 | 网关路由 |
+|------|------|----------|
+| pdm-gateway | 8080 | — |
+| pdm-auth | 8081 | `/api/auth/**` |
+| pdm-resident | 8082 | `/api/resident/**` |
+| pdm-household | 8083 | `/api/household/**` `/api/area/**` |
+| pdm-keyperson | 8084 | `/api/keyperson/**` |
+| pdm-floating-population | 8085 | `/api/fp/**` |
+| pdm-missingperson | 8086 | `/api/missing/**` |
+| pdm-log | 8087 | `/api/log/**` |
+| pdm-notification | 8088 | `/api/alert/**` |
+| PostgreSQL | 15432 | — |
+| Redis | 16379 | — |
+| Elasticsearch | 9200 | — |
+| Nacos | 8848 | — |
+| Nginx | 18080 | — |
+
+## 运维脚本
+
+| 脚本 | 用途 |
+|------|------|
+| `scripts/test-api.py` | **全量 API 自动化测试** — 测试全部 60 个端点 |
+| `scripts/reset-database.sh` | 清空所有数据并重建容器 (`--hard` 重新编译) |
+| `scripts/rebuild-and-restart.sh` | 编译所有模块并重启 (`--reset-db` 同时清数据) |
+| `scripts/build-and-start.sh` | 编译、构建镜像、启动全套服务 |
+
+```bash
+# 运行 API 测试
+python3 scripts/test-api.py
+
+# 重置数据库
+./scripts/reset-database.sh
+
+# 完全重建（重新编译+清数据）
+./scripts/reset-database.sh --hard
+```
+
+## API 文档
+
+完整 API 文档见 `docs/postman-api-test-list.md`，包含全部 60 个 REST API 端点的请求/响应示例。
+
+所有枚举值使用中文（与数据库 CHECK 约束一致）：
+- 角色: `系统管理员` / `民警` / `采集员` / …
+- 管控等级: `一级` / `二级` / `三级`
+- 户籍状态: `正常` / `死亡注销` / `失踪注销` / `迁出注销` / `恢复`
+- 走访状态: `待走访` / `已完成` / `已逾期` / `已取消`
 
 ## 核心功能模块
 
@@ -105,3 +118,15 @@ java -jar pdm-auth/target/pdm-auth-1.0-SNAPSHOT.jar &
 | 失踪人员管理 | 登记撤销、寻回闭环、统计看板 |
 | 系统管理 | RBAC权限组、警员管理、操作/登录审计日志 |
 | 预警通知 | 居住证到期/走访逾期/重点人员匹配预警 |
+
+## 数据库
+
+- **数据库**: PostgreSQL 16
+- **连接**: `localhost:15432`, 用户 `pdm`, 密码 `pdm123`, 库 `pdm_db`
+- **设计文档**: `07.第01组-数据库设计说明书-人口数据库管理系统.xlsx`
+- **SQL 脚本**: `sql/init-schema.sql` (24 张表), `sql/init-schema-shard.sql` (分片表)
+
+```bash
+# 手动连接数据库
+psql -h localhost -p 15432 -U pdm -d pdm_db
+```

@@ -1,8 +1,10 @@
 package com.pdm.floatingpopulation.entity;
 
-import com.pdm.common.mybatis.BaseEntity;
+import com.pdm.common.mybatis.BaseNamedEntity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 import java.time.LocalDate;
@@ -13,10 +15,11 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("fp_register_record")
-public class FpRegisterRecord extends BaseEntity {
+public class FpRegisterRecord extends BaseNamedEntity {
 
+    @TableId(type = IdType.AUTO)
     @TableField("rid")
-    private String rid;
+    private Long rid;
 
     @TableField("residence_permit_no")
     private String residencePermitNo;

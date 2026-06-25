@@ -1,8 +1,10 @@
 package com.pdm.notification.entity;
 
-import com.pdm.common.mybatis.BaseEntity;
+import com.pdm.common.mybatis.BaseNamedEntity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 import java.time.LocalDateTime;
@@ -13,7 +15,11 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("alert")
-public class Alert extends BaseEntity {
+public class Alert extends BaseNamedEntity {
+
+    @TableId(type = IdType.AUTO)
+    @TableField("alert_id")
+    private Long alertId;
 
     @TableField("alert_type")
     private String alertType;

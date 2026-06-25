@@ -1,8 +1,10 @@
 package com.pdm.log.entity;
 
-import com.pdm.common.mybatis.BaseEntity;
+import com.pdm.common.mybatis.BaseNamedEntity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 import java.time.LocalDateTime;
@@ -13,7 +15,11 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("audit_log")
-public class AuditLog extends BaseEntity {
+public class AuditLog extends BaseNamedEntity {
+
+    @TableId(type = IdType.AUTO)
+    @TableField("log_id")
+    private Long logId;
 
     @TableField("operator_uuid")
     private String operatorUuid;

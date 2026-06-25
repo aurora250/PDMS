@@ -1,8 +1,10 @@
 package com.pdm.household.entity;
 
-import com.pdm.common.mybatis.BaseEntity;
+import com.pdm.common.mybatis.BaseNamedEntity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 import java.math.BigDecimal;
@@ -14,7 +16,9 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("household_business_request")
-public class HouseholdBusinessRequest extends BaseEntity {
+public class HouseholdBusinessRequest extends BaseNamedEntity {
+
+    @TableId(type = IdType.AUTO)
     @TableField("rid")
     private Long rid;
 
