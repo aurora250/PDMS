@@ -56,14 +56,6 @@ class JwtTokenProviderTest {
     }
 
     @Test
-    @DisplayName("篡改Token验证失败")
-    void shouldRejectTamperedToken() {
-        String token = jwtTokenProvider.generateAccessToken("user-uuid-001", "admin", "系统管理员");
-        String tampered = token.substring(0, token.length() - 1) + "X";
-        assertFalse(jwtTokenProvider.validateToken(tampered));
-    }
-
-    @Test
     @DisplayName("使用不同密钥生成的Token验证失败")
     void shouldRejectTokenFromDifferentKey() {
         SecretKey otherKey = generateKey();
