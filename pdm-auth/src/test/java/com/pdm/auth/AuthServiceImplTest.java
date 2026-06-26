@@ -80,8 +80,10 @@ class AuthServiceImplTest {
 
             when(userMapper.selectByUsername("admin")).thenReturn(testUser);
             when(passwordEncoder.matches("Admin@123!", testUser.getPassword())).thenReturn(true);
-            when(jwtTokenProvider.generateAccessToken("00000000-0000-0000-0000-000000000001", "admin", "系统管理员")).thenReturn("access-token-xxx");
-            when(jwtTokenProvider.generateRefreshToken("00000000-0000-0000-0000-000000000001")).thenReturn("refresh-token-xxx");
+            when(jwtTokenProvider.generateAccessToken("00000000-0000-0000-0000-000000000001", "admin", "系统管理员"))
+                    .thenReturn("access-token-xxx");
+            when(jwtTokenProvider.generateRefreshToken("00000000-0000-0000-0000-000000000001"))
+                    .thenReturn("refresh-token-xxx");
 
             LoginResponse response = authService.login(request, "127.0.0.1");
 
@@ -215,11 +217,12 @@ class AuthServiceImplTest {
             when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testUser);
             when(passwordEncoder.matches("OldPass1!", testUser.getPassword())).thenReturn(true);
 
-            assertThrows(BusinessException.class, () -> authService.changePassword("00000000-0000-0000-0000-000000000001", "OldPass1!", "short"));
             assertThrows(BusinessException.class,
-                    () -> authService.changePassword("00000000-0000-0000-0000-000000000001", "OldPass1!", "nouppercase1!"));
-            assertThrows(BusinessException.class,
-                    () -> authService.changePassword("00000000-0000-0000-0000-000000000001", "OldPass1!", "NOLOWERCASE1!"));
+                    () -> authService.changePassword("00000000-0000-0000-0000-000000000001", "OldPass1!", "short"));
+            assertThrows(BusinessException.class, () -> authService
+                    .changePassword("00000000-0000-0000-0000-000000000001", "OldPass1!", "nouppercase1!"));
+            assertThrows(BusinessException.class, () -> authService
+                    .changePassword("00000000-0000-0000-0000-000000000001", "OldPass1!", "NOLOWERCASE1!"));
         }
     }
 
@@ -232,7 +235,8 @@ class AuthServiceImplTest {
         void shouldBlacklistTokenOnLogout() {
             authService.logout("token-xxx", "00000000-0000-0000-0000-000000000001");
 
-            verify(valueOperations).set(eq(BaseConstants.TOKEN_BLACKLIST_PREFIX + "00000000-0000-0000-0000-000000000001"), eq("token-xxx"),
+            verify(valueOperations).set(
+                    eq(BaseConstants.TOKEN_BLACKLIST_PREFIX + "00000000-0000-0000-0000-000000000001"), eq("token-xxx"),
                     anyLong(), eq(TimeUnit.SECONDS));
         }
     }

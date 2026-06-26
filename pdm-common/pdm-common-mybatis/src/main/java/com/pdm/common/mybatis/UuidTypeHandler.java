@@ -9,19 +9,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.UUID;
 
-/**
- * MyBatis TypeHandler: Java String ↔ PostgreSQL UUID 双向自动转换
- *
- * 写入时: String → java.util.UUID → PG uuid 列
- * 读取时: PG uuid 列 → java.util.UUID → String
- *
- * 全局注册:
- *   mybatis-plus.type-handlers-package: com.pdm.common.mybatis
- */
 public class UuidTypeHandler extends BaseTypeHandler<String> {
 
     @Override
-    public void setNonNullParameter(PreparedStatement ps, int i, String parameter, JdbcType jdbcType) throws SQLException {
+    public void setNonNullParameter(PreparedStatement ps, int i, String parameter, JdbcType jdbcType)
+            throws SQLException {
         if (parameter == null || parameter.isEmpty()) {
             ps.setNull(i, java.sql.Types.OTHER);
         } else {
