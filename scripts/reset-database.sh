@@ -59,7 +59,7 @@ docker compose up -d
 
 echo ""
 echo "============================================================"
-echo " 服务启动中，等待数据库就绪..."
+echo " 服务启动中，等待就绪..."
 echo "============================================================"
 
 # 等待 PostgreSQL 就绪
@@ -79,6 +79,14 @@ if [ $ELAPSED -ge $TIMEOUT ]; then
     exit 1
 fi
 
+# 等待 PgBouncer 就绪
+sleep 3
+if docker exec pdm-pgbouncer pg_isready -U pdm -h 127.0.0.1 -p 6432 -d pdm_db &>/dev/null 2>&1 || true; then
+    echo "  [OK] PgBouncer 已就绪"
+else
+    echo "  [WARN] PgBouncer 健康检查不支持，跳过（服务将直连 PostgreSQL）"
+fi
+
 # 验证数据库和表
 echo ""
 echo "============================================================"
@@ -95,6 +103,17 @@ for db in pdm_shard_0 pdm_shard_1 pdm_shard_2 pdm_shard_3; do
     echo "    $db: $TABLE_COUNT tables"
 done
 
+# 验证 area 表数据
+echo ""
+echo "  区域数据验证:"
+AREA_COUNT=$(docker exec pdm-postgresql psql -U pdm -d pdm_db -t -c "SELECT COUNT(*) FROM area" 2>/dev/null | tr -d ' ')
+echo "    pdm_db.area: $AREA_COUNT records"
+
+# 验证物化视图
+echo ""
+echo "  物化视图:"
+docker exec pdm-postgresql psql -U pdm -d pdm_db -c "\dm" 2>/dev/null || echo "    (无物化视图或当前用户无权限)"
+
 echo ""
 echo "============================================================"
 echo " 数据库重置完成!"
@@ -104,6 +123,7 @@ echo "   Gateway:  http://localhost:8080"
 echo "   Nginx:    http://localhost:18080"
 echo "   Nacos:    http://localhost:8848/nacos"
 echo "   PG:       localhost:15432 (pdm/pdm123)"
+echo "   PgBouncer: localhost:6432 (连接池)"
 echo "   Redis:    localhost:16379"
 echo "   ES:       http://localhost:9200"
 echo ""

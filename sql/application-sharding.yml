@@ -1,0 +1,111 @@
+# ============================================================
+# ShardingSphere-JDBC 分库分表配置
+# 4 分片 HASH_MOD(uuid)，广播表 area/permission_group
+# ============================================================
+spring:
+  shardingsphere:
+    mode:
+      type: Standalone
+    datasource:
+      names: ds0,ds1,ds2,ds3
+      ds0:
+        type: com.zaxxer.hikari.HikariDataSource
+        driver-class-name: org.postgresql.Driver
+        url: jdbc:postgresql://127.0.0.1:6432/pdm_shard_0
+        username: pdm
+        password: pdm123
+      ds1:
+        type: com.zaxxer.hikari.HikariDataSource
+        driver-class-name: org.postgresql.Driver
+        url: jdbc:postgresql://127.0.0.1:6432/pdm_shard_1
+        username: pdm
+        password: pdm123
+      ds2:
+        type: com.zaxxer.hikari.HikariDataSource
+        driver-class-name: org.postgresql.Driver
+        url: jdbc:postgresql://127.0.0.1:6432/pdm_shard_2
+        username: pdm
+        password: pdm123
+      ds3:
+        type: com.zaxxer.hikari.HikariDataSource
+        driver-class-name: org.postgresql.Driver
+        url: jdbc:postgresql://127.0.0.1:6432/pdm_shard_3
+        username: pdm
+        password: pdm123
+    rules:
+      sharding:
+        tables:
+          resident:
+            actual-data-nodes: ds$->{0..3}.resident
+            database-strategy:
+              standard:
+                sharding-column: uuid
+                sharding-algorithm-name: hash-mod-4
+          resident_relation:
+            actual-data-nodes: ds$->{0..3}.resident_relation
+            database-strategy:
+              standard:
+                sharding-column: relation_person_uuid
+                sharding-algorithm-name: hash-mod-4
+          resident_change_request:
+            actual-data-nodes: ds$->{0..3}.resident_change_request
+            database-strategy:
+              standard:
+                sharding-column: applicant_uuid
+                sharding-algorithm-name: hash-mod-4
+          resident_permit:
+            actual-data-nodes: ds$->{0..3}.resident_permit
+            database-strategy:
+              standard:
+                sharding-column: uuid
+                sharding-algorithm-name: hash-mod-4
+          resident_registration:
+            actual-data-nodes: ds$->{0..3}.resident_registration
+            database-strategy:
+              standard:
+                sharding-column: uuid
+                sharding-algorithm-name: hash-mod-4
+          fp_register_record:
+            actual-data-nodes: ds$->{0..3}.fp_register_record
+            database-strategy:
+              standard:
+                sharding-column: uuid
+                sharding-algorithm-name: hash-mod-4
+          key_person:
+            actual-data-nodes: ds$->{0..3}.key_person
+            database-strategy:
+              standard:
+                sharding-column: uuid
+                sharding-algorithm-name: hash-mod-4
+          visit_plan:
+            actual-data-nodes: ds$->{0..3}.visit_plan
+            database-strategy:
+              standard:
+                sharding-column: key_person_uuid
+                sharding-algorithm-name: hash-mod-4
+          petition_record:
+            actual-data-nodes: ds$->{0..3}.petition_record
+            database-strategy:
+              standard:
+                sharding-column: key_person_uuid
+                sharding-algorithm-name: hash-mod-4
+          alert:
+            actual-data-nodes: ds$->{0..3}.alert
+            database-strategy:
+              standard:
+                sharding-column: target_id
+                sharding-algorithm-name: hash-mod-4
+        binding-tables:
+          - key_person,visit_plan,petition_record
+          - resident,resident_relation,resident_permit,resident_registration
+        broadcast-tables:
+          - area
+          - permission_group
+        sharding-algorithms:
+          hash-mod-4:
+            type: HASH_MOD
+            props:
+              sharding-count: 4
+    props:
+      sql-show: false
+      sql-simple: true

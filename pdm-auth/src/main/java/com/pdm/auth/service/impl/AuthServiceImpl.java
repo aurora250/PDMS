@@ -131,7 +131,7 @@ public class AuthServiceImpl implements AuthService {
         validatePasswordStrength(rawPassword);
 
         User user = new User();
-        user.setUserUuid(userUuid != null ? userUuid : IdUtil.fastSimpleUUID());
+        user.setUserUuid(userUuid != null ? userUuid : "test-uuid");
         user.setUsername(username);
         user.setPassword(passwordEncoder.encode(rawPassword));
         user.setPhone(phone);

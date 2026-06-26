@@ -68,6 +68,12 @@
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
         </dependency>
+
+        <!-- ShardingSphere-JDBC 分库分表 -->
+        <dependency>
+            <groupId>org.apache.shardingsphere</groupId>
+            <artifactId>shardingsphere-jdbc</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

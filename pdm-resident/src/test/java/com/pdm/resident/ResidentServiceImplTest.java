@@ -51,7 +51,7 @@ class ResidentServiceImplTest {
     void setUp() {
         testResident = new Resident();
         testResident.setId(1L);
-        testResident.setUuid("r-uuid-001");
+        testResident.setUuid("00000000-0000-0000-0000-000000000001");
         testResident.setName("张三");
         testResident.setIdCardNo("110101199003076632");
         testResident.setGender("男");
@@ -108,13 +108,13 @@ class ResidentServiceImplTest {
         @DisplayName("设置父亲关系成功")
         void shouldSetFatherRelation() {
             ResidentRelation relation = new ResidentRelation();
-            relation.setRelationPersonUuid("r-uuid-001");
-            relation.setFatherUuid("r-uuid-002");
-            relation.setMotherUuid("r-uuid-003");
+            relation.setRelationPersonUuid("00000000-0000-0000-0000-000000000001");
+            relation.setFatherUuid("00000000-0000-0000-0000-000000000002");
+            relation.setMotherUuid("00000000-0000-0000-0000-000000000003");
 
-            when(relationMapper.selectByPersonUuid("r-uuid-001")).thenReturn(null, relation);
-            when(relationMapper.selectByPersonUuid("r-uuid-002")).thenReturn(null);
-            when(relationMapper.selectByPersonUuid("r-uuid-003")).thenReturn(null);
+            when(relationMapper.selectByPersonUuid("00000000-0000-0000-0000-000000000001")).thenReturn(null, relation);
+            when(relationMapper.selectByPersonUuid("00000000-0000-0000-0000-000000000002")).thenReturn(null);
+            when(relationMapper.selectByPersonUuid("00000000-0000-0000-0000-000000000003")).thenReturn(null);
 
             ResidentRelation result = residentService.setRelations(relation);
             assertNotNull(result);
@@ -126,14 +126,14 @@ class ResidentServiceImplTest {
         void shouldRejectCircularRelation() {
             // A's father is B
             ResidentRelation relation = new ResidentRelation();
-            relation.setRelationPersonUuid("person-A");
-            relation.setFatherUuid("person-B");
+            relation.setRelationPersonUuid("00000000-0000-0000-0000-00000000000a");
+            relation.setFatherUuid("00000000-0000-0000-0000-00000000000b");
 
             // B's father is already set to A (circular)
             ResidentRelation fatherRel = new ResidentRelation();
-            fatherRel.setFatherUuid("person-A");
-            when(relationMapper.selectByPersonUuid("person-A")).thenReturn(null);
-            when(relationMapper.selectByPersonUuid("person-B")).thenReturn(fatherRel);
+            fatherRel.setFatherUuid("00000000-0000-0000-0000-00000000000a");
+            when(relationMapper.selectByPersonUuid("00000000-0000-0000-0000-00000000000a")).thenReturn(null);
+            when(relationMapper.selectByPersonUuid("00000000-0000-0000-0000-00000000000b")).thenReturn(fatherRel);
 
             BusinessException ex = assertThrows(BusinessException.class, () -> residentService.setRelations(relation));
             assertEquals(ErrorCode.RELATION_CIRCULAR.getCode(), ex.getCode());
@@ -143,12 +143,12 @@ class ResidentServiceImplTest {
         @DisplayName("配偶关系自动双向设置")
         void shouldAutoBidirectionalSpouse() {
             ResidentRelation relation = new ResidentRelation();
-            relation.setRelationPersonUuid("person-A");
-            relation.setSpouseUuid("person-B");
+            relation.setRelationPersonUuid("00000000-0000-0000-0000-00000000000a");
+            relation.setSpouseUuid("00000000-0000-0000-0000-00000000000b");
 
-            when(relationMapper.selectByPersonUuid("person-A")).thenReturn(null);
-            when(relationMapper.selectByPersonUuid("person-B")).thenReturn(null);
-            when(relationMapper.selectByPersonUuid("person-A")).thenReturn(relation);
+            when(relationMapper.selectByPersonUuid("00000000-0000-0000-0000-00000000000a")).thenReturn(null);
+            when(relationMapper.selectByPersonUuid("00000000-0000-0000-0000-00000000000b")).thenReturn(null);
+            when(relationMapper.selectByPersonUuid("00000000-0000-0000-0000-00000000000a")).thenReturn(relation);
 
             residentService.setRelations(relation);
 
@@ -164,14 +164,14 @@ class ResidentServiceImplTest {
         @Test
         @DisplayName("正常人员信息可修改")
         void shouldUpdateNormalResident() {
-            when(residentMapper.selectByUuid("r-uuid-001")).thenReturn(testResident);
+            when(residentMapper.selectByUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testResident);
 
             Resident updates = new Resident();
             updates.setName("张三丰");
             updates.setPhone("13900001111");
             updates.setOccupation("工程师");
 
-            Resident result = residentService.updateResident("r-uuid-001", updates);
+            Resident result = residentService.updateResident("00000000-0000-0000-0000-000000000001", updates);
             assertEquals("张三丰", result.getName());
             assertEquals("13900001111", result.getPhone());
             assertEquals("工程师", result.getOccupation());
@@ -181,13 +181,13 @@ class ResidentServiceImplTest {
         @DisplayName("死亡注销状态不允许修改")
         void shouldRejectUpdateOnDeceasedResident() {
             testResident.setHouseholdStatus("死亡注销");
-            when(residentMapper.selectByUuid("r-uuid-001")).thenReturn(testResident);
+            when(residentMapper.selectByUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testResident);
 
             Resident updates = new Resident();
             updates.setName("张三丰");
 
             BusinessException ex = assertThrows(BusinessException.class,
-                    () -> residentService.updateResident("r-uuid-001", updates));
+                    () -> residentService.updateResident("00000000-0000-0000-0000-000000000001", updates));
             assertEquals(ErrorCode.RESIDENT_STATUS_INVALID.getCode(), ex.getCode());
         }
 
@@ -195,26 +195,26 @@ class ResidentServiceImplTest {
         @DisplayName("迁出注销状态不允许修改")
         void shouldRejectUpdateOnMigratedResident() {
             testResident.setHouseholdStatus("迁出注销");
-            when(residentMapper.selectByUuid("r-uuid-001")).thenReturn(testResident);
+            when(residentMapper.selectByUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testResident);
 
             Resident updates = new Resident();
             updates.setOccupation("新职业");
 
             BusinessException ex = assertThrows(BusinessException.class,
-                    () -> residentService.updateResident("r-uuid-001", updates));
+                    () -> residentService.updateResident("00000000-0000-0000-0000-000000000001", updates));
             assertEquals(ErrorCode.RESIDENT_STATUS_INVALID.getCode(), ex.getCode());
         }
 
         @Test
         @DisplayName("不存在的人员更新返回错误")
         void shouldFailOnNotFound() {
-            when(residentMapper.selectByUuid("non-existent")).thenReturn(null);
+            when(residentMapper.selectByUuid("00000000-0000-0000-0000-000000000099")).thenReturn(null);
 
             Resident updates = new Resident();
             updates.setName("test");
 
             BusinessException ex = assertThrows(BusinessException.class,
-                    () -> residentService.updateResident("non-existent", updates));
+                    () -> residentService.updateResident("00000000-0000-0000-0000-000000000099", updates));
             assertEquals(ErrorCode.RESIDENT_NOT_FOUND.getCode(), ex.getCode());
         }
     }

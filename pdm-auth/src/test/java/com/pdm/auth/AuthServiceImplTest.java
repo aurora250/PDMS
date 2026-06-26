@@ -55,7 +55,7 @@ class AuthServiceImplTest {
     void setUp() {
         testUser = new User();
         testUser.setId(1L);
-        testUser.setUserUuid("uuid-001");
+        testUser.setUserUuid("00000000-0000-0000-0000-000000000001");
         testUser.setUsername("admin");
         testUser.setPassword("$2a$10$encryptedPassword");
         testUser.setUserRole("系统管理员");
@@ -80,15 +80,15 @@ class AuthServiceImplTest {
 
             when(userMapper.selectByUsername("admin")).thenReturn(testUser);
             when(passwordEncoder.matches("Admin@123!", testUser.getPassword())).thenReturn(true);
-            when(jwtTokenProvider.generateAccessToken("uuid-001", "admin", "系统管理员")).thenReturn("access-token-xxx");
-            when(jwtTokenProvider.generateRefreshToken("uuid-001")).thenReturn("refresh-token-xxx");
+            when(jwtTokenProvider.generateAccessToken("00000000-0000-0000-0000-000000000001", "admin", "系统管理员")).thenReturn("access-token-xxx");
+            when(jwtTokenProvider.generateRefreshToken("00000000-0000-0000-0000-000000000001")).thenReturn("refresh-token-xxx");
 
             LoginResponse response = authService.login(request, "127.0.0.1");
 
             assertNotNull(response);
             assertEquals("access-token-xxx", response.getAccessToken());
             assertEquals("refresh-token-xxx", response.getRefreshToken());
-            assertEquals("uuid-001", response.getUserUuid());
+            assertEquals("00000000-0000-0000-0000-000000000001", response.getUserUuid());
             assertEquals("admin", response.getUsername());
             assertEquals("系统管理员", response.getRole());
             assertFalse(response.isMustChangePassword());
@@ -198,11 +198,11 @@ class AuthServiceImplTest {
         @Test
         @DisplayName("合法密码修改成功")
         void shouldChangePassword() {
-            when(userMapper.selectByUserUuid("uuid-001")).thenReturn(testUser);
+            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testUser);
             when(passwordEncoder.matches("OldPass1!", testUser.getPassword())).thenReturn(true);
             when(passwordEncoder.encode("NewPass2@")).thenReturn("$2a$10$newlyEncoded");
 
-            authService.changePassword("uuid-001", "OldPass1!", "NewPass2@");
+            authService.changePassword("00000000-0000-0000-0000-000000000001", "OldPass1!", "NewPass2@");
 
             assertEquals("$2a$10$newlyEncoded", testUser.getPassword());
             assertFalse(testUser.getMustChangePassword());
@@ -212,14 +212,14 @@ class AuthServiceImplTest {
         @Test
         @DisplayName("弱密码应拒绝")
         void shouldRejectWeakPassword() {
-            when(userMapper.selectByUserUuid("uuid-001")).thenReturn(testUser);
+            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testUser);
             when(passwordEncoder.matches("OldPass1!", testUser.getPassword())).thenReturn(true);
 
-            assertThrows(BusinessException.class, () -> authService.changePassword("uuid-001", "OldPass1!", "short"));
+            assertThrows(BusinessException.class, () -> authService.changePassword("00000000-0000-0000-0000-000000000001", "OldPass1!", "short"));
             assertThrows(BusinessException.class,
-                    () -> authService.changePassword("uuid-001", "OldPass1!", "nouppercase1!"));
+                    () -> authService.changePassword("00000000-0000-0000-0000-000000000001", "OldPass1!", "nouppercase1!"));
             assertThrows(BusinessException.class,
-                    () -> authService.changePassword("uuid-001", "OldPass1!", "NOLOWERCASE1!"));
+                    () -> authService.changePassword("00000000-0000-0000-0000-000000000001", "OldPass1!", "NOLOWERCASE1!"));
         }
     }
 
@@ -230,9 +230,9 @@ class AuthServiceImplTest {
         @Test
         @DisplayName("登出将Token加入黑名单")
         void shouldBlacklistTokenOnLogout() {
-            authService.logout("token-xxx", "uuid-001");
+            authService.logout("token-xxx", "00000000-0000-0000-0000-000000000001");
 
-            verify(valueOperations).set(eq(BaseConstants.TOKEN_BLACKLIST_PREFIX + "uuid-001"), eq("token-xxx"),
+            verify(valueOperations).set(eq(BaseConstants.TOKEN_BLACKLIST_PREFIX + "00000000-0000-0000-0000-000000000001"), eq("token-xxx"),
                     anyLong(), eq(TimeUnit.SECONDS));
         }
     }
