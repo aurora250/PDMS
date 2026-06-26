@@ -32,10 +32,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/refresh", "/swagger-ui/**",
                                 "/v3/api-docs/**")
-                        .permitAll().requestMatchers("/api/auth/users/**").hasAnyRole("系统管理员", "用户管理员")
-                        .requestMatchers("/api/auth/police/**").hasAnyRole("系统管理员", "用户管理员")
-                        .requestMatchers("/api/auth/permission-groups/**").hasRole("系统管理员").anyRequest()
-                        .authenticated())
+                        .permitAll().requestMatchers("/api/auth/users/**").hasAnyAuthority("auth:user:read", "*")
+                        .requestMatchers("/api/auth/police/**").hasAnyAuthority("auth:police:read", "*")
+                        .requestMatchers("/api/auth/permission-groups/**").hasAnyAuthority("auth:permission:write", "*")
+                        .anyRequest().authenticated())
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
                         UsernamePasswordAuthenticationFilter.class);
 

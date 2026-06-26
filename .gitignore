@@ -47,6 +47,7 @@ AGENTS.md
 ### Documents ###
 *.docx
 *.xlsx
+./rule_business.md
 
 ### Docker ###
 docker/*-data

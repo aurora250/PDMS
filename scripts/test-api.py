@@ -172,6 +172,25 @@ def section(title: str):
     print(f"{'─'*60}")
 
 
+def test_http(name: str, method: str, path: str, body: Any = None,
+              want_http: int = 200) -> bool:
+    """测试 HTTP 状态码（用于 403 等非200业务码场景）"""
+    global PASS, FAIL
+    code, resp = _req(method, path, body)
+    if code == want_http:
+        PASS += 1
+        RESULTS.append({"name": name, "path": path, "status": "PASS"})
+        print(f"  ✅ PASS  {method:6s} {path}  (HTTP {code})")
+        return True
+    else:
+        FAIL += 1
+        err_msg = resp.get("message", str(resp))[:120]
+        RESULTS.append({"name": name, "path": path, "status": "FAIL",
+                         "http": code, "response": err_msg})
+        print(f"  ❌ FAIL  {method:6s} {path}  (HTTP {code}, want {want_http})")
+        return False
+
+
 # ============================================================
 # 检查环境
 # ============================================================
@@ -287,9 +306,18 @@ test("修改民警信息", "PUT", f"/api/auth/police/{police_no}",
 test("修改民警执勤状态", "PUT", f"/api/auth/police/{police_no}/status",
      {"dutyStatus": "调岗"})
 
-# 1.13-1.17 用户管理
-print("\n── 1.13-1.17 用户管理 ──")
+# 1.13-1.18 用户管理
+print("\n── 1.13-1.18 用户管理 ──")
 test("分页查询用户", "GET", "/api/auth/users?page=1&size=20")
+
+# 新增: 创建用户
+test_user_uuid = new_uuid()
+test("创建新用户(admin)", "POST", "/api/auth/users",
+     {"userUuid": test_user_uuid, "username": f"newuser-{TEST_TAG[:8]}",
+      "password": "NewUser@123!", "phone": "13900000002",
+      "residentUuid": RESIDENT_UUID,
+      "userRole": "采集员", "permissionGroupId": 3,
+      "accountStatus": "有效"})
 
 test("按UUID查询用户", "GET", f"/api/auth/users/{USER_UUID}")
 
@@ -391,6 +419,9 @@ if change_rid:
          f"/api/resident/change-request/{change_rid}/approve?status=通过",
          {})
 
+# 新增: 变更申请列表
+test("变更申请列表", "GET", "/api/resident/change-request?page=1&size=20")
+
 # 2.9 批量导入
 print("\n── 2.9 批量导入 ──")
 test("批量导入人口(无文件)", "POST", "/api/resident/import",
@@ -476,6 +507,14 @@ test("申领迁移证", "POST", "/api/household/migration-permit",
       "outgoingPoliceStation": "测试派出所",
       "status": "有效"})
 
+# 新增: 列表端点测试
+print("\n── 3.12 列表查询 ──")
+test("户籍业务列表", "GET", "/api/household/business?page=1&size=20")
+test("户籍迁移列表", "GET", "/api/household/migration?page=1&size=20")
+test("户口簿搜索列表", "GET", "/api/household/book/search?page=1&size=20")
+test("准迁证列表", "GET", "/api/household/approval-permit?page=1&size=20")
+test("迁移证列表", "GET", "/api/household/migration-permit?page=1&size=20")
+
 # ============================================================
 # 模块 4: pdm-keyperson — 重点人员管理 (8 端点)
 # ============================================================
@@ -528,6 +567,11 @@ test("获取重点人员GIS数据", "GET", "/api/keyperson/gis")
 # 4.8 撤销管控
 print("\n── 4.8 撤销管控 ──")
 test("撤销重点人员管控", "DELETE", f"/api/keyperson/{kp_uuid}")
+
+# 新增: 列表端点
+print("\n── 4.9 列表查询 ──")
+test("走访计划列表", "GET", "/api/keyperson/visit-plan?page=1&size=20")
+test("信访记录列表", "GET", "/api/keyperson/petition?page=1&size=20")
 
 # ============================================================
 # 模块 5: pdm-floating-population — 流动人口管理 (12 端点)
@@ -594,6 +638,12 @@ if permit_id:
 print("\n── 5.11-5.12 统计查询 ──")
 test("流动人口热力图", "GET", "/api/fp/statistics/heatmap")
 test("流动人口趋势统计", "GET", "/api/fp/statistics/trend")
+
+# 新增: 列表端点
+print("\n── 5.13 列表查询 ──")
+test("流动人口登记列表", "GET", "/api/fp/register?page=1&size=20")
+test("居住证列表", "GET", "/api/fp/permit?page=1&size=20")
+test("居住地登记列表", "GET", "/api/fp/residence?page=1&size=20")
 
 # 清理
 print("\n── 清理 ──")
@@ -684,6 +734,84 @@ if alert_id:
 print("\n── 8.3 搜索预警 ──")
 test("搜索预警", "GET",
      "/api/alert/search?alertType=走访逾期&severity=高&isHandled=0&page=1&size=20")
+
+# ============================================================
+# 模块 9: 动态权限边界测试
+# ============================================================
+
+section("模块 9/9: 动态权限边界测试 — 采集员权限验证")
+
+# 策略: 临时将 admin 的 permissionGroupId 改为 3(采集员组), 重新登录获取受限token,
+#       测试 200/403 边界, 然后恢复.
+
+print("\n── 9.1 切换admin到采集员权限组 ──")
+test("切换admin到采集员权限组", "PUT", f"/api/auth/users/{USER_UUID}",
+     {"permissionGroupId": 3})
+
+# 重新登录以获取新的受限token
+print("\n── 9.2 重新登录(受限权限) ──")
+LIMITED_TOKEN = ""
+code_l, resp_l = post("/api/auth/login",
+    {"username": "admin", "password": "Admin@123"})
+if resp_l.get("code") == 200 and resp_l.get("data", {}).get("accessToken"):
+    LIMITED_TOKEN = resp_l["data"]["accessToken"]
+    limited_perms = resp_l["data"].get("permissions", [])
+    print(f"  ✅ 采集员权限登录成功, permissions={limited_perms}")
+    PASS += 1
+    RESULTS.append({"name": "采集员权限登录", "path": "/api/auth/login", "status": "PASS"})
+else:
+    FAIL += 1
+    print(f"  ❌ 受限登录失败: {resp_l.get('message','?')[:80]}")
+
+if LIMITED_TOKEN:
+    ADMIN_TOKEN = TOKEN
+    TOKEN = LIMITED_TOKEN
+
+    # 9.3 采集员应有权限的端点 → 期望 200
+    print("\n── 9.3 采集员允许访问 (期望 200) ──")
+    test("【采集员】流动人口趋势统计", "GET", "/api/fp/statistics/trend")
+    test("【采集员】流动人口热力图", "GET", "/api/fp/statistics/heatmap")
+    test("【采集员】重点人员搜索", "GET",
+         "/api/keyperson/search?controlLevel=一级")
+    test("【采集员】失踪人口统计", "GET", "/api/missing/statistics")
+    test("【采集员】搜索失踪人口", "GET",
+         f"/api/missing/search?name=测试&status=失踪中&page=1&size=20")
+
+    # 9.4 采集员无权访问的端点 → 期望 403
+    # 注: pdm-log,pdm-notification,pdm-floating-population 未升级到 hasAuthority,
+    #     仍为 .anyRequest().authenticated(), 故不在此测试.
+    print("\n── 9.4 采集员禁止访问 (期望 403) ──")
+    test_http("【采集员】查询用户列表(禁)", "GET",
+              "/api/auth/users?page=1&size=20", want_http=403)
+    test_http("【采集员】搜索常住人口(禁)", "POST", "/api/resident/search",
+              {"name": "测试", "page": 1, "size": 20}, want_http=403)
+    test_http("【采集员】导入常住人口(禁)", "POST",
+              "/api/resident/import", want_http=403)
+    test_http("【采集员】删除常住人口(禁)", "DELETE",
+              "/api/resident/test-fake-uuid", want_http=403)
+    test_http("【采集员】权限组管理(禁)", "GET",
+              "/api/auth/permission-groups", want_http=403)
+
+    # 9.5 恢复admin
+    print("\n── 9.5 恢复管理员权限 ──")
+    TOKEN = ADMIN_TOKEN
+    # 先恢复权限组才能操作
+    test("恢复admin权限组", "PUT", f"/api/auth/users/{USER_UUID}",
+         {"permissionGroupId": 1})
+    # 重新登录获取完整权限token
+    code_r, resp_r = post("/api/auth/login",
+        {"username": "admin", "password": "Admin@123"})
+    if resp_r.get("code") == 200:
+        TOKEN = resp_r["data"]["accessToken"]
+        print("  ✅ 管理员权限已恢复")
+        PASS += 1
+        RESULTS.append({"name": "恢复管理员权限", "path": "/api/auth/login", "status": "PASS"})
+    else:
+        FAIL += 1
+        print("  ❌ 管理员权限恢复失败!")
+else:
+    print("  ⬜ 采集员权限测试跳过（登录失败）")
+    SKIP += 1
 
 # ============================================================
 # 结果汇总

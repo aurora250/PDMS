@@ -12,6 +12,8 @@ import com.pdm.resident.service.ResidentService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Map;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -59,6 +61,12 @@ public class ResidentController {
         return Result.success(residentService.setRelations(relation));
     }
 
+    @GetMapping("/change-request")
+    public Result<PageResult<ResidentChangeRequest>> listChangeRequests(@RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int size) {
+        return Result.success(residentService.listChangeRequests(status, page, size));
+    }
+
     @PostMapping("/change-request")
     public Result<ResidentChangeRequest> submitChangeRequest(@RequestBody ResidentChangeRequest request) {
         return Result.success(residentService.submitChangeRequest(request));
@@ -73,5 +81,13 @@ public class ResidentController {
     @PostMapping("/import")
     public Result<ResidentImportResult> importExcel(@RequestParam("file") MultipartFile file) {
         return Result.success(residentService.importExcel(file));
+    }
+
+    @GetMapping("/export")
+    public void exportExcel(@RequestParam(required = false) Map<String, Object> conditions,
+            jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader("Content-Disposition", "attachment; filename=residents.xlsx");
+        residentService.exportExcel(conditions, response.getOutputStream());
     }
 }

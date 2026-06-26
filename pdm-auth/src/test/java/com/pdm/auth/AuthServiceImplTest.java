@@ -2,6 +2,7 @@ package com.pdm.auth;
 
 import com.pdm.auth.entity.User;
 import com.pdm.auth.mapper.UserMapper;
+import com.pdm.auth.service.PermissionGroupService;
 import com.pdm.auth.service.impl.AuthServiceImpl;
 import com.pdm.common.core.constant.BaseConstants;
 import com.pdm.common.core.exception.BusinessException;
@@ -25,10 +26,11 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -46,6 +48,8 @@ class AuthServiceImplTest {
     private RedisTemplate<String, String> redisTemplate;
     @Mock
     private ValueOperations<String, String> valueOperations;
+    @Mock
+    private PermissionGroupService permissionGroupService;
     @InjectMocks
     private AuthServiceImpl authService;
 
@@ -63,8 +67,10 @@ class AuthServiceImplTest {
         testUser.setPhone("13800000000");
         testUser.setFailedLoginCount(0);
         testUser.setMustChangePassword(false);
+        testUser.setPermissionGroupId(1L); // 系统管理员组
 
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(permissionGroupService.getPermissionsByGroupId(1L)).thenReturn(List.of("*"));
     }
 
     @Nested
@@ -80,8 +86,8 @@ class AuthServiceImplTest {
 
             when(userMapper.selectByUsername("admin")).thenReturn(testUser);
             when(passwordEncoder.matches("Admin@123!", testUser.getPassword())).thenReturn(true);
-            when(jwtTokenProvider.generateAccessToken("00000000-0000-0000-0000-000000000001", "admin", "系统管理员"))
-                    .thenReturn("access-token-xxx");
+            when(jwtTokenProvider.generateAccessToken(eq("00000000-0000-0000-0000-000000000001"), eq("admin"),
+                    eq("系统管理员"), anyList())).thenReturn("access-token-xxx");
             when(jwtTokenProvider.generateRefreshToken("00000000-0000-0000-0000-000000000001"))
                     .thenReturn("refresh-token-xxx");
 
@@ -184,7 +190,7 @@ class AuthServiceImplTest {
 
             when(userMapper.selectByUsername("admin")).thenReturn(testUser);
             when(passwordEncoder.matches("Admin@123!", testUser.getPassword())).thenReturn(true);
-            when(jwtTokenProvider.generateAccessToken(anyString(), anyString(), anyString()))
+            when(jwtTokenProvider.generateAccessToken(anyString(), anyString(), anyString(), anyList()))
                     .thenReturn("access-token-xxx");
             when(jwtTokenProvider.generateRefreshToken(anyString())).thenReturn("refresh-token-xxx");
 

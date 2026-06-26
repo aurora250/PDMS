@@ -2,8 +2,11 @@ package com.pdm.common.security;
 
 import com.pdm.common.core.constant.BaseConstants;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.crypto.SecretKey;
@@ -28,11 +31,12 @@ public class JwtTokenProvider {
         this(base64Secret, BaseConstants.JWT_EXPIRATION_MS);
     }
 
-    public String generateAccessToken(String userUuid, String username, String role) {
+    public String generateAccessToken(String userUuid, String username, String role, List<String> permissions) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userUuid", userUuid);
         claims.put("username", username);
         claims.put("role", role);
+        claims.put("permissions", String.join(",", permissions != null ? permissions : Collections.emptyList()));
         claims.put("type", "access");
 
         return Jwts.builder().claims(claims).subject(userUuid).issuedAt(new Date())
@@ -73,6 +77,19 @@ public class JwtTokenProvider {
 
     public String getRole(String token) {
         return parseToken(token).get("role", String.class);
+    }
+
+    /**
+     * 从JWT中提取权限列表.
+     *
+     * @return 权限字符串列表，空token或无permissions claim返回空列表
+     */
+    public List<String> getPermissions(String token) {
+        Object perms = parseToken(token).get("permissions");
+        if (perms == null || perms.toString().isEmpty()) {
+            return Collections.emptyList();
+        }
+        return Arrays.asList(perms.toString().split(","));
     }
 
     public boolean isTokenExpiringSoon(String token) {

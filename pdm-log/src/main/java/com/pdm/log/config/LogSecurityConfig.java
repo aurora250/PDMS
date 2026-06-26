@@ -23,8 +23,12 @@ public class LogSecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated()).addFilterBefore(
-                        new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
+                .authorizeHttpRequests(auth -> auth.requestMatchers("/api/log/audit")
+                        .hasAnyAuthority("log:audit:read", "*").requestMatchers("/api/log/login")
+                        .hasAnyAuthority("log:login:read", "*").requestMatchers("/api/log/export")
+                        .hasAnyAuthority("log:export", "*").anyRequest().authenticated())
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
+                        UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }

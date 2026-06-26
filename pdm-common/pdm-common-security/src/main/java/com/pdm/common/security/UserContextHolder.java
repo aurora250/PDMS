@@ -1,5 +1,8 @@
 package com.pdm.common.security;
 
+import java.util.Collections;
+import java.util.List;
+
 /** 当前登录用户上下文 — 基于 ThreadLocal, 请求结束后须清理. */
 public final class UserContextHolder {
 
@@ -31,10 +34,16 @@ public final class UserContextHolder {
         return ctx != null ? ctx.role() : null;
     }
 
+    public static List<String> getPermissions() {
+        UserContext ctx = CONTEXT.get();
+        return ctx != null ? ctx.permissions() : Collections.emptyList();
+    }
+
     public static void clear() {
         CONTEXT.remove();
     }
 
-    public record UserContext(String userUuid, String username, String role, String ipAddress) {
+    public record UserContext(String userUuid, String username, String role, String ipAddress,
+            List<String> permissions) {
     }
 }

@@ -27,6 +27,8 @@ public interface ResidentService {
 
     ResidentRelation setRelations(ResidentRelation relation);
 
+    PageResult<ResidentChangeRequest> listChangeRequests(String status, int page, int size);
+
     ResidentChangeRequest submitChangeRequest(ResidentChangeRequest request);
 
     ResidentChangeRequest approveChangeRequest(Long rid, String status, String handlerUuid);

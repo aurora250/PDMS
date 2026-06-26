@@ -1,6 +1,7 @@
 package com.pdm.common.dto;
 
 import java.io.Serializable;
+import java.util.List;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,5 +23,6 @@ public class LoginResponse implements Serializable {
     private String userUuid;
     private String username;
     private String role;
+    private List<String> permissions;
     private boolean mustChangePassword;
 }

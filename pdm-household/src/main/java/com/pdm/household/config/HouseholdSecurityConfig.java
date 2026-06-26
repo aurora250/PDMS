@@ -5,6 +5,7 @@ import com.pdm.common.security.JwtTokenProvider;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -22,8 +23,13 @@ public class HouseholdSecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated()).addFilterBefore(
-                        new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
+                .authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.GET, "/api/household/**")
+                        .hasAnyAuthority("household:read", "*").requestMatchers(HttpMethod.POST, "/api/household/**")
+                        .hasAnyAuthority("household:write", "*").requestMatchers(HttpMethod.PUT, "/api/household/**")
+                        .hasAnyAuthority("household:write", "*").requestMatchers(HttpMethod.DELETE, "/api/household/**")
+                        .hasAnyAuthority("household:write", "*").anyRequest().authenticated())
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
+                        UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }

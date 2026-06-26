@@ -2,6 +2,7 @@ package com.pdm.keyperson.service.impl;
 
 import com.pdm.common.core.exception.BusinessException;
 import com.pdm.common.core.result.ErrorCode;
+import com.pdm.common.dto.PageResult;
 import com.pdm.keyperson.entity.KeyPerson;
 import com.pdm.keyperson.entity.PetitionRecord;
 import com.pdm.keyperson.entity.VisitPlan;
@@ -66,22 +67,22 @@ public class KeypersonServiceImpl implements KeypersonService {
     }
 
     @Override
-    public List<KeyPerson> searchKeyPersons(Map<String, Object> conditions) {
+    public PageResult<KeyPerson> searchKeyPersons(String controlLevel, String controlType, String keyword, int page,
+            int size) {
         LambdaQueryWrapper<KeyPerson> wrapper = new LambdaQueryWrapper<>();
-        if (conditions.get("uuid") != null) {
-            wrapper.eq(KeyPerson::getUuid, conditions.get("uuid"));
+        if (controlLevel != null && !controlLevel.isEmpty()) {
+            wrapper.eq(KeyPerson::getControlLevel, controlLevel);
         }
-        if (conditions.get("controlLevel") != null) {
-            wrapper.eq(KeyPerson::getControlLevel, conditions.get("controlLevel"));
+        if (controlType != null && !controlType.isEmpty()) {
+            wrapper.eq(KeyPerson::getControlType, controlType);
         }
-        if (conditions.get("controlType") != null) {
-            wrapper.eq(KeyPerson::getControlType, conditions.get("controlType"));
-        }
-        if (conditions.get("responsiblePoliceNo") != null) {
-            wrapper.eq(KeyPerson::getResponsiblePoliceNo, conditions.get("responsiblePoliceNo"));
+        if (keyword != null && !keyword.isEmpty()) {
+            wrapper.and(w -> w.like(KeyPerson::getUuid, keyword));
         }
         wrapper.orderByDesc(KeyPerson::getCreateTime);
-        return keyPersonMapper.selectList(wrapper);
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<KeyPerson> result = keyPersonMapper
+                .selectPage(com.baomidou.mybatisplus.extension.plugins.pagination.Page.of(page, size), wrapper);
+        return PageResult.of(result.getRecords(), result.getTotal(), page, size);
     }
 
     @Override

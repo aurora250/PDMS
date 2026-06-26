@@ -1,6 +1,7 @@
 package com.pdm.auth.controller;
 
 import com.pdm.auth.entity.User;
+import com.pdm.auth.service.AuthService;
 import com.pdm.auth.service.UserService;
 import com.pdm.common.core.result.Result;
 import com.pdm.common.dto.PageResult;
@@ -10,6 +11,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 public class UserController {
 
     private final UserService userService;
+    private final AuthService authService;
 
     @GetMapping
     public Result<PageResult<User>> listUsers(@RequestParam(defaultValue = "1") int page,
@@ -26,6 +29,30 @@ public class UserController {
             @RequestParam(required = false) String role, @RequestParam(required = false) String status) {
         Page<User> userPage = userService.listUsers(page, size, keyword, role, status);
         return Result.success(PageResult.of(userPage.getRecords(), userPage.getTotal(), page, size));
+    }
+
+    @PostMapping
+    public Result<User> createUser(@RequestBody Map<String, Object> body) {
+        String userUuid = body.containsKey("userUuid") ? (String) body.get("userUuid") : UUID.randomUUID().toString();
+        String username = (String) body.get("username");
+        String password = (String) body.get("password");
+        String phone = (String) body.get("phone");
+        String residentUuid = (String) body.get("residentUuid");
+
+        authService.registerUser(userUuid, username, password, phone, residentUuid);
+
+        // 注册后立即设置角色和权限组
+        User updates = new User();
+        if (body.containsKey("userRole")) {
+            updates.setUserRole((String) body.get("userRole"));
+        }
+        if (body.containsKey("permissionGroupId")) {
+            updates.setPermissionGroupId(((Number) body.get("permissionGroupId")).longValue());
+        }
+        if (body.containsKey("accountStatus")) {
+            updates.setAccountStatus((String) body.get("accountStatus"));
+        }
+        return Result.success(userService.updateUser(userUuid, updates));
     }
 
     @GetMapping("/{uuid}")

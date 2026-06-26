@@ -3,6 +3,7 @@ package com.pdm.auth.service.impl;
 import com.pdm.auth.entity.User;
 import com.pdm.auth.mapper.UserMapper;
 import com.pdm.auth.service.AuthService;
+import com.pdm.auth.service.PermissionGroupService;
 import com.pdm.common.core.constant.BaseConstants;
 import com.pdm.common.core.exception.BusinessException;
 import com.pdm.common.core.result.ErrorCode;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RedisTemplate<String, String> redisTemplate;
+    private final PermissionGroupService permissionGroupService;
 
     @Override
     @Transactional
@@ -65,8 +68,10 @@ public class AuthServiceImpl implements AuthService {
         user.setLastLoginTime(LocalDateTime.now());
         user.setLastLoginIp(ipAddress);
 
+        List<String> permissions = permissionGroupService.getPermissionsByGroupId(user.getPermissionGroupId());
+
         String accessToken = jwtTokenProvider.generateAccessToken(user.getUserUuid(), user.getUsername(),
-                user.getUserRole());
+                user.getUserRole(), permissions);
         String refreshToken = jwtTokenProvider.generateRefreshToken(user.getUserUuid());
         user.setToken(accessToken);
         userMapper.updateById(user);
@@ -75,7 +80,8 @@ public class AuthServiceImpl implements AuthService {
 
         return LoginResponse.builder().accessToken(accessToken).refreshToken(refreshToken)
                 .expiresIn(BaseConstants.JWT_EXPIRATION_MS / 1000).userUuid(user.getUserUuid())
-                .username(user.getUsername()).role(user.getUserRole()).mustChangePassword(mustChangePassword).build();
+                .username(user.getUsername()).role(user.getUserRole()).permissions(permissions)
+                .mustChangePassword(mustChangePassword).build();
     }
 
     @Override
@@ -96,13 +102,16 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(ErrorCode.DATA_NOT_FOUND);
         }
 
+        List<String> permissions = permissionGroupService.getPermissionsByGroupId(user.getPermissionGroupId());
+
         String newAccessToken = jwtTokenProvider.generateAccessToken(user.getUserUuid(), user.getUsername(),
-                user.getUserRole());
+                user.getUserRole(), permissions);
         user.setToken(newAccessToken);
         userMapper.updateById(user);
 
         return LoginResponse.builder().accessToken(newAccessToken).expiresIn(BaseConstants.JWT_EXPIRATION_MS / 1000)
-                .userUuid(user.getUserUuid()).username(user.getUsername()).role(user.getUserRole()).build();
+                .userUuid(user.getUserUuid()).username(user.getUsername()).role(user.getUserRole())
+                .permissions(permissions).build();
     }
 
     @Override
@@ -139,6 +148,7 @@ public class AuthServiceImpl implements AuthService {
         user.setAccountStatus("审批中");
         user.setMustChangePassword(true);
         user.setFailedLoginCount(0);
+        user.setRegisterMaterials("[]");
         userMapper.insert(user);
     }
 

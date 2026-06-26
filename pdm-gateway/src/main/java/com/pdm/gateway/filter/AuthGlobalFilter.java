@@ -54,9 +54,11 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         String userUuid = jwtTokenProvider.getUserUuid(token);
         String username = jwtTokenProvider.getUsername(token);
         String role = jwtTokenProvider.getRole(token);
+        List<String> permissions = jwtTokenProvider.getPermissions(token);
 
         ServerHttpRequest modifiedRequest = exchange.getRequest().mutate().header("X-User-Uuid", userUuid)
-                .header("X-Username", username).header("X-User-Role", role).build();
+                .header("X-Username", username).header("X-User-Role", role)
+                .header("X-User-Permissions", String.join(",", permissions)).build();
 
         return chain.filter(exchange.mutate().request(modifiedRequest).build());
     }

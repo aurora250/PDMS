@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.List;
 
 import javax.crypto.SecretKey;
 
@@ -38,7 +39,8 @@ class JwtTokenProviderTest {
     @Test
     @DisplayName("生成并验证Access Token")
     void shouldGenerateAndValidateAccessToken() {
-        String token = jwtTokenProvider.generateAccessToken("user-uuid-001", "admin", "系统管理员");
+        String token = jwtTokenProvider.generateAccessToken("user-uuid-001", "admin", "系统管理员",
+                List.of("resident:read"));
         assertNotNull(token);
 
         assertTrue(jwtTokenProvider.validateToken(token));
@@ -61,7 +63,7 @@ class JwtTokenProviderTest {
         SecretKey otherKey = generateKey();
         String otherBase64 = Base64.getEncoder().encodeToString(otherKey.getEncoded());
         JwtTokenProvider otherProvider = new JwtTokenProvider(otherBase64);
-        String token = otherProvider.generateAccessToken("user-001", "admin", "系统管理员");
+        String token = otherProvider.generateAccessToken("user-001", "admin", "系统管理员", List.of("resident:read"));
 
         assertFalse(jwtTokenProvider.validateToken(token));
     }
@@ -79,17 +81,17 @@ class JwtTokenProviderTest {
     @DisplayName("Token即将过期检测")
     void shouldDetectExpirySoon() {
         JwtTokenProvider shortProvider = new JwtTokenProvider(base64Secret, 100L);
-        String token = shortProvider.generateAccessToken("user-001", "admin", "系统管理员");
+        String token = shortProvider.generateAccessToken("user-001", "admin", "系统管理员", List.of("resident:read"));
         assertTrue(shortProvider.isTokenExpiringSoon(token));
 
-        assertFalse(jwtTokenProvider
-                .isTokenExpiringSoon(jwtTokenProvider.generateAccessToken("user-001", "admin", "系统管理员")));
+        assertFalse(jwtTokenProvider.isTokenExpiringSoon(
+                jwtTokenProvider.generateAccessToken("user-001", "admin", "系统管理员", List.of("resident:read"))));
     }
 
     @Test
     @DisplayName("解析Token Claims")
     void shouldParseTokenClaims() {
-        String token = jwtTokenProvider.generateAccessToken("user-001", "admin", "系统管理员");
+        String token = jwtTokenProvider.generateAccessToken("user-001", "admin", "系统管理员", List.of("resident:read"));
         Claims claims = jwtTokenProvider.parseToken(token);
 
         assertEquals("user-001", claims.getSubject());
@@ -104,7 +106,7 @@ class JwtTokenProviderTest {
         SecretKey wrongKey = generateKey();
         String wrongBase64 = Base64.getEncoder().encodeToString(wrongKey.getEncoded());
         JwtTokenProvider wrongProvider = new JwtTokenProvider(wrongBase64);
-        String token = jwtTokenProvider.generateAccessToken("user-001", "admin", "系统管理员");
+        String token = jwtTokenProvider.generateAccessToken("user-001", "admin", "系统管理员", List.of("resident:read"));
 
         assertFalse(wrongProvider.validateToken(token));
     }

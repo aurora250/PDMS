@@ -1,5 +1,6 @@
 package com.pdm.keyperson.service;
 
+import com.pdm.common.dto.PageResult;
 import com.pdm.keyperson.entity.KeyPerson;
 import com.pdm.keyperson.entity.PetitionRecord;
 import com.pdm.keyperson.entity.VisitPlan;
@@ -16,7 +17,7 @@ public interface KeypersonService {
 
     KeyPerson updateControlLevel(String uuid, String controlLevel);
 
-    List<KeyPerson> searchKeyPersons(Map<String, Object> conditions);
+    PageResult<KeyPerson> searchKeyPersons(String controlLevel, String controlType, String keyword, int page, int size);
 
     VisitPlan generateVisitPlan(VisitPlan visitPlan);
 

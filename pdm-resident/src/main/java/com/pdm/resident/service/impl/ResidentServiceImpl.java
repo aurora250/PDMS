@@ -15,6 +15,7 @@ import com.pdm.resident.mapper.ResidentMapper;
 import com.pdm.resident.mapper.ResidentRelationMapper;
 import com.pdm.resident.service.ResidentService;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.stereotype.Service;
@@ -206,6 +207,18 @@ public class ResidentServiceImpl implements ResidentService {
         }
 
         return relationMapper.selectByPersonUuid(uuid);
+    }
+
+    @Override
+    public PageResult<ResidentChangeRequest> listChangeRequests(String status, int page, int size) {
+        LambdaQueryWrapper<ResidentChangeRequest> wrapper = new LambdaQueryWrapper<>();
+        if (status != null && !status.isEmpty()) {
+            wrapper.eq(ResidentChangeRequest::getStatus, status);
+        }
+        wrapper.orderByDesc(ResidentChangeRequest::getRequestTime);
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<ResidentChangeRequest> result = changeRequestMapper
+                .selectPage(com.baomidou.mybatisplus.extension.plugins.pagination.Page.of(page, size), wrapper);
+        return PageResult.of(result.getRecords(), result.getTotal(), page, size);
     }
 
     @Override

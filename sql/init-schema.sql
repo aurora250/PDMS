@@ -574,12 +574,42 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_fp_trend ON mv_fp_trend (register_date)
 -- 初始化数据
 -- ============================================================
 
--- 默认权限组
+-- 默认权限组（与 PermissionConstants 对齐）
 INSERT INTO permission_group (group_name, description, permissions) VALUES
-('系统管理员组', '拥有全部系统权限', '["*"]'),
-('民警组', '民警操作权限', '["resident:read","resident:write","keyperson:read","keyperson:write","household:read","missing:read"]'),
-('街道办组', '街道办审核权限', '["resident:read","household:read","household:approve","fp:read"]'),
-('普通用户组', '基础查询权限', '["resident:read","statistics:read"]');
+('系统管理员组', '拥有全部系统权限',
+ '["*"]'),
+('民警组', '户籍民警：业务受理、审核、制证、常住人口管理',
+ '["resident:read","resident:write","resident:import","resident:export","resident:change-request:approve",
+   "household:read","household:write","household:approve",
+   "keyperson:read","keyperson:write",
+   "missing:read","missing:write",
+   "fp:read","fp:permit:approve","fp:permit:issue",
+   "alert:read","alert:handle",
+   "police:read","police:write"]'),
+('采集员组', '一线采集员：流动人口、重点人员、失踪人口数据采集',
+ '["fp:read","fp:write","fp:delete","fp:residence:write",
+   "keyperson:read","keyperson:write","keyperson:gis:read","keyperson:visit-plan:write","keyperson:petition:write",
+   "missing:read","missing:write","missing:recovery:write"]'),
+('街道办组', '街道办负责人：查看数据、附加补充材料（无审批权）',
+ '["resident:read",
+   "household:read","household:material:attach",
+   "fp:read","keyperson:read","missing:read",
+   "alert:read"]'),
+('数据审查员组', '独立数据审查：审核数据质量，标记审查状态',
+ '["fp:read","fp:review",
+   "keyperson:read","keyperson:review",
+   "missing:read","missing:review"]'),
+('市局负责人组', '市局领导：全市范围查看、极少数重要业务二审',
+ '["resident:read","resident:change-request:second-approve",
+   "household:read","household:second-approve",
+   "fp:read","keyperson:read","missing:read",
+   "alert:read","alert:handle",
+   "police:read",
+   "statistics:read"]'),
+('用户管理员组', '用户账号管理：创建、修改、状态变更',
+ '["auth:user:read","auth:user:write","auth:user:status"]'),
+('普通用户组', '群众自助服务：自我申报、业务查询',
+ '["self:resident:read","self:fp:write","self:household:apply","self:missing:recovery:write","statistics:read"]');
 
 -- 默认管理员账号 (密码: Admin@123)
 INSERT INTO sys_user (user_uuid, username, password, resident_uuid, user_role, permission_group_id, phone, account_status, must_change_password, register_materials)
