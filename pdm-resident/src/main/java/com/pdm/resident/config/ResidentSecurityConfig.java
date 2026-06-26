@@ -2,7 +2,6 @@ package com.pdm.resident.config;
 
 import com.pdm.common.security.JwtAuthenticationFilter;
 import com.pdm.common.security.JwtTokenProvider;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -12,17 +11,29 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
 import lombok.RequiredArgsConstructor;
 
+/**
+ * 常住人口模块安全配置类
+ * 配置Spring Security规则、JWT过滤器、权限控制等
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class ResidentSecurityConfig {
 
+    /**
+     * JWT令牌提供者
+     */
     private final JwtTokenProvider jwtTokenProvider;
 
+    /**
+     * 构建安全过滤链
+     * @param http HttpSecurity配置对象
+     * @return SecurityFilterChain 安全过滤链
+     * @throws Exception 配置异常
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)

@@ -14,34 +14,61 @@ import com.pdm.resident.mapper.ResidentChangeRequestMapper;
 import com.pdm.resident.mapper.ResidentMapper;
 import com.pdm.resident.mapper.ResidentRelationMapper;
 import com.pdm.resident.service.ResidentService;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.OutputStream;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 常住人口业务实现类
+ * 实现ResidentService接口，处理常住人口核心业务逻辑
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ResidentServiceImpl implements ResidentService {
 
+    /**
+     * 常住人口Mapper
+     */
     private final ResidentMapper residentMapper;
+
+    /**
+     * 亲属关系Mapper
+     */
     private final ResidentRelationMapper relationMapper;
+
+    /**
+     * 变更申请Mapper
+     */
     private final ResidentChangeRequestMapper changeRequestMapper;
+
+    /**
+     * ES仓储
+     */
     private final ResidentEsRepository residentEsRepository;
+
+    /**
+     * JSON序列化工具
+     */
     private final ObjectMapper objectMapper;
 
+    /**
+     * 创建常住人口信息
+     * 1. 验证身份证有效性和唯一性
+     * 2. 从身份证自动提取出生日期和性别
+     * 3. 入库并同步到ES
+     * @param resident 常住人口实体对象
+     * @return 创建后的常住人口信息
+     */
     @Override
     @Transactional
     public Resident createResident(Resident resident) {
@@ -75,6 +102,12 @@ public class ResidentServiceImpl implements ResidentService {
         return resident;
     }
 
+    /**
+     * 根据UUID查询常住人口信息
+     * @param uuid 人员唯一标识
+     * @return 常住人口实体对象
+     * @throws BusinessException 人员不存在异常
+     */
     @Override
     public Resident getResident(String uuid) {
         Resident resident = residentMapper.selectByUuid(uuid);
@@ -84,6 +117,16 @@ public class ResidentServiceImpl implements ResidentService {
         return resident;
     }
 
+    /**
+     * 更新常住人口信息
+     * 1. 校验人员是否存在
+     * 2. 校验户口状态（注销状态不允许修改）
+     * 3. 更新指定字段并同步到ES
+     * @param uuid 人员唯一标识
+     * @param updates 待更新字段信息
+     * @return 更新后的常住人口信息
+     * @throws BusinessException 人员不存在/状态异常
+     */
     @Override
     @Transactional
     public Resident updateResident(String uuid, Resident updates) {
@@ -124,6 +167,13 @@ public class ResidentServiceImpl implements ResidentService {
         return resident;
     }
 
+    /**
+     * 删除常住人口信息
+     * 1. 校验人员是否存在
+     * 2. 逻辑删除并同步删除ES数据
+     * @param uuid 人员唯一标识
+     * @throws BusinessException 人员不存在异常
+     */
     @Override
     @Transactional
     public void deleteResident(String uuid) {
@@ -139,6 +189,13 @@ public class ResidentServiceImpl implements ResidentService {
         }
     }
 
+    /**
+     * 多条件分页查询常住人口
+     * 1. 优先从ES查询
+     * 2. ES查询失败时降级到数据库（简化实现）
+     * @param request 查询条件及分页参数
+     * @return 分页查询结果
+     */
     @Override
     public PageResult<Resident> search(ResidentSearchRequest request) {
         try {
@@ -155,6 +212,12 @@ public class ResidentServiceImpl implements ResidentService {
         }
     }
 
+    /**
+     * 根据UUID查询人员亲属关系
+     * @param uuid 人员唯一标识
+     * @return 亲属关系实体对象
+     * @throws BusinessException 关系数据不存在异常
+     */
     @Override
     public ResidentRelation getRelations(String uuid) {
         ResidentRelation relation = relationMapper.selectByPersonUuid(uuid);
@@ -164,6 +227,15 @@ public class ResidentServiceImpl implements ResidentService {
         return relation;
     }
 
+    /**
+     * 设置/更新人员亲属关系
+     * 1. 校验循环亲属关系
+     * 2. 新增/更新亲属关系数据
+     * 3. 自动设置配偶双向关系
+     * @param relation 亲属关系实体对象
+     * @return 更新后的亲属关系信息
+     * @throws BusinessException 循环关系异常
+     */
     @Override
     @Transactional
     public ResidentRelation setRelations(ResidentRelation relation) {
@@ -208,6 +280,13 @@ public class ResidentServiceImpl implements ResidentService {
         return relationMapper.selectByPersonUuid(uuid);
     }
 
+    /**
+     * 提交常住人口信息变更申请
+     * 1. 补全默认申请时间和状态
+     * 2. 入库保存申请信息
+     * @param request 变更申请实体对象
+     * @return 提交后的变更申请信息
+     */
     @Override
     @Transactional
     public ResidentChangeRequest submitChangeRequest(ResidentChangeRequest request) {
@@ -221,6 +300,17 @@ public class ResidentServiceImpl implements ResidentService {
         return request;
     }
 
+    /**
+     * 审批常住人口信息变更申请
+     * 1. 校验申请是否存在
+     * 2. 更新审批状态和处理人
+     * 3. 审批通过时同步更新常住人口信息
+     * @param rid 申请单主键ID
+     * @param status 审批状态（通过/驳回）
+     * @param handlerUuid 处理人UUID
+     * @return 审批后的变更申请信息
+     * @throws BusinessException 申请不存在异常
+     */
     @Override
     @Transactional
     public ResidentChangeRequest approveChangeRequest(Long rid, String status, String handlerUuid) {
@@ -257,6 +347,12 @@ public class ResidentServiceImpl implements ResidentService {
         return request;
     }
 
+    /**
+     * 导入Excel批量新增常住人口
+     * 简化实现（生产环境需使用EasyExcel监听器）
+     * @param file Excel文件
+     * @return 导入结果统计
+     */
     @Override
     public ResidentImportResult importExcel(MultipartFile file) {
         // Simplified import: in production use EasyExcel listener
@@ -281,6 +377,13 @@ public class ResidentServiceImpl implements ResidentService {
                 .errorMessages(errors).build();
     }
 
+    /**
+     * 导出常住人口信息到Excel
+     * 暂未实现（生产环境需使用EasyExcel写入）
+     * @param conditions 查询条件
+     * @param outputStream 输出流
+     * @throws UnsupportedOperationException 未实现异常
+     */
     @Override
     public void exportExcel(Map<String, Object> conditions, OutputStream outputStream) {
         // Simplified export: in production use EasyExcel write
