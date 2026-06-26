@@ -143,8 +143,9 @@ public class ResidentServiceImpl implements ResidentService {
     public PageResult<Resident> search(ResidentSearchRequest request) {
         try {
             List<Resident> residents = residentEsRepository.multiConditionSearch(request.getName(), request.getGender(),
-                    request.getNation(), request.getEducationLevel(), request.getMaritalStatus(),
-                    request.getHouseholdStatus(), request.getOffset(), request.getSize());
+                    request.getNation(), request.getNationCode(), request.getEducationLevel(),
+                    request.getEducationCode(), request.getMaritalStatus(), request.getHouseholdStatus(),
+                    request.getOffset(), request.getSize());
             // Estimate total from ES (simplified)
             long total = residents.size();
             return PageResult.of(residents, total, request.getPage(), request.getSize());
