@@ -2,6 +2,7 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+scripts/__pycache__
 
 ### IntelliJ IDEA ###
 .idea
@@ -51,3 +52,23 @@ AGENTS.md
 ### Docker ###
 docker/*-data
 ./*.log
+
+### Performance Test Artifacts ###
+# Generated test raw data (keep reports: BASELINE-REPORT-*.md)
+performance/results/*.jtl
+performance/results/*.json
+performance/results/jmeter-report/
+performance/results/debug-*
+# Gatling build output (simulation logs, HTML reports)
+performance/gatling/target/
+# JMeter generated logs and debug files
+performance/jmeter/debug-*.jmx
+jmeter.log
+# Generated test data SQL (large files)
+performance/test-data/insert-pdm_*.sql
+# JVM crash and compiler replay dumps
+hs_err_pid*.log
+replay_pid*.log
+# Python cache (also covered above, explicit for perf scripts)
+scripts/__pycache__/
+performance/**/__pycache__/
