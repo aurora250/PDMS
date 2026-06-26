@@ -3,6 +3,22 @@ package com.pdm.common.core.result;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * 统一错误码枚举。
+ *
+ * <p>
+ * 将所有业务模块的错误码按号段划分，便于前端根据错误码进行差异化处理：
+ * <ul>
+ * <li>{@code 1000-1999} —— 系统级错误</li>
+ * <li>{@code 2000-2999} —— 认证授权错误</li>
+ * <li>{@code 3000-3999} —— 户籍人员错误</li>
+ * <li>{@code 4000-4999} —— 户口本/户籍业务错误</li>
+ * <li>{@code 5000-5999} —— 重点人员错误</li>
+ * <li>{@code 6000-6999} —— 流动人口/居住证错误</li>
+ * <li>{@code 7000-7999} —— 失踪人员错误</li>
+ * <li>{@code 8000-8999} —— 导入/导出错误</li>
+ * </ul>
+ */
 @Getter
 @AllArgsConstructor
 public enum ErrorCode {

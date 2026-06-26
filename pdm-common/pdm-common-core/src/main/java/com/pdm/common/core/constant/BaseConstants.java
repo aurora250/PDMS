@@ -1,5 +1,12 @@
 package com.pdm.common.core.constant;
 
+/**
+ * 系统全局常量定义类。
+ *
+ * <p>
+ * 集中管理 JWT 配置、安全策略、业务周期、Redis Key 前缀及逻辑删除标记等常量。 工具类不可实例化。
+ * </p>
+ */
 public final class BaseConstants {
 
     private BaseConstants() {
