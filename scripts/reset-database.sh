@@ -7,6 +7,11 @@ set -e
 #   --hard  同时删除所有 Docker 镜像并重建（完全从头开始）
 # ============================================================
 
+# 自动检测 docker 命令（Windows Git Bash 下 Docker 可能只在 WSL 内）
+if ! command -v docker &>/dev/null && command -v wsl &>/dev/null; then
+    docker() { wsl docker "$@"; }
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 cd "$PROJECT_DIR"
@@ -30,9 +35,7 @@ echo "  [OK] 容器已停止"
 
 # Step 2: 删除数据库相关数据卷
 echo "[2/5] 删除数据库数据卷..."
-docker volume rm peopledatabasemanagement-linux_pdm-postgresql-data 2>/dev/null || true
-docker volume rm peopledatabasemanagement-linux_pdm-es-data 2>/dev/null || true
-docker volume rm peopledatabasemanagement-linux_pdm-redis-data 2>/dev/null || true
+docker compose down -v 2>/dev/null || true
 echo "  [OK] 数据卷已删除"
 
 # Step 3: 清理孤儿容器和网络（可选）
@@ -41,21 +44,26 @@ docker container prune -f 2>/dev/null || true
 docker network prune -f 2>/dev/null || true
 echo "  [OK] Docker 资源已清理"
 
-# Step 4: (hard mode only) 删除并重建镜像
+# Step 4: (hard mode only) 重新编译并重建镜像
 if [ "$HARD_RESET" = true ]; then
-    echo "[4/5] 删除旧镜像并重新编译..."
-    # 删除所有 pdm 相关镜像
-    docker images | grep 'people-database-management\|pdm-' | awk '{print $3}' | xargs -r docker rmi -f 2>/dev/null || true
-    echo "  编译所有模块（跳过测试）..."
+    echo "[4/5] 重新编译并重建镜像..."
+    echo "  Maven 编译中（跳过测试）..."
     mvn clean package -DskipTests -q
-    echo "  [OK] 重新编译完成"
+    echo "  [OK] Maven 编译完成"
+    echo "  清理本项目旧镜像..."
+    docker compose down --rmi local 2>/dev/null || true
+    echo "  [OK] 旧镜像已清理"
 else
     echo "[4/5] 跳过镜像重建（使用 --hard 参数以重新编译）"
 fi
 
 # Step 5: 启动所有服务
 echo "[5/5] 启动所有服务..."
-docker compose up -d
+if [ "$HARD_RESET" = true ]; then
+    docker compose up -d --build
+else
+    docker compose up -d
+fi
 
 echo ""
 echo "============================================================"
