@@ -5,13 +5,9 @@ import java.lang.annotation.*;
 /**
  * 审计日志注解。
  *
- * <p>
- * 标注在需要记录操作审计日志的方法上（通常为 Controller 或 Service 层方法）。 配合 AOP
- * 切面实现自动记录操作类型、目标对象类型及目标 ID。
- * </p>
+ * <p>标注在需要记录操作审计日志的方法上（通常为 Controller 或 Service 层方法）。 配合 AOP 切面实现自动记录操作类型、目标对象类型及目标 ID。
  *
- * <p>
- * 使用示例：
+ * <p>使用示例：
  *
  * <pre>{@code
  * &#64;AuditLog(operationType = "删除", targetType = "user", targetIdExpression = "#uuid")

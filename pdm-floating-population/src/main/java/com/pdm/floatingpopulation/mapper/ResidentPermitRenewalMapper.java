@@ -9,10 +9,7 @@ import org.apache.ibatis.annotations.Mapper;
 /**
  * 居住证续期记录 Mapper 接口。
  *
- * <p>
- * 继承 MyBatis-Plus {@link BaseMapper}，提供居住证续期记录表的基础 CRUD 操作。
- * </p>
+ * <p>继承 MyBatis-Plus {@link BaseMapper}，提供居住证续期记录表的基础 CRUD 操作。
  */
 @Mapper
-public interface ResidentPermitRenewalMapper extends BaseMapper<ResidentPermitRenewal> {
-}
+public interface ResidentPermitRenewalMapper extends BaseMapper<ResidentPermitRenewal> {}

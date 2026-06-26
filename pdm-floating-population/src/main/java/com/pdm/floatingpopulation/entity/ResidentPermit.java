@@ -13,9 +13,7 @@ import lombok.EqualsAndHashCode;
 /**
  * 居住证实体类。
  *
- * <p>
- * 对应数据库表 {@code resident_permit}，用于记录流动人口的居住证签发信息。 居住证是流动人口在居住地享受基本公共服务和便利的凭证。
- * </p>
+ * <p>对应数据库表 {@code resident_permit}，用于记录流动人口的居住证签发信息。 居住证是流动人口在居住地享受基本公共服务和便利的凭证。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

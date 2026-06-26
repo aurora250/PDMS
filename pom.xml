@@ -325,9 +325,13 @@
                     <configuration>
                         <java>
                             <eclipse>
-                                <version>4.31</version>
+                                <version>4.34</version>
                                 <file>${session.executionRootDirectory}/format.xml</file>
                             </eclipse>
+                            <googleJavaFormat>
+                                <version>1.23.0</version>
+                                <style>AOSP</style>
+                            </googleJavaFormat>
                             <removeUnusedImports/>
                             <importOrder>
                                 <order>com.pdm,com,org,java,javax,\#</order>

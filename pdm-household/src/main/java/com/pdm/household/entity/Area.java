@@ -13,9 +13,7 @@ import lombok.EqualsAndHashCode;
 /**
  * 行政区划区域实体类。
  *
- * <p>
- * 对应数据库表 {@code area}，用于存储省、市、区县等行政区划层级数据。 支持树形结构查询，通过 {@code parentId} 建立层级关系。
- * </p>
+ * <p>对应数据库表 {@code area}，用于存储省、市、区县等行政区划层级数据。 支持树形结构查询，通过 {@code parentId} 建立层级关系。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

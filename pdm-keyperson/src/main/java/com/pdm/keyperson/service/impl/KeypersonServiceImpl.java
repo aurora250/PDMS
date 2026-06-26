@@ -112,7 +112,8 @@ public class KeypersonServiceImpl implements KeypersonService {
 
     @Override
     @Transactional
-    public VisitPlan completeVisit(Long planId, LocalDate actualDate, PetitionRecord petitionRecord) {
+    public VisitPlan completeVisit(
+            Long planId, LocalDate actualDate, PetitionRecord petitionRecord) {
         VisitPlan plan = visitPlanMapper.selectById(planId);
         if (plan == null) {
             throw new BusinessException(ErrorCode.VISIT_PLAN_NOT_FOUND);
@@ -149,7 +150,16 @@ public class KeypersonServiceImpl implements KeypersonService {
     public List<Map<String, Object>> getGisData() {
         // Return simplified GIS data from key_person table
         List<KeyPerson> list = keyPersonMapper.selectList(null);
-        return list.stream().map(kp -> Map.<String, Object>of("uuid", kp.getUuid(), "controlLevel",
-                kp.getControlLevel(), "controlType", kp.getControlType())).toList();
+        return list.stream()
+                .map(
+                        kp ->
+                                Map.<String, Object>of(
+                                        "uuid",
+                                        kp.getUuid(),
+                                        "controlLevel",
+                                        kp.getControlLevel(),
+                                        "controlType",
+                                        kp.getControlType()))
+                .toList();
     }
 }

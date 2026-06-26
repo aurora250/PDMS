@@ -32,18 +32,12 @@ import static org.mockito.Mockito.*;
 @DisplayName("常住人口服务 — 单元测试")
 class ResidentServiceImplTest {
 
-    @Mock
-    private ResidentMapper residentMapper;
-    @Mock
-    private ResidentRelationMapper relationMapper;
-    @Mock
-    private ResidentChangeRequestMapper changeRequestMapper;
-    @Mock
-    private ResidentEsRepository residentEsRepository;
-    @Mock
-    private ObjectMapper objectMapper;
-    @InjectMocks
-    private ResidentServiceImpl residentService;
+    @Mock private ResidentMapper residentMapper;
+    @Mock private ResidentRelationMapper relationMapper;
+    @Mock private ResidentChangeRequestMapper changeRequestMapper;
+    @Mock private ResidentEsRepository residentEsRepository;
+    @Mock private ObjectMapper objectMapper;
+    @InjectMocks private ResidentServiceImpl residentService;
 
     private Resident testResident;
 
@@ -84,8 +78,10 @@ class ResidentServiceImplTest {
         void shouldRejectDuplicateIdCard() {
             when(residentMapper.selectByIdCardNo("110101199003076632")).thenReturn(testResident);
 
-            BusinessException ex = assertThrows(BusinessException.class,
-                    () -> residentService.createResident(testResident));
+            BusinessException ex =
+                    assertThrows(
+                            BusinessException.class,
+                            () -> residentService.createResident(testResident));
             assertEquals(ErrorCode.ID_CARD_DUPLICATE.getCode(), ex.getCode());
         }
 
@@ -94,8 +90,10 @@ class ResidentServiceImplTest {
         void shouldRejectInvalidIdCard() {
             testResident.setIdCardNo("12345");
 
-            BusinessException ex = assertThrows(BusinessException.class,
-                    () -> residentService.createResident(testResident));
+            BusinessException ex =
+                    assertThrows(
+                            BusinessException.class,
+                            () -> residentService.createResident(testResident));
             assertEquals(ErrorCode.ID_CARD_INVALID.getCode(), ex.getCode());
         }
     }
@@ -112,9 +110,12 @@ class ResidentServiceImplTest {
             relation.setFatherUuid("00000000-0000-0000-0000-000000000002");
             relation.setMotherUuid("00000000-0000-0000-0000-000000000003");
 
-            when(relationMapper.selectByPersonUuid("00000000-0000-0000-0000-000000000001")).thenReturn(null, relation);
-            when(relationMapper.selectByPersonUuid("00000000-0000-0000-0000-000000000002")).thenReturn(null);
-            when(relationMapper.selectByPersonUuid("00000000-0000-0000-0000-000000000003")).thenReturn(null);
+            when(relationMapper.selectByPersonUuid("00000000-0000-0000-0000-000000000001"))
+                    .thenReturn(null, relation);
+            when(relationMapper.selectByPersonUuid("00000000-0000-0000-0000-000000000002"))
+                    .thenReturn(null);
+            when(relationMapper.selectByPersonUuid("00000000-0000-0000-0000-000000000003"))
+                    .thenReturn(null);
 
             ResidentRelation result = residentService.setRelations(relation);
             assertNotNull(result);
@@ -132,10 +133,14 @@ class ResidentServiceImplTest {
             // B's father is already set to A (circular)
             ResidentRelation fatherRel = new ResidentRelation();
             fatherRel.setFatherUuid("00000000-0000-0000-0000-00000000000a");
-            when(relationMapper.selectByPersonUuid("00000000-0000-0000-0000-00000000000a")).thenReturn(null);
-            when(relationMapper.selectByPersonUuid("00000000-0000-0000-0000-00000000000b")).thenReturn(fatherRel);
+            when(relationMapper.selectByPersonUuid("00000000-0000-0000-0000-00000000000a"))
+                    .thenReturn(null);
+            when(relationMapper.selectByPersonUuid("00000000-0000-0000-0000-00000000000b"))
+                    .thenReturn(fatherRel);
 
-            BusinessException ex = assertThrows(BusinessException.class, () -> residentService.setRelations(relation));
+            BusinessException ex =
+                    assertThrows(
+                            BusinessException.class, () -> residentService.setRelations(relation));
             assertEquals(ErrorCode.RELATION_CIRCULAR.getCode(), ex.getCode());
         }
 
@@ -146,9 +151,12 @@ class ResidentServiceImplTest {
             relation.setRelationPersonUuid("00000000-0000-0000-0000-00000000000a");
             relation.setSpouseUuid("00000000-0000-0000-0000-00000000000b");
 
-            when(relationMapper.selectByPersonUuid("00000000-0000-0000-0000-00000000000a")).thenReturn(null);
-            when(relationMapper.selectByPersonUuid("00000000-0000-0000-0000-00000000000b")).thenReturn(null);
-            when(relationMapper.selectByPersonUuid("00000000-0000-0000-0000-00000000000a")).thenReturn(relation);
+            when(relationMapper.selectByPersonUuid("00000000-0000-0000-0000-00000000000a"))
+                    .thenReturn(null);
+            when(relationMapper.selectByPersonUuid("00000000-0000-0000-0000-00000000000b"))
+                    .thenReturn(null);
+            when(relationMapper.selectByPersonUuid("00000000-0000-0000-0000-00000000000a"))
+                    .thenReturn(relation);
 
             residentService.setRelations(relation);
 
@@ -164,14 +172,16 @@ class ResidentServiceImplTest {
         @Test
         @DisplayName("正常人员信息可修改")
         void shouldUpdateNormalResident() {
-            when(residentMapper.selectByUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testResident);
+            when(residentMapper.selectByUuid("00000000-0000-0000-0000-000000000001"))
+                    .thenReturn(testResident);
 
             Resident updates = new Resident();
             updates.setName("张三丰");
             updates.setPhone("13900001111");
             updates.setOccupation("工程师");
 
-            Resident result = residentService.updateResident("00000000-0000-0000-0000-000000000001", updates);
+            Resident result =
+                    residentService.updateResident("00000000-0000-0000-0000-000000000001", updates);
             assertEquals("张三丰", result.getName());
             assertEquals("13900001111", result.getPhone());
             assertEquals("工程师", result.getOccupation());
@@ -181,13 +191,18 @@ class ResidentServiceImplTest {
         @DisplayName("死亡注销状态不允许修改")
         void shouldRejectUpdateOnDeceasedResident() {
             testResident.setHouseholdStatus("死亡注销");
-            when(residentMapper.selectByUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testResident);
+            when(residentMapper.selectByUuid("00000000-0000-0000-0000-000000000001"))
+                    .thenReturn(testResident);
 
             Resident updates = new Resident();
             updates.setName("张三丰");
 
-            BusinessException ex = assertThrows(BusinessException.class,
-                    () -> residentService.updateResident("00000000-0000-0000-0000-000000000001", updates));
+            BusinessException ex =
+                    assertThrows(
+                            BusinessException.class,
+                            () ->
+                                    residentService.updateResident(
+                                            "00000000-0000-0000-0000-000000000001", updates));
             assertEquals(ErrorCode.RESIDENT_STATUS_INVALID.getCode(), ex.getCode());
         }
 
@@ -195,26 +210,36 @@ class ResidentServiceImplTest {
         @DisplayName("迁出注销状态不允许修改")
         void shouldRejectUpdateOnMigratedResident() {
             testResident.setHouseholdStatus("迁出注销");
-            when(residentMapper.selectByUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testResident);
+            when(residentMapper.selectByUuid("00000000-0000-0000-0000-000000000001"))
+                    .thenReturn(testResident);
 
             Resident updates = new Resident();
             updates.setOccupation("新职业");
 
-            BusinessException ex = assertThrows(BusinessException.class,
-                    () -> residentService.updateResident("00000000-0000-0000-0000-000000000001", updates));
+            BusinessException ex =
+                    assertThrows(
+                            BusinessException.class,
+                            () ->
+                                    residentService.updateResident(
+                                            "00000000-0000-0000-0000-000000000001", updates));
             assertEquals(ErrorCode.RESIDENT_STATUS_INVALID.getCode(), ex.getCode());
         }
 
         @Test
         @DisplayName("不存在的人员更新返回错误")
         void shouldFailOnNotFound() {
-            when(residentMapper.selectByUuid("00000000-0000-0000-0000-000000000099")).thenReturn(null);
+            when(residentMapper.selectByUuid("00000000-0000-0000-0000-000000000099"))
+                    .thenReturn(null);
 
             Resident updates = new Resident();
             updates.setName("test");
 
-            BusinessException ex = assertThrows(BusinessException.class,
-                    () -> residentService.updateResident("00000000-0000-0000-0000-000000000099", updates));
+            BusinessException ex =
+                    assertThrows(
+                            BusinessException.class,
+                            () ->
+                                    residentService.updateResident(
+                                            "00000000-0000-0000-0000-000000000099", updates));
             assertEquals(ErrorCode.RESIDENT_NOT_FOUND.getCode(), ex.getCode());
         }
     }

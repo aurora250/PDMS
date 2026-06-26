@@ -9,10 +9,7 @@ import org.apache.ibatis.annotations.Mapper;
 /**
  * 迁移证 Mapper 接口。
  *
- * <p>
- * 继承 MyBatis-Plus {@link BaseMapper}，提供迁移证表的基础 CRUD 操作。
- * </p>
+ * <p>继承 MyBatis-Plus {@link BaseMapper}，提供迁移证表的基础 CRUD 操作。
  */
 @Mapper
-public interface MigrationPermitMapper extends BaseMapper<MigrationPermit> {
-}
+public interface MigrationPermitMapper extends BaseMapper<MigrationPermit> {}

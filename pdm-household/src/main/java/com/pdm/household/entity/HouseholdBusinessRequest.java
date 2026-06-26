@@ -16,10 +16,8 @@ import lombok.EqualsAndHashCode;
 /**
  * 户政业务申请实体类。
  *
- * <p>
- * 对应数据库表 {@code household_business_request}，用于记录户籍登记、注销、户主变更等业务的申请与审批信息。
- * 业务申请经四级审批流程：采集员录入 → 街道办初审 → 民警复核 → 市局审批。
- * </p>
+ * <p>对应数据库表 {@code household_business_request}，用于记录户籍登记、注销、户主变更等业务的申请与审批信息。 业务申请经四级审批流程：采集员录入 →
+ * 街道办初审 → 民警复核 → 市局审批。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

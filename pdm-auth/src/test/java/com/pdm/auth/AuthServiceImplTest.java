@@ -36,18 +36,12 @@ import static org.mockito.Mockito.*;
 @DisplayName("认证服务 — 单元测试")
 class AuthServiceImplTest {
 
-    @Mock
-    private UserMapper userMapper;
-    @Mock
-    private PasswordEncoder passwordEncoder;
-    @Mock
-    private JwtTokenProvider jwtTokenProvider;
-    @Mock
-    private RedisTemplate<String, String> redisTemplate;
-    @Mock
-    private ValueOperations<String, String> valueOperations;
-    @InjectMocks
-    private AuthServiceImpl authService;
+    @Mock private UserMapper userMapper;
+    @Mock private PasswordEncoder passwordEncoder;
+    @Mock private JwtTokenProvider jwtTokenProvider;
+    @Mock private RedisTemplate<String, String> redisTemplate;
+    @Mock private ValueOperations<String, String> valueOperations;
+    @InjectMocks private AuthServiceImpl authService;
 
     private User testUser;
 
@@ -80,7 +74,8 @@ class AuthServiceImplTest {
 
             when(userMapper.selectByUsername("admin")).thenReturn(testUser);
             when(passwordEncoder.matches("Admin@123!", testUser.getPassword())).thenReturn(true);
-            when(jwtTokenProvider.generateAccessToken("00000000-0000-0000-0000-000000000001", "admin", "系统管理员"))
+            when(jwtTokenProvider.generateAccessToken(
+                            "00000000-0000-0000-0000-000000000001", "admin", "系统管理员"))
                     .thenReturn("access-token-xxx");
             when(jwtTokenProvider.generateRefreshToken("00000000-0000-0000-0000-000000000001"))
                     .thenReturn("refresh-token-xxx");
@@ -108,9 +103,12 @@ class AuthServiceImplTest {
             request.setPassword("WrongPassword");
 
             when(userMapper.selectByUsername("admin")).thenReturn(testUser);
-            when(passwordEncoder.matches("WrongPassword", testUser.getPassword())).thenReturn(false);
+            when(passwordEncoder.matches("WrongPassword", testUser.getPassword()))
+                    .thenReturn(false);
 
-            BusinessException ex = assertThrows(BusinessException.class, () -> authService.login(request, "127.0.0.1"));
+            BusinessException ex =
+                    assertThrows(
+                            BusinessException.class, () -> authService.login(request, "127.0.0.1"));
             assertEquals(ErrorCode.USERNAME_OR_PASSWORD_ERROR.getCode(), ex.getCode());
         }
 
@@ -123,7 +121,9 @@ class AuthServiceImplTest {
 
             when(userMapper.selectByUsername("nonexistent")).thenReturn(null);
 
-            BusinessException ex = assertThrows(BusinessException.class, () -> authService.login(request, "127.0.0.1"));
+            BusinessException ex =
+                    assertThrows(
+                            BusinessException.class, () -> authService.login(request, "127.0.0.1"));
             assertEquals(ErrorCode.USERNAME_OR_PASSWORD_ERROR.getCode(), ex.getCode());
         }
 
@@ -137,7 +137,9 @@ class AuthServiceImplTest {
 
             when(userMapper.selectByUsername("admin")).thenReturn(testUser);
 
-            BusinessException ex = assertThrows(BusinessException.class, () -> authService.login(request, "127.0.0.1"));
+            BusinessException ex =
+                    assertThrows(
+                            BusinessException.class, () -> authService.login(request, "127.0.0.1"));
             assertEquals(ErrorCode.ACCOUNT_FROZEN.getCode(), ex.getCode());
         }
 
@@ -151,7 +153,9 @@ class AuthServiceImplTest {
 
             when(userMapper.selectByUsername("admin")).thenReturn(testUser);
 
-            BusinessException ex = assertThrows(BusinessException.class, () -> authService.login(request, "127.0.0.1"));
+            BusinessException ex =
+                    assertThrows(
+                            BusinessException.class, () -> authService.login(request, "127.0.0.1"));
             assertEquals(ErrorCode.ACCOUNT_LOCKED.getCode(), ex.getCode());
         }
 
@@ -164,7 +168,8 @@ class AuthServiceImplTest {
             request.setPassword("WrongPassword");
 
             when(userMapper.selectByUsername("admin")).thenReturn(testUser);
-            when(passwordEncoder.matches("WrongPassword", testUser.getPassword())).thenReturn(false);
+            when(passwordEncoder.matches("WrongPassword", testUser.getPassword()))
+                    .thenReturn(false);
 
             assertThrows(BusinessException.class, () -> authService.login(request, "127.0.0.1"));
 
@@ -186,7 +191,8 @@ class AuthServiceImplTest {
             when(passwordEncoder.matches("Admin@123!", testUser.getPassword())).thenReturn(true);
             when(jwtTokenProvider.generateAccessToken(anyString(), anyString(), anyString()))
                     .thenReturn("access-token-xxx");
-            when(jwtTokenProvider.generateRefreshToken(anyString())).thenReturn("refresh-token-xxx");
+            when(jwtTokenProvider.generateRefreshToken(anyString()))
+                    .thenReturn("refresh-token-xxx");
 
             LoginResponse response = authService.login(request, "127.0.0.1");
             assertTrue(response.isMustChangePassword());
@@ -200,11 +206,13 @@ class AuthServiceImplTest {
         @Test
         @DisplayName("合法密码修改成功")
         void shouldChangePassword() {
-            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testUser);
+            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001"))
+                    .thenReturn(testUser);
             when(passwordEncoder.matches("OldPass1!", testUser.getPassword())).thenReturn(true);
             when(passwordEncoder.encode("NewPass2@")).thenReturn("$2a$10$newlyEncoded");
 
-            authService.changePassword("00000000-0000-0000-0000-000000000001", "OldPass1!", "NewPass2@");
+            authService.changePassword(
+                    "00000000-0000-0000-0000-000000000001", "OldPass1!", "NewPass2@");
 
             assertEquals("$2a$10$newlyEncoded", testUser.getPassword());
             assertFalse(testUser.getMustChangePassword());
@@ -214,15 +222,29 @@ class AuthServiceImplTest {
         @Test
         @DisplayName("弱密码应拒绝")
         void shouldRejectWeakPassword() {
-            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testUser);
+            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001"))
+                    .thenReturn(testUser);
             when(passwordEncoder.matches("OldPass1!", testUser.getPassword())).thenReturn(true);
 
-            assertThrows(BusinessException.class,
-                    () -> authService.changePassword("00000000-0000-0000-0000-000000000001", "OldPass1!", "short"));
-            assertThrows(BusinessException.class, () -> authService
-                    .changePassword("00000000-0000-0000-0000-000000000001", "OldPass1!", "nouppercase1!"));
-            assertThrows(BusinessException.class, () -> authService
-                    .changePassword("00000000-0000-0000-0000-000000000001", "OldPass1!", "NOLOWERCASE1!"));
+            assertThrows(
+                    BusinessException.class,
+                    () ->
+                            authService.changePassword(
+                                    "00000000-0000-0000-0000-000000000001", "OldPass1!", "short"));
+            assertThrows(
+                    BusinessException.class,
+                    () ->
+                            authService.changePassword(
+                                    "00000000-0000-0000-0000-000000000001",
+                                    "OldPass1!",
+                                    "nouppercase1!"));
+            assertThrows(
+                    BusinessException.class,
+                    () ->
+                            authService.changePassword(
+                                    "00000000-0000-0000-0000-000000000001",
+                                    "OldPass1!",
+                                    "NOLOWERCASE1!"));
         }
     }
 
@@ -235,9 +257,13 @@ class AuthServiceImplTest {
         void shouldBlacklistTokenOnLogout() {
             authService.logout("token-xxx", "00000000-0000-0000-0000-000000000001");
 
-            verify(valueOperations).set(
-                    eq(BaseConstants.TOKEN_BLACKLIST_PREFIX + "00000000-0000-0000-0000-000000000001"), eq("token-xxx"),
-                    anyLong(), eq(TimeUnit.SECONDS));
+            verify(valueOperations)
+                    .set(
+                            eq(
+                                            BaseConstants.TOKEN_BLACKLIST_PREFIX
+                                                    + "00000000-0000-0000-0000-000000000001"),
+                                    eq("token-xxx"),
+                            anyLong(), eq(TimeUnit.SECONDS));
         }
     }
 }

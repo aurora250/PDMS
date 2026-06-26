@@ -13,9 +13,7 @@ import lombok.EqualsAndHashCode;
 /**
  * 迁移证实体类。
  *
- * <p>
- * 对应数据库表 {@code migration_permit}，用于记录户口迁移证的签发信息。 迁移证由迁出地公安机关签发，是户口迁移流程中的关键证件。
- * </p>
+ * <p>对应数据库表 {@code migration_permit}，用于记录户口迁移证的签发信息。 迁移证由迁出地公安机关签发，是户口迁移流程中的关键证件。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

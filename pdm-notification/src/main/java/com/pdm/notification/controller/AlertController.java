@@ -29,9 +29,13 @@ public class AlertController {
     }
 
     @GetMapping("/search")
-    public Result<PageResult<Alert>> search(@RequestParam(required = false) String alertType,
-            @RequestParam(required = false) String severity, @RequestParam(required = false) Integer isHandled,
-            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int size) {
-        return Result.success(notificationService.search(alertType, severity, isHandled, page, size));
+    public Result<PageResult<Alert>> search(
+            @RequestParam(required = false) String alertType,
+            @RequestParam(required = false) String severity,
+            @RequestParam(required = false) Integer isHandled,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return Result.success(
+                notificationService.search(alertType, severity, isHandled, page, size));
     }
 }

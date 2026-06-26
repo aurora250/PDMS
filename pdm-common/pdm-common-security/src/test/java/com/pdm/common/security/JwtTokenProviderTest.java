@@ -82,8 +82,9 @@ class JwtTokenProviderTest {
         String token = shortProvider.generateAccessToken("user-001", "admin", "系统管理员");
         assertTrue(shortProvider.isTokenExpiringSoon(token));
 
-        assertFalse(jwtTokenProvider
-                .isTokenExpiringSoon(jwtTokenProvider.generateAccessToken("user-001", "admin", "系统管理员")));
+        assertFalse(
+                jwtTokenProvider.isTokenExpiringSoon(
+                        jwtTokenProvider.generateAccessToken("user-001", "admin", "系统管理员")));
     }
 
     @Test

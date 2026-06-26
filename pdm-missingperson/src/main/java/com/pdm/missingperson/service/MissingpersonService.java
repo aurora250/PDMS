@@ -15,7 +15,8 @@ public interface MissingpersonService {
 
     MissingPersonRecovery recordRecovery(MissingPersonRecovery recovery);
 
-    PageResult<MissingPerson> search(String residentUuid, String status, String name, PageRequest pageRequest);
+    PageResult<MissingPerson> search(
+            String residentUuid, String status, String name, PageRequest pageRequest);
 
     Map<String, Object> getStatistics();
 }

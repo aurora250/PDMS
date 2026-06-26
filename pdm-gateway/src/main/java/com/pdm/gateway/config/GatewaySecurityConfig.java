@@ -9,9 +9,8 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 /**
  * Gateway 层安全配置（Reactive）
  *
- * <p>
- * 认证由 {@link com.pdm.gateway.filter.AuthGlobalFilter} 处理， 下游微服务各自负责细粒度授权，网关层仅禁用
- * CSRF 并放行所有请求。 CSRF 必须禁用：系统使用 JWT Bearer Token，无状态会话，不存在 CSRF 攻击面。
+ * <p>认证由 {@link com.pdm.gateway.filter.AuthGlobalFilter} 处理， 下游微服务各自负责细粒度授权，网关层仅禁用 CSRF 并放行所有请求。
+ * CSRF 必须禁用：系统使用 JWT Bearer Token，无状态会话，不存在 CSRF 攻击面。
  *
  * @author aurora250
  */
@@ -22,13 +21,10 @@ public class GatewaySecurityConfig {
     /**
      * 配置响应式安全过滤器链。
      *
-     * <p>
-     * 禁用 CSRF 防护（JWT 无状态架构不需要）、放行所有请求经过网关层、 关闭表单登录和 HTTP Basic 认证，Token 校验交由
-     * {@link com.pdm.gateway.filter.AuthGlobalFilter} 统一处理。
-     * </p>
+     * <p>禁用 CSRF 防护（JWT 无状态架构不需要）、放行所有请求经过网关层、 关闭表单登录和 HTTP Basic 认证，Token 校验交由 {@link
+     * com.pdm.gateway.filter.AuthGlobalFilter} 统一处理。
      *
-     * @param http
-     *            ServerHttpSecurity 配置对象
+     * @param http ServerHttpSecurity 配置对象
      * @return 构建好的 SecurityWebFilterChain
      */
     @Bean

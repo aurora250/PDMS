@@ -15,9 +15,7 @@ import lombok.EqualsAndHashCode;
 /**
  * 居住证续期记录实体类。
  *
- * <p>
- * 对应数据库表 {@code resident_permit_renewal}，用于记录居住证的续期操作， 包括续期前后有效期变化及操作人信息。
- * </p>
+ * <p>对应数据库表 {@code resident_permit_renewal}，用于记录居住证的续期操作， 包括续期前后有效期变化及操作人信息。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

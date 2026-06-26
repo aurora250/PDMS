@@ -53,11 +53,14 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public List<Alert> getPendingAlerts() {
         return alertMapper.selectList(
-                new LambdaQueryWrapper<Alert>().eq(Alert::getIsHandled, 0).orderByDesc(Alert::getCreateTime));
+                new LambdaQueryWrapper<Alert>()
+                        .eq(Alert::getIsHandled, 0)
+                        .orderByDesc(Alert::getCreateTime));
     }
 
     @Override
-    public PageResult<Alert> search(String alertType, String severity, Integer isHandled, int page, int size) {
+    public PageResult<Alert> search(
+            String alertType, String severity, Integer isHandled, int page, int size) {
         LambdaQueryWrapper<Alert> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(alertType)) {
             wrapper.eq(Alert::getAlertType, alertType);
@@ -71,7 +74,11 @@ public class NotificationServiceImpl implements NotificationService {
         wrapper.orderByDesc(Alert::getCreateTime);
 
         IPage<Alert> result = alertMapper.selectPage(new Page<>(page, size), wrapper);
-        return PageResult.of(result.getRecords(), result.getTotal(), (int) result.getCurrent(), (int) result.getSize());
+        return PageResult.of(
+                result.getRecords(),
+                result.getTotal(),
+                (int) result.getCurrent(),
+                (int) result.getSize());
     }
 
     @Override

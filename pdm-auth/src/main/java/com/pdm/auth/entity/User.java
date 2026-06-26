@@ -13,10 +13,7 @@ import lombok.EqualsAndHashCode;
 /**
  * 系统用户实体类，对应数据库 {@code sys_user} 表。
  *
- * <p>
- * 继承 {@link BaseEntity}，自动获得 ID、创建时间、更新时间、逻辑删除等通用字段。
- * 记录用户的登录凭证、角色权限、账号安全状态（锁定/失败计数）以及关联的实名信息。
- * </p>
+ * <p>继承 {@link BaseEntity}，自动获得 ID、创建时间、更新时间、逻辑删除等通用字段。 记录用户的登录凭证、角色权限、账号安全状态（锁定/失败计数）以及关联的实名信息。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

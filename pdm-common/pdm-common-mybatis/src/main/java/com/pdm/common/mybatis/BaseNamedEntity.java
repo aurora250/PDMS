@@ -12,10 +12,8 @@ import lombok.Data;
 /**
  * 实体基类（无自增主键，适用于以业务键为主键的表）。
  *
- * <p>
- * 与 {@link BaseEntity} 的区别是不包含 {@code id} 字段， 适用于以自定义业务键（如
- * {@code group_id}）为主键的表，如 {@code permission_group}。 提供创建时间、更新时间、逻辑删除标记三个公共字段。
- * </p>
+ * <p>与 {@link BaseEntity} 的区别是不包含 {@code id} 字段， 适用于以自定义业务键（如 {@code group_id}）为主键的表，如 {@code
+ * permission_group}。 提供创建时间、更新时间、逻辑删除标记三个公共字段。
  */
 @Data
 public class BaseNamedEntity implements Serializable {

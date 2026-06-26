@@ -3,29 +3,22 @@ package com.pdm.common.security;
 /**
  * 当前登录用户上下文持有者。
  *
- * <p>
- * 基于 {@link ThreadLocal} 实现，在每个请求处理线程中保存当前登录用户的基本信息。 由
- * {@link JwtAuthenticationFilter} 在请求进入时设置，在请求结束时通过 {@code finally} 块自动清理，
- * 避免内存泄漏和跨请求数据污染。
- * </p>
+ * <p>基于 {@link ThreadLocal} 实现，在每个请求处理线程中保存当前登录用户的基本信息。 由 {@link JwtAuthenticationFilter}
+ * 在请求进入时设置，在请求结束时通过 {@code finally} 块自动清理， 避免内存泄漏和跨请求数据污染。
  *
- * <p>
- * 工具类不可实例化。
- * </p>
+ * <p>工具类不可实例化。
  */
 public final class UserContextHolder {
 
     /** 线程级别的用户上下文存储 */
     private static final ThreadLocal<UserContext> CONTEXT = new ThreadLocal<>();
 
-    private UserContextHolder() {
-    }
+    private UserContextHolder() {}
 
     /**
      * 设置当前线程的用户上下文。
      *
-     * @param context
-     *            用户上下文
+     * @param context 用户上下文
      */
     public static void set(UserContext context) {
         CONTEXT.set(context);
@@ -70,9 +63,7 @@ public final class UserContextHolder {
         return ctx != null ? ctx.role() : null;
     }
 
-    /**
-     * 清除当前线程的用户上下文，防止内存泄漏。
-     */
+    /** 清除当前线程的用户上下文，防止内存泄漏。 */
     public static void clear() {
         CONTEXT.remove();
     }
@@ -80,15 +71,10 @@ public final class UserContextHolder {
     /**
      * 用户上下文记录，包含当前用户的基本信息和请求 IP。
      *
-     * @param userUuid
-     *            用户 UUID
-     * @param username
-     *            用户名
-     * @param role
-     *            用户角色
-     * @param ipAddress
-     *            客户端 IP 地址
+     * @param userUuid 用户 UUID
+     * @param username 用户名
+     * @param role 用户角色
+     * @param ipAddress 客户端 IP 地址
      */
-    public record UserContext(String userUuid, String username, String role, String ipAddress) {
-    }
+    public record UserContext(String userUuid, String username, String role, String ipAddress) {}
 }

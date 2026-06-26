@@ -9,9 +9,7 @@ import lombok.Data;
 /**
  * 用户注册请求 DTO。
  *
- * <p>
- * 包含用户注册所需的全部字段，各字段均带 Jakarta Validation 校验注解。
- * </p>
+ * <p>包含用户注册所需的全部字段，各字段均带 Jakarta Validation 校验注解。
  */
 @Data
 public class RegisterRequest implements Serializable {

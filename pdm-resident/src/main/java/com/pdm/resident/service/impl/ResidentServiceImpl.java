@@ -92,14 +92,13 @@ public class ResidentServiceImpl implements ResidentService {
             throw new BusinessException(ErrorCode.RESIDENT_NOT_FOUND);
         }
         // 注销状态不允许修改
-        if ("死亡注销".equals(resident.getHouseholdStatus()) || "迁出注销".equals(resident.getHouseholdStatus())) {
+        if ("死亡注销".equals(resident.getHouseholdStatus())
+                || "迁出注销".equals(resident.getHouseholdStatus())) {
             throw new BusinessException(ErrorCode.RESIDENT_STATUS_INVALID);
         }
 
-        if (StringUtils.hasText(updates.getName()))
-            resident.setName(updates.getName());
-        if (StringUtils.hasText(updates.getNation()))
-            resident.setNation(updates.getNation());
+        if (StringUtils.hasText(updates.getName())) resident.setName(updates.getName());
+        if (StringUtils.hasText(updates.getNation())) resident.setNation(updates.getNation());
         if (StringUtils.hasText(updates.getEducationLevel()))
             resident.setEducationLevel(updates.getEducationLevel());
         if (StringUtils.hasText(updates.getBloodType()))
@@ -108,8 +107,7 @@ public class ResidentServiceImpl implements ResidentService {
             resident.setMaritalStatus(updates.getMaritalStatus());
         if (StringUtils.hasText(updates.getOccupation()))
             resident.setOccupation(updates.getOccupation());
-        if (StringUtils.hasText(updates.getPhone()))
-            resident.setPhone(updates.getPhone());
+        if (StringUtils.hasText(updates.getPhone())) resident.setPhone(updates.getPhone());
         if (StringUtils.hasText(updates.getResidence()))
             resident.setResidence(updates.getResidence());
 
@@ -142,9 +140,16 @@ public class ResidentServiceImpl implements ResidentService {
     @Override
     public PageResult<Resident> search(ResidentSearchRequest request) {
         try {
-            List<Resident> residents = residentEsRepository.multiConditionSearch(request.getName(), request.getGender(),
-                    request.getNation(), request.getEducationLevel(), request.getMaritalStatus(),
-                    request.getHouseholdStatus(), request.getOffset(), request.getSize());
+            List<Resident> residents =
+                    residentEsRepository.multiConditionSearch(
+                            request.getName(),
+                            request.getGender(),
+                            request.getNation(),
+                            request.getEducationLevel(),
+                            request.getMaritalStatus(),
+                            request.getHouseholdStatus(),
+                            request.getOffset(),
+                            request.getSize());
             // Estimate total from ES (simplified)
             long total = residents.size();
             return PageResult.of(residents, total, request.getPage(), request.getSize());
@@ -171,7 +176,8 @@ public class ResidentServiceImpl implements ResidentService {
 
         // Check circular relation
         if (relation.getFatherUuid() != null) {
-            ResidentRelation fatherRel = relationMapper.selectByPersonUuid(relation.getFatherUuid());
+            ResidentRelation fatherRel =
+                    relationMapper.selectByPersonUuid(relation.getFatherUuid());
             if (fatherRel != null && uuid.equals(fatherRel.getFatherUuid())) {
                 throw new BusinessException(ErrorCode.RELATION_CIRCULAR);
             }
@@ -180,12 +186,9 @@ public class ResidentServiceImpl implements ResidentService {
         // Update or insert
         ResidentRelation existing = relationMapper.selectByPersonUuid(uuid);
         if (existing != null) {
-            if (relation.getFatherUuid() != null)
-                existing.setFatherUuid(relation.getFatherUuid());
-            if (relation.getMotherUuid() != null)
-                existing.setMotherUuid(relation.getMotherUuid());
-            if (relation.getSpouseUuid() != null)
-                existing.setSpouseUuid(relation.getSpouseUuid());
+            if (relation.getFatherUuid() != null) existing.setFatherUuid(relation.getFatherUuid());
+            if (relation.getMotherUuid() != null) existing.setMotherUuid(relation.getMotherUuid());
+            if (relation.getSpouseUuid() != null) existing.setSpouseUuid(relation.getSpouseUuid());
             relationMapper.updateById(existing);
         } else {
             relationMapper.insert(relation);
@@ -193,7 +196,8 @@ public class ResidentServiceImpl implements ResidentService {
 
         // Auto-bidirectional spouse relation
         if (relation.getSpouseUuid() != null) {
-            ResidentRelation spouseRel = relationMapper.selectByPersonUuid(relation.getSpouseUuid());
+            ResidentRelation spouseRel =
+                    relationMapper.selectByPersonUuid(relation.getSpouseUuid());
             if (spouseRel != null) {
                 spouseRel.setSpouseUuid(uuid);
                 relationMapper.updateById(spouseRel);
@@ -240,7 +244,8 @@ public class ResidentServiceImpl implements ResidentService {
         // If approved, apply the change to resident
         if ("通过".equals(status)) {
             try {
-                Map<String, Object> modifiedData = objectMapper.readValue(request.getModifiedData(), Map.class);
+                Map<String, Object> modifiedData =
+                        objectMapper.readValue(request.getModifiedData(), Map.class);
                 Resident resident = residentMapper.selectByUuid(request.getApplicantUuid());
                 if (resident != null) {
                     if (modifiedData.containsKey("name"))
@@ -277,8 +282,12 @@ public class ResidentServiceImpl implements ResidentService {
             fail++;
         }
 
-        return ResidentImportResult.builder().totalCount(total).successCount(success).failCount(fail)
-                .errorMessages(errors).build();
+        return ResidentImportResult.builder()
+                .totalCount(total)
+                .successCount(success)
+                .failCount(fail)
+                .errorMessages(errors)
+                .build();
     }
 
     @Override

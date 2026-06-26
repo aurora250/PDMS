@@ -11,6 +11,7 @@ import org.apache.ibatis.annotations.Select;
 @Mapper
 public interface ResidentRelationMapper extends BaseMapper<ResidentRelation> {
 
-    @Select("SELECT * FROM resident_relation WHERE relation_person_uuid = #{uuid} AND is_deleted = 0")
+    @Select(
+            "SELECT * FROM resident_relation WHERE relation_person_uuid = #{uuid} AND is_deleted = 0")
     ResidentRelation selectByPersonUuid(@Param("uuid") String uuid);
 }

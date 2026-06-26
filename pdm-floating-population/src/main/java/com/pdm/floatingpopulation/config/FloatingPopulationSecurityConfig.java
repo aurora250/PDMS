@@ -16,9 +16,7 @@ import lombok.RequiredArgsConstructor;
 /**
  * 流动人口模块安全配置类。
  *
- * <p>
- * 配置 Spring Security 过滤器链：禁用 CSRF 防护、设置无状态会话、 对所有请求强制认证，并注册 JWT 认证过滤器。
- * </p>
+ * <p>配置 Spring Security 过滤器链：禁用 CSRF 防护、设置无状态会话、 对所有请求强制认证，并注册 JWT 认证过滤器。
  */
 @Configuration
 @RequiredArgsConstructor
@@ -30,22 +28,20 @@ public class FloatingPopulationSecurityConfig {
     /**
      * 配置安全过滤器链。
      *
-     * <p>
-     * 禁用 CSRF、设置为无状态会话以避免服务端存储会话信息、 要求所有请求必须携带有效 JWT 令牌进行认证。
-     * </p>
+     * <p>禁用 CSRF、设置为无状态会话以避免服务端存储会话信息、 要求所有请求必须携带有效 JWT 令牌进行认证。
      *
-     * @param http
-     *            HttpSecurity 配置对象
+     * @param http HttpSecurity 配置对象
      * @return 构建好的 SecurityFilterChain
-     * @throws Exception
-     *             配置过程中可能抛出的异常
+     * @throws Exception 配置过程中可能抛出的异常
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated()).addFilterBefore(
-                        new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
+                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
+                .addFilterBefore(
+                        new JwtAuthenticationFilter(jwtTokenProvider),
+                        UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }

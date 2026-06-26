@@ -13,9 +13,7 @@ import lombok.EqualsAndHashCode;
 /**
  * 户口本登记实体类。
  *
- * <p>
- * 对应数据库表 {@code household_register}，用于记录户口本的核心信息， 包括户口本编号、户主信息、户籍地址及家庭成员列表。
- * </p>
+ * <p>对应数据库表 {@code household_register}，用于记录户口本的核心信息， 包括户口本编号、户主信息、户籍地址及家庭成员列表。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

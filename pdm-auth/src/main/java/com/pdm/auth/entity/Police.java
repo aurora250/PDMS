@@ -11,9 +11,7 @@ import lombok.EqualsAndHashCode;
 /**
  * 警员实体类，对应数据库 {@code police} 表。
  *
- * <p>
- * 继承 {@link BaseEntity}，自动获得 ID、创建时间、更新时间、逻辑删除等通用字段。 记录警员的基本信息、所属单位、警衔以及当前值班状态。
- * </p>
+ * <p>继承 {@link BaseEntity}，自动获得 ID、创建时间、更新时间、逻辑删除等通用字段。 记录警员的基本信息、所属单位、警衔以及当前值班状态。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

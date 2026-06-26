@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<profiles version="22">
-    <profile kind="CodeFormatterProfile" name="PDM-Style" version="22">
+<profiles version="24">
+    <profile kind="CodeFormatterProfile" name="PDM-Style" version="24">
         <!-- 缩进：4个空格 -->
         <setting id="org.eclipse.jdt.core.formatter.indentation.size" value="4"/>
         <setting id="org.eclipse.jdt.core.formatter.tabulation.char" value="space"/>
@@ -38,5 +38,21 @@
         <!-- 数组初始化 -->
         <setting id="org.eclipse.jdt.core.formatter.insert_space_after_opening_brace_in_array_initializer" value="insert"/>
         <setting id="org.eclipse.jdt.core.formatter.insert_space_before_closing_brace_in_array_initializer" value="insert"/>
+
+        <!-- @param、@return、@throws -->
+        <setting id="org.eclipse.jdt.core.formatter.comment.javadoc.new_line_after_param_tag" value="false"/>
+        <setting id="org.eclipse.jdt.core.formatter.comment.javadoc.new_line_after_return_tag" value="false"/>
+        <setting id="org.eclipse.jdt.core.formatter.comment.javadoc.new_line_after_throws_tag" value="false"/>
+
+        <!-- Javadoc标签缩进 -->
+        <setting id="org.eclipse.jdt.core.formatter.comment.javadoc.indent_param_description" value="false"/>
+        <setting id="org.eclipse.jdt.core.formatter.comment.javadoc.indent_throws_description" value="false"/>
+
+        <!-- Javadoc行分割阈值 -->
+        <setting id="org.eclipse.jdt.core.formatter.comment.line_length" value="120"/>
+
+        <!-- Javadoc段落<p>标签 -->
+        <setting id="org.eclipse.jdt.core.formatter.comment.javadoc.blank_line_before_html_tag" value="true"/>
+        <setting id="org.eclipse.jdt.core.formatter.comment.javadoc.blank_line_after_html_tag" value="true"/>
     </profile>
 </profiles>

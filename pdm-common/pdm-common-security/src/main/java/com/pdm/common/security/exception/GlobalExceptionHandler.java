@@ -20,18 +20,16 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * 全局异常处理器。
  *
- * <p>
- * 使用 {@code @RestControllerAdvice} 统一拦截所有 Controller 层抛出的异常， 将其转换为
- * {@link Result} 格式的标准错误响应。 覆盖以下几类异常：
- * </p>
+ * <p>使用 {@code @RestControllerAdvice} 统一拦截所有 Controller 层抛出的异常， 将其转换为 {@link Result} 格式的标准错误响应。
+ * 覆盖以下几类异常：
+ *
  * <ul>
- * <li>{@code BusinessException} —— 业务异常，返回对应的错误码和消息</li>
- * <li>参数校验异常（{@code MethodArgumentNotValidException} / {@code BindException} /
- * {@code ConstraintViolationException}）—— 400 + 具体校验信息</li>
- * <li>{@code AccessDeniedException} —— 403 无权限</li>
- * <li>{@code AuthenticationException} / {@code BadCredentialsException} —— 401
- * 未授权</li>
- * <li>{@code Exception} —— 兜底处理，500 系统内部错误</li>
+ *   <li>{@code BusinessException} —— 业务异常，返回对应的错误码和消息
+ *   <li>参数校验异常（{@code MethodArgumentNotValidException} / {@code BindException} / {@code
+ *       ConstraintViolationException}）—— 400 + 具体校验信息
+ *   <li>{@code AccessDeniedException} —— 403 无权限
+ *   <li>{@code AuthenticationException} / {@code BadCredentialsException} —— 401 未授权
+ *   <li>{@code Exception} —— 兜底处理，500 系统内部错误
  * </ul>
  */
 @Slf4j
@@ -41,12 +39,9 @@ public class GlobalExceptionHandler {
     /**
      * 处理业务异常。
      *
-     * <p>
-     * 记录 warn 级别的日志后，返回异常中携带的错误码和消息。
-     * </p>
+     * <p>记录 warn 级别的日志后，返回异常中携带的错误码和消息。
      *
-     * @param e
-     *            业务异常
+     * @param e 业务异常
      * @return 失败响应
      */
     @ExceptionHandler(BusinessException.class)
@@ -58,22 +53,21 @@ public class GlobalExceptionHandler {
     /**
      * 处理请求体 / 表单参数校验异常（400）。
      *
-     * <p>
-     * 提取所有字段校验错误信息，以分号分隔后返回。
-     * </p>
+     * <p>提取所有字段校验错误信息，以分号分隔后返回。
      *
-     * @param e
-     *            校验异常
+     * @param e 校验异常
      * @return 失败响应（含字段级错误详情）
      */
-    @ExceptionHandler({ MethodArgumentNotValidException.class, BindException.class })
+    @ExceptionHandler({MethodArgumentNotValidException.class, BindException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Void> handleValidationException(Exception e) {
         String message = "参数校验失败";
         if (e instanceof MethodArgumentNotValidException ex) {
-            message = ex.getBindingResult().getFieldErrors().stream()
-                    .map(f -> f.getField() + ": " + f.getDefaultMessage()).reduce((a, b) -> a + "; " + b)
-                    .orElse(message);
+            message =
+                    ex.getBindingResult().getFieldErrors().stream()
+                            .map(f -> f.getField() + ": " + f.getDefaultMessage())
+                            .reduce((a, b) -> a + "; " + b)
+                            .orElse(message);
         }
         return Result.fail(ErrorCode.PARAM_ERROR.getCode(), message);
     }
@@ -81,8 +75,7 @@ public class GlobalExceptionHandler {
     /**
      * 处理方法级别约束校验异常（400）。
      *
-     * @param e
-     *            约束违反异常
+     * @param e 约束违反异常
      * @return 失败响应
      */
     @ExceptionHandler(ConstraintViolationException.class)
@@ -94,8 +87,7 @@ public class GlobalExceptionHandler {
     /**
      * 处理 Spring Security 权限拒绝异常（403）。
      *
-     * @param e
-     *            权限拒绝异常
+     * @param e 权限拒绝异常
      * @return 失败响应
      */
     @ExceptionHandler(AccessDeniedException.class)
@@ -107,8 +99,7 @@ public class GlobalExceptionHandler {
     /**
      * 处理 Spring Security 认证异常（401），如未登录或令牌过期。
      *
-     * @param e
-     *            认证异常
+     * @param e 认证异常
      * @return 失败响应
      */
     @ExceptionHandler(AuthenticationException.class)
@@ -120,8 +111,7 @@ public class GlobalExceptionHandler {
     /**
      * 处理密码错误异常（401）。
      *
-     * @param e
-     *            密码错误异常
+     * @param e 密码错误异常
      * @return 失败响应
      */
     @ExceptionHandler(BadCredentialsException.class)
@@ -133,12 +123,9 @@ public class GlobalExceptionHandler {
     /**
      * 兜底处理未预期的系统异常（500）。
      *
-     * <p>
-     * 记录 error 级别日志并附带堆栈信息，便于问题排查。
-     * </p>
+     * <p>记录 error 级别日志并附带堆栈信息，便于问题排查。
      *
-     * @param e
-     *            未预期的异常
+     * @param e 未预期的异常
      * @return 失败响应
      */
     @ExceptionHandler(Exception.class)

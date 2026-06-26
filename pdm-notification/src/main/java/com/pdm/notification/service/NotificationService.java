@@ -13,7 +13,8 @@ public interface NotificationService {
 
     List<Alert> getPendingAlerts();
 
-    PageResult<Alert> search(String alertType, String severity, Integer isHandled, int page, int size);
+    PageResult<Alert> search(
+            String alertType, String severity, Integer isHandled, int page, int size);
 
     void scanPermitExpiry();
 

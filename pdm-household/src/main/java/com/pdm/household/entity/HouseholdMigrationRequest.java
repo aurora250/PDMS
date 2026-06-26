@@ -16,10 +16,7 @@ import lombok.EqualsAndHashCode;
 /**
  * 户口迁移申请实体类。
  *
- * <p>
- * 对应数据库表 {@code household_migration_request}，用于记录户口迁移的申请与审批信息。
- * 包括迁入地和迁出地的详细地址、关联的准迁证和迁移证编号。
- * </p>
+ * <p>对应数据库表 {@code household_migration_request}，用于记录户口迁移的申请与审批信息。 包括迁入地和迁出地的详细地址、关联的准迁证和迁移证编号。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

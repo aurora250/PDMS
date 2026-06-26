@@ -15,9 +15,7 @@ import lombok.EqualsAndHashCode;
 /**
  * 流动人口登记记录实体类。
  *
- * <p>
- * 对应数据库表 {@code fp_register_record}，用于记录流动人口的登记信息， 包括关联的居住证编号、经办人、审核人及审核状态。
- * </p>
+ * <p>对应数据库表 {@code fp_register_record}，用于记录流动人口的登记信息， 包括关联的居住证编号、经办人、审核人及审核状态。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

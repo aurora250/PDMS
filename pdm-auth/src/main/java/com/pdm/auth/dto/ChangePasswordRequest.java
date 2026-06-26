@@ -9,9 +9,7 @@ import lombok.Data;
 /**
  * 修改密码请求 DTO。
  *
- * <p>
- * 包含旧密码验证和新密码设置所需的字段，各字段均带 Jakarta Validation 校验注解。
- * </p>
+ * <p>包含旧密码验证和新密码设置所需的字段，各字段均带 Jakarta Validation 校验注解。
  */
 @Data
 public class ChangePasswordRequest implements Serializable {

@@ -5,7 +5,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
-@SpringBootApplication(scanBasePackages = { "com.pdm.resident", "com.pdm.common" })
+@SpringBootApplication(scanBasePackages = {"com.pdm.resident", "com.pdm.common"})
 @EnableDiscoveryClient
 @MapperScan("com.pdm.resident.mapper")
 public class ResidentApplication {

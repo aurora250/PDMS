@@ -19,13 +19,14 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * JWT 认证过滤器。
  *
- * <p>
- * 继承 Spring 的 {@link OncePerRequestFilter}，确保每个请求仅执行一次。 从请求头
- * {@code Authorization: Bearer <token>} 中提取 JWT 令牌，验证通过后：
+ * <p>继承 Spring 的 {@link OncePerRequestFilter}，确保每个请求仅执行一次。 从请求头 {@code Authorization: Bearer
+ * <token>} 中提取 JWT 令牌，验证通过后：
+ *
  * <ul>
- * <li>将用户信息存入 {@link UserContextHolder}（基于 ThreadLocal）</li>
- * <li>设置 Spring Security 的认证上下文（包含用户角色）</li>
+ *   <li>将用户信息存入 {@link UserContextHolder}（基于 ThreadLocal）
+ *   <li>设置 Spring Security 的认证上下文（包含用户角色）
  * </ul>
+ *
  * 无论认证是否成功，请求结束后都会在 {@code finally} 块中清理用户上下文。
  */
 @Slf4j
@@ -34,31 +35,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     /** JWT 令牌提供器 */
     private final JwtTokenProvider jwtTokenProvider;
+
     /** HTTP 请求头名称 */
     private static final String AUTHORIZATION_HEADER = "Authorization";
+
     /** Bearer 令牌前缀 */
     private static final String BEARER_PREFIX = "Bearer ";
 
     /**
      * 对每个请求进行 JWT 认证过滤。
      *
-     * <p>
-     * 提取令牌、验证有效性后设置安全上下文，请求处理完成后清理 ThreadLocal。
-     * </p>
+     * <p>提取令牌、验证有效性后设置安全上下文，请求处理完成后清理 ThreadLocal。
      *
-     * @param request
-     *            HTTP 请求
-     * @param response
-     *            HTTP 响应
-     * @param filterChain
-     *            过滤器链
-     * @throws ServletException
-     *             Servlet 异常
-     * @throws IOException
-     *             IO 异常
+     * @param request HTTP 请求
+     * @param response HTTP 响应
+     * @param filterChain 过滤器链
+     * @throws ServletException Servlet 异常
+     * @throws IOException IO 异常
      */
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(
+            HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
         String token = extractToken(request);
@@ -67,12 +64,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String username = jwtTokenProvider.getUsername(token);
             String role = jwtTokenProvider.getRole(token);
 
-            UserContextHolder.UserContext context = new UserContextHolder.UserContext(userUuid, username, role,
-                    request.getRemoteAddr());
+            UserContextHolder.UserContext context =
+                    new UserContextHolder.UserContext(
+                            userUuid, username, role, request.getRemoteAddr());
             UserContextHolder.set(context);
 
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userUuid, null,
-                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role)));
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                            userUuid,
+                            null,
+                            Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role)));
             authentication.setDetails(token);
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
@@ -87,8 +88,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     /**
      * 从 HTTP 请求头中提取 Bearer 令牌。
      *
-     * @param request
-     *            HTTP 请求
+     * @param request HTTP 请求
      * @return 提取的 JWT 令牌字符串，不存在或以非 Bearer 开头时返回 {@code null}
      */
     private String extractToken(HttpServletRequest request) {

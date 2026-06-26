@@ -54,18 +54,22 @@ public class ResidentController {
     }
 
     @PostMapping("/{uuid}/relations")
-    public Result<ResidentRelation> setRelations(@PathVariable String uuid, @RequestBody ResidentRelation relation) {
+    public Result<ResidentRelation> setRelations(
+            @PathVariable String uuid, @RequestBody ResidentRelation relation) {
         relation.setRelationPersonUuid(uuid);
         return Result.success(residentService.setRelations(relation));
     }
 
     @PostMapping("/change-request")
-    public Result<ResidentChangeRequest> submitChangeRequest(@RequestBody ResidentChangeRequest request) {
+    public Result<ResidentChangeRequest> submitChangeRequest(
+            @RequestBody ResidentChangeRequest request) {
         return Result.success(residentService.submitChangeRequest(request));
     }
 
     @PutMapping("/change-request/{rid}/approve")
-    public Result<ResidentChangeRequest> approveChangeRequest(@PathVariable Long rid, @RequestParam String status,
+    public Result<ResidentChangeRequest> approveChangeRequest(
+            @PathVariable Long rid,
+            @RequestParam String status,
             @RequestHeader("X-User-Uuid") String handlerUuid) {
         return Result.success(residentService.approveChangeRequest(rid, status, handlerUuid));
     }

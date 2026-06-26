@@ -15,10 +15,7 @@ import lombok.EqualsAndHashCode;
 /**
  * 常住人口登记实体类。
  *
- * <p>
- * 对应数据库表 {@code resident_registration}，用于记录常住人口的居住登记信息，
- * 包括原地址、现地址、住房性质、居住事由、工作单位等详细信息。
- * </p>
+ * <p>对应数据库表 {@code resident_registration}，用于记录常住人口的居住登记信息， 包括原地址、现地址、住房性质、居住事由、工作单位等详细信息。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

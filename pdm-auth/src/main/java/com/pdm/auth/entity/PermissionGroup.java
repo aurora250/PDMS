@@ -13,10 +13,7 @@ import lombok.EqualsAndHashCode;
 /**
  * 权限组实体类，对应数据库 {@code permission_group} 表。
  *
- * <p>
- * 继承 {@link com.pdm.common.mybatis.BaseNamedEntity}，自动获得名称等通用字段。
- * 权限组用于将一组权限打包授权给用户，实现基于角色的权限管理。
- * </p>
+ * <p>继承 {@link com.pdm.common.mybatis.BaseNamedEntity}，自动获得名称等通用字段。 权限组用于将一组权限打包授权给用户，实现基于角色的权限管理。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

@@ -13,9 +13,7 @@ import lombok.EqualsAndHashCode;
 /**
  * 准迁证实体类。
  *
- * <p>
- * 对应数据库表 {@code approval_permit}，用于记录户口迁移准迁证的签发信息。 准迁证是户口迁移流程中的重要证件，由迁入地公安机关签发。
- * </p>
+ * <p>对应数据库表 {@code approval_permit}，用于记录户口迁移准迁证的签发信息。 准迁证是户口迁移流程中的重要证件，由迁入地公安机关签发。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

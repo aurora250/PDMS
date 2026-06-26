@@ -8,9 +8,7 @@ import lombok.Data;
 /**
  * 登录请求 DTO。
  *
- * <p>
- * 包含用户名和密码两个必填字段，用于身份认证。
- * </p>
+ * <p>包含用户名和密码两个必填字段，用于身份认证。
  */
 @Data
 public class LoginRequest implements Serializable {

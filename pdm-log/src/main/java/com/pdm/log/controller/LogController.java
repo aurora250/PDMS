@@ -23,27 +23,41 @@ public class LogController {
 
     @GetMapping("/audit")
     public Result<PageResult<AuditLog>> searchAuditLogs(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime,
-            @RequestParam(required = false) String operatorUuid, @RequestParam(required = false) String operationType,
-            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int size) {
-        return Result.success(logService.searchAuditLogs(startTime, endTime, operatorUuid, operationType, page, size));
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime startTime,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime endTime,
+            @RequestParam(required = false) String operatorUuid,
+            @RequestParam(required = false) String operationType,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return Result.success(
+                logService.searchAuditLogs(
+                        startTime, endTime, operatorUuid, operationType, page, size));
     }
 
     @GetMapping("/login")
-    public Result<PageResult<LoginLog>> searchLoginLogs(@RequestParam(required = false) String userUuid,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime,
-            @RequestParam(required = false) Integer isSuccess, @RequestParam(defaultValue = "1") int page,
+    public Result<PageResult<LoginLog>> searchLoginLogs(
+            @RequestParam(required = false) String userUuid,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime startTime,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime endTime,
+            @RequestParam(required = false) Integer isSuccess,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return Result.success(logService.searchLoginLogs(userUuid, startTime, endTime, isSuccess, page, size));
+        return Result.success(
+                logService.searchLoginLogs(userUuid, startTime, endTime, isSuccess, page, size));
     }
 
     @GetMapping("/export")
     public void exportAuditLogs(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime,
-            @RequestParam(required = false) String operatorUuid, @RequestParam(required = false) String operationType,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime startTime,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                    LocalDateTime endTime,
+            @RequestParam(required = false) String operatorUuid,
+            @RequestParam(required = false) String operationType,
             HttpServletResponse response) {
         logService.exportAuditLogs(startTime, endTime, operatorUuid, operationType, response);
     }

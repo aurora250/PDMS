@@ -31,7 +31,8 @@ class IdCardValidatorTest {
 
     @ParameterizedTest
     @NullAndEmptySource
-    @ValueSource(strings = { "12345", "11010119900307663", "11010119900307663XA", "abcdefghijklmnopqr" })
+    @ValueSource(
+            strings = {"12345", "11010119900307663", "11010119900307663XA", "abcdefghijklmnopqr"})
     @DisplayName("非法身份证号应校验失败")
     void shouldFailInvalidIdCard(String idCardNo) {
         assertFalse(IdCardValidator.isValid(idCardNo));
@@ -49,14 +50,16 @@ class IdCardValidatorTest {
     @DisplayName("自动提取出生日期")
     void shouldExtractBirthDate() {
         assertEquals(LocalDate.of(1990, 3, 7), IdCardValidator.extractBirthDate(VALID_MALE_1990));
-        assertEquals(LocalDate.of(1995, 12, 12), IdCardValidator.extractBirthDate(VALID_FEMALE_1995));
+        assertEquals(
+                LocalDate.of(1995, 12, 12), IdCardValidator.extractBirthDate(VALID_FEMALE_1995));
         assertEquals(LocalDate.of(1988, 7, 2), IdCardValidator.extractBirthDate(VALID_FEMALE_1988));
     }
 
     @Test
     @DisplayName("非法号码提取出生日期应抛异常")
     void shouldThrowOnInvalidForBirthDate() {
-        assertThrows(IllegalArgumentException.class, () -> IdCardValidator.extractBirthDate("12345"));
+        assertThrows(
+                IllegalArgumentException.class, () -> IdCardValidator.extractBirthDate("12345"));
     }
 
     @Test

@@ -32,14 +32,18 @@ public class MissingpersonController {
     }
 
     @PostMapping("/recovery")
-    public Result<MissingPersonRecovery> recordRecovery(@RequestBody MissingPersonRecovery recovery) {
+    public Result<MissingPersonRecovery> recordRecovery(
+            @RequestBody MissingPersonRecovery recovery) {
         return Result.success(missingpersonService.recordRecovery(recovery));
     }
 
     @GetMapping("/search")
-    public Result<PageResult<MissingPerson>> search(@RequestParam(required = false) String residentUuid,
-            @RequestParam(required = false) String status, @RequestParam(required = false) String name,
-            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int size) {
+    public Result<PageResult<MissingPerson>> search(
+            @RequestParam(required = false) String residentUuid,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String name,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
         PageRequest pageRequest = new PageRequest(page, size, null, "DESC");
         return Result.success(missingpersonService.search(residentUuid, status, name, pageRequest));
     }

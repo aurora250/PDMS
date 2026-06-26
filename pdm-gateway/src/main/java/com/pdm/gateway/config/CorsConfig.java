@@ -11,9 +11,7 @@ import java.util.List;
 /**
  * 跨域配置类（Reactive）。
  *
- * <p>
- * 配置网关层的 CORS（跨域资源共享）策略，允许所有来源的请求， 支持常用 HTTP 方法，允许携带凭据以支持 JWT 认证。
- * </p>
+ * <p>配置网关层的 CORS（跨域资源共享）策略，允许所有来源的请求， 支持常用 HTTP 方法，允许携带凭据以支持 JWT 认证。
  */
 @Configuration
 public class CorsConfig {
@@ -21,10 +19,8 @@ public class CorsConfig {
     /**
      * 创建 CORS Web 过滤器 Bean。
      *
-     * <p>
-     * 允许所有来源、常见 HTTP 方法（GET/POST/PUT/DELETE/OPTIONS）、所有请求头， 支持携带
-     * Cookie/Authorization 凭据，预检请求缓存 3600 秒。
-     * </p>
+     * <p>允许所有来源、常见 HTTP 方法（GET/POST/PUT/DELETE/OPTIONS）、所有请求头， 支持携带 Cookie/Authorization 凭据，预检请求缓存
+     * 3600 秒。
      *
      * @return CorsWebFilter 实例
      */

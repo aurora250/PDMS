@@ -14,12 +14,26 @@ public interface LogService {
 
     void recordLoginLog(LoginLog loginLog);
 
-    PageResult<AuditLog> searchAuditLogs(LocalDateTime startTime, LocalDateTime endTime, String operatorUuid,
-            String operationType, int page, int size);
+    PageResult<AuditLog> searchAuditLogs(
+            LocalDateTime startTime,
+            LocalDateTime endTime,
+            String operatorUuid,
+            String operationType,
+            int page,
+            int size);
 
-    PageResult<LoginLog> searchLoginLogs(String userUuid, LocalDateTime startTime, LocalDateTime endTime,
-            Integer isSuccess, int page, int size);
+    PageResult<LoginLog> searchLoginLogs(
+            String userUuid,
+            LocalDateTime startTime,
+            LocalDateTime endTime,
+            Integer isSuccess,
+            int page,
+            int size);
 
-    void exportAuditLogs(LocalDateTime startTime, LocalDateTime endTime, String operatorUuid, String operationType,
+    void exportAuditLogs(
+            LocalDateTime startTime,
+            LocalDateTime endTime,
+            String operatorUuid,
+            String operationType,
             HttpServletResponse response);
 }

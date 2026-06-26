@@ -73,7 +73,8 @@ public class MissingpersonServiceImpl implements MissingpersonService {
     }
 
     @Override
-    public PageResult<MissingPerson> search(String residentUuid, String status, String name, PageRequest pageRequest) {
+    public PageResult<MissingPerson> search(
+            String residentUuid, String status, String name, PageRequest pageRequest) {
         LambdaQueryWrapper<MissingPerson> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(residentUuid)) {
             wrapper.eq(MissingPerson::getResidentUuid, residentUuid);
@@ -86,7 +87,11 @@ public class MissingpersonServiceImpl implements MissingpersonService {
         IPage<MissingPerson> page = new Page<>(pageRequest.getPage(), pageRequest.getSize());
         IPage<MissingPerson> result = missingPersonMapper.selectPage(page, wrapper);
 
-        return PageResult.of(result.getRecords(), result.getTotal(), (int) result.getCurrent(), (int) result.getSize());
+        return PageResult.of(
+                result.getRecords(),
+                result.getTotal(),
+                (int) result.getCurrent(),
+                (int) result.getSize());
     }
 
     @Override
@@ -96,12 +101,16 @@ public class MissingpersonServiceImpl implements MissingpersonService {
         long totalCount = missingPersonMapper.selectCount(null);
         stats.put("totalCount", totalCount);
 
-        long missingCount = missingPersonMapper
-                .selectCount(new LambdaQueryWrapper<MissingPerson>().eq(MissingPerson::getStatus, "失踪中"));
+        long missingCount =
+                missingPersonMapper.selectCount(
+                        new LambdaQueryWrapper<MissingPerson>()
+                                .eq(MissingPerson::getStatus, "失踪中"));
         stats.put("missingCount", missingCount);
 
-        long recoveredCount = missingPersonMapper
-                .selectCount(new LambdaQueryWrapper<MissingPerson>().eq(MissingPerson::getStatus, "已经寻回"));
+        long recoveredCount =
+                missingPersonMapper.selectCount(
+                        new LambdaQueryWrapper<MissingPerson>()
+                                .eq(MissingPerson::getStatus, "已经寻回"));
         stats.put("recoveredCount", recoveredCount);
 
         Map<String, Long> byGender = new HashMap<>();

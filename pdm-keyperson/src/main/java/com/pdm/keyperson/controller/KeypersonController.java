@@ -27,7 +27,8 @@ public class KeypersonController {
     }
 
     @PutMapping("/{uuid}")
-    public Result<KeyPerson> updateControlLevel(@PathVariable String uuid, @RequestBody Map<String, String> body) {
+    public Result<KeyPerson> updateControlLevel(
+            @PathVariable String uuid, @RequestBody Map<String, String> body) {
         return Result.success(keypersonService.updateControlLevel(uuid, body.get("controlLevel")));
     }
 
@@ -48,7 +49,8 @@ public class KeypersonController {
     }
 
     @PutMapping("/visit-plan/{id}")
-    public Result<VisitPlan> completeVisit(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+    public Result<VisitPlan> completeVisit(
+            @PathVariable Long id, @RequestBody Map<String, Object> body) {
         LocalDate actualDate = LocalDate.parse((String) body.get("actualDate"));
         PetitionRecord petitionRecord = null;
         if (body.get("petitionRecord") != null) {

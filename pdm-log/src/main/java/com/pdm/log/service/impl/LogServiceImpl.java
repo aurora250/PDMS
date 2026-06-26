@@ -47,8 +47,13 @@ public class LogServiceImpl implements LogService {
     }
 
     @Override
-    public PageResult<AuditLog> searchAuditLogs(LocalDateTime startTime, LocalDateTime endTime, String operatorUuid,
-            String operationType, int page, int size) {
+    public PageResult<AuditLog> searchAuditLogs(
+            LocalDateTime startTime,
+            LocalDateTime endTime,
+            String operatorUuid,
+            String operationType,
+            int page,
+            int size) {
         LambdaQueryWrapper<AuditLog> wrapper = new LambdaQueryWrapper<>();
         if (startTime != null) {
             wrapper.ge(AuditLog::getOperationTime, startTime);
@@ -65,12 +70,21 @@ public class LogServiceImpl implements LogService {
         wrapper.orderByDesc(AuditLog::getOperationTime);
 
         IPage<AuditLog> result = auditLogMapper.selectPage(new Page<>(page, size), wrapper);
-        return PageResult.of(result.getRecords(), result.getTotal(), (int) result.getCurrent(), (int) result.getSize());
+        return PageResult.of(
+                result.getRecords(),
+                result.getTotal(),
+                (int) result.getCurrent(),
+                (int) result.getSize());
     }
 
     @Override
-    public PageResult<LoginLog> searchLoginLogs(String userUuid, LocalDateTime startTime, LocalDateTime endTime,
-            Integer isSuccess, int page, int size) {
+    public PageResult<LoginLog> searchLoginLogs(
+            String userUuid,
+            LocalDateTime startTime,
+            LocalDateTime endTime,
+            Integer isSuccess,
+            int page,
+            int size) {
         LambdaQueryWrapper<LoginLog> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(userUuid)) {
             wrapper.eq(LoginLog::getUserUuid, userUuid);
@@ -87,12 +101,20 @@ public class LogServiceImpl implements LogService {
         wrapper.orderByDesc(LoginLog::getLoginTime);
 
         IPage<LoginLog> result = loginLogMapper.selectPage(new Page<>(page, size), wrapper);
-        return PageResult.of(result.getRecords(), result.getTotal(), (int) result.getCurrent(), (int) result.getSize());
+        return PageResult.of(
+                result.getRecords(),
+                result.getTotal(),
+                (int) result.getCurrent(),
+                (int) result.getSize());
     }
 
     @Override
-    public void exportAuditLogs(LocalDateTime startTime, LocalDateTime endTime, String operatorUuid,
-            String operationType, HttpServletResponse response) {
+    public void exportAuditLogs(
+            LocalDateTime startTime,
+            LocalDateTime endTime,
+            String operatorUuid,
+            String operationType,
+            HttpServletResponse response) {
         LambdaQueryWrapper<AuditLog> wrapper = new LambdaQueryWrapper<>();
         if (startTime != null) {
             wrapper.ge(AuditLog::getOperationTime, startTime);
@@ -110,8 +132,10 @@ public class LogServiceImpl implements LogService {
 
         List<AuditLog> logs = auditLogMapper.selectList(wrapper);
 
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition",
+        response.setContentType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setHeader(
+                "Content-Disposition",
                 "attachment; filename=audit_logs_" + System.currentTimeMillis() + ".xlsx");
 
         try {
@@ -120,9 +144,18 @@ public class LogServiceImpl implements LogService {
             StringBuilder sb = new StringBuilder();
             sb.append("操作人,操作时间,IP地址,操作类型,目标类型,目标ID\n");
             for (AuditLog log : logs) {
-                sb.append(log.getOperatorUuid()).append(",").append(log.getOperationTime()).append(",")
-                        .append(log.getIpAddress()).append(",").append(log.getOperationType()).append(",")
-                        .append(log.getTargetType()).append(",").append(log.getTargetId()).append("\n");
+                sb.append(log.getOperatorUuid())
+                        .append(",")
+                        .append(log.getOperationTime())
+                        .append(",")
+                        .append(log.getIpAddress())
+                        .append(",")
+                        .append(log.getOperationType())
+                        .append(",")
+                        .append(log.getTargetType())
+                        .append(",")
+                        .append(log.getTargetId())
+                        .append("\n");
             }
             response.getWriter().write(sb.toString());
             response.getWriter().flush();
