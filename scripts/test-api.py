@@ -24,6 +24,13 @@ REFRESH_TOKEN = ""
 USER_UUID = ""
 TEST_TAG = str(uuid.uuid4())[:12]
 
+def new_uuid() -> str:
+    """Generate a valid UUID string for PostgreSQL UUID type"""
+    return str(uuid.uuid4())
+
+RESIDENT_UUID = new_uuid()
+SPOUSE_UUID = new_uuid()
+
 def generate_valid_id_card(area: str = "110101", birth: str = "19900101") -> str:
     """生成通过 GB 11643-1999 校验的合法身份证号"""
     import random
@@ -62,7 +69,7 @@ def _req(method: str, path: str, body: Any = None, headers: dict = None) -> tupl
     else:
         url = f"{BASE_URL}{path}"
 
-    data = json.dumps(body).encode("utf-8") if body else None
+    data = json.dumps(body).encode("utf-8") if body is not None else None
 
     hdrs = {"Content-Type": "application/json"}
     if TOKEN:
@@ -122,7 +129,7 @@ def test(name: str, method: str, path: str, body: Any = None,
         print(f"  ⬜ SKIP  {method:6s} {path}")
         return None
 
-    if body:
+    if body is not None:
         code, resp = _req(method, path, body)
     else:
         code, resp = _req(method, path)
@@ -219,9 +226,9 @@ if REFRESH_TOKEN:
     code2, resp2 = post("/api/auth/refresh", {"refreshToken": REFRESH_TOKEN})
     if code2 == 200 and resp2.get("data", {}).get("accessToken"):
         TOKEN = resp2["data"]["accessToken"]
-        test("刷新Token", "POST", "/api/auth/refresh", want_code=200)
+        test("刷新Token", "POST", "/api/auth/refresh", {"refreshToken": REFRESH_TOKEN}, want_code=200)
     else:
-        test("刷新Token", "POST", "/api/auth/refresh", want_code=200)
+        test("刷新Token", "POST", "/api/auth/refresh", {"refreshToken": REFRESH_TOKEN}, want_code=200)
 
 # 1.3 修改密码（弱密码应被正确拒绝，业务码 2010=密码强度不足）
 code3, resp3 = put("/api/auth/change-password",
@@ -264,7 +271,7 @@ print("\n── 1.8-1.12 民警管理 ──")
 police_no = f"P-{TEST_TAG}"
 test("新增民警", "POST", "/api/auth/police",
      {"policeNumber": police_no, "userUuid": "",
-      "residentUuid": "R00000000000000000001",
+      "residentUuid": "00000000-0000-0000-0000-000000000001",
       "policeStation": "测试派出所", "jurisdiction": "测试辖区",
       "areaId": None, "department": "治安大队",
       "policeRank": "警司", "dutyStatus": "在岗"})
@@ -293,6 +300,11 @@ test("修改用户信息", "PUT", f"/api/auth/users/{USER_UUID}",
 test("修改用户状态", "PUT", f"/api/auth/users/{USER_UUID}/status",
      {"status": "有效"})
 
+# 恢复管理员角色，避免后续 403
+test("恢复管理员角色", "PUT", f"/api/auth/users/{USER_UUID}",
+     {"phone": "13800138000", "email": "test@example.com",
+      "userRole": "系统管理员", "permissionGroupId": 1})
+
 # 1.18 登出
 print("\n── 1.18 登出 ──")
 test("用户登出", "POST", "/api/auth/logout", {})
@@ -308,7 +320,7 @@ if resp.get("code") == 200:
 
 section("模块 2/8: pdm-resident — 常住人口管理")
 
-resident_uuid = f"test-resident-{TEST_TAG}"
+resident_uuid = RESIDENT_UUID
 id_card = RESIDENT_IDCARD
 
 # 2.1 新增常住人口
@@ -343,7 +355,7 @@ test("多条件搜索人口", "POST", "/api/resident/search",
 
 # 2.5-2.6 家庭关系
 print("\n── 2.5-2.6 家庭关系 ──")
-spouse_uuid = f"test-spouse-{TEST_TAG}"
+spouse_uuid = SPOUSE_UUID
 spouse_card = SPOUSE_IDCARD
 
 # 创建配偶
@@ -359,12 +371,12 @@ test("创建配偶(前置)", "POST", "/api/resident",
       "householdAddress": "北京市东城区测试路1号",
       "householdAreaId": None})
 
-test("查询人口家庭关系", "GET", f"/api/resident/{resident_uuid}/relations")
-
 test("添加人口家庭关系", "POST", f"/api/resident/{resident_uuid}/relations",
      {"relationPersonUuid": resident_uuid,
       "fatherUuid": "", "motherUuid": "",
       "spouseUuid": spouse_uuid})
+
+test("查询人口家庭关系", "GET", f"/api/resident/{resident_uuid}/relations")
 
 # 2.7-2.8 变更申请
 print("\n── 2.7-2.8 信息变更申请 ──")
@@ -470,7 +482,7 @@ test("申领迁移证", "POST", "/api/household/migration-permit",
 
 section("模块 4/8: pdm-keyperson — 重点人员管理")
 
-kp_uuid = f"test-keyperson-{TEST_TAG}"
+kp_uuid = new_uuid()
 
 # 4.1 新增重点人员
 print("\n── 4.1-4.3 重点人员 CRUD ──")
@@ -523,7 +535,7 @@ test("撤销重点人员管控", "DELETE", f"/api/keyperson/{kp_uuid}")
 
 section("模块 5/8: pdm-floating-population — 流动人口管理")
 
-fp_uuid = f"test-fp-{TEST_TAG}"
+fp_uuid = new_uuid()
 
 # 5.1-5.3 流动人口登记
 print("\n── 5.1-5.3 流动人口登记 ──")

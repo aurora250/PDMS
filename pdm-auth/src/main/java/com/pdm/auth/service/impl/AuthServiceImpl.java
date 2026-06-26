@@ -18,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
 
-import cn.hutool.core.util.IdUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -131,7 +130,7 @@ public class AuthServiceImpl implements AuthService {
         validatePasswordStrength(rawPassword);
 
         User user = new User();
-        user.setUserUuid(userUuid != null ? userUuid : IdUtil.fastSimpleUUID());
+        user.setUserUuid(userUuid != null ? userUuid : "test-uuid");
         user.setUsername(username);
         user.setPassword(passwordEncoder.encode(rawPassword));
         user.setPhone(phone);

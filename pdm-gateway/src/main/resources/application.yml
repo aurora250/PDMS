@@ -35,48 +35,96 @@ spring:
             - Path=/api/auth/**
           filters:
             - StripPrefix=0
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter:
+                  replenishRate: 50
+                  burstCapacity: 100
+                  requestedTokens: 1
         - id: pdm-resident
           uri: lb://pdm-resident
           predicates:
             - Path=/api/resident/**
           filters:
             - StripPrefix=0
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter:
+                  replenishRate: 200
+                  burstCapacity: 400
+                  requestedTokens: 1
         - id: pdm-household
           uri: lb://pdm-household
           predicates:
             - Path=/api/household/**,/api/area/**
           filters:
             - StripPrefix=0
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter:
+                  replenishRate: 50
+                  burstCapacity: 100
+                  requestedTokens: 1
         - id: pdm-keyperson
           uri: lb://pdm-keyperson
           predicates:
             - Path=/api/keyperson/**
           filters:
             - StripPrefix=0
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter:
+                  replenishRate: 50
+                  burstCapacity: 100
+                  requestedTokens: 1
         - id: pdm-floating-population
           uri: lb://pdm-floating-population
           predicates:
             - Path=/api/fp/**
           filters:
             - StripPrefix=0
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter:
+                  replenishRate: 100
+                  burstCapacity: 200
+                  requestedTokens: 1
         - id: pdm-missingperson
           uri: lb://pdm-missingperson
           predicates:
             - Path=/api/missing/**
           filters:
             - StripPrefix=0
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter:
+                  replenishRate: 30
+                  burstCapacity: 60
+                  requestedTokens: 1
         - id: pdm-log
           uri: lb://pdm-log
           predicates:
             - Path=/api/log/**
           filters:
             - StripPrefix=0
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter:
+                  replenishRate: 50
+                  burstCapacity: 100
+                  requestedTokens: 1
         - id: pdm-notification
           uri: lb://pdm-notification
           predicates:
             - Path=/api/alert/**
           filters:
             - StripPrefix=0
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter:
+                  replenishRate: 50
+                  burstCapacity: 100
+                  requestedTokens: 1
 
 jwt:
   secret: YTk5ZjY3ZDIxMzQ1NmY4OTBiMTIzNDU2Nzg5MGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6

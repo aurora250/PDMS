@@ -1,6 +1,13 @@
--- Shared schema tables for shard databases (PostgreSQL 16+)
--- (Resident and related tables; system tables stay in pdm_db)
+-- ============================================================
+-- PDM 分片数据库共享表结构 (PostgreSQL 16+)
+-- 应用于: pdm_shard_0, pdm_shard_1, pdm_shard_2, pdm_shard_3
+-- 优化: VARCHAR(36)原生类型, TEXT, 分区索引
+-- ============================================================
 
+
+-- ============================================================
+-- 1. 户籍人员表 (分片键: uuid)
+-- ============================================================
 CREATE TABLE IF NOT EXISTS resident (
     id BIGSERIAL PRIMARY KEY,
     uuid VARCHAR(36) NOT NULL,
@@ -31,8 +38,13 @@ CREATE TABLE IF NOT EXISTS resident (
 CREATE INDEX IF NOT EXISTS idx_resident_name ON resident (name);
 CREATE INDEX IF NOT EXISTS idx_resident_create_time ON resident (create_time);
 CREATE INDEX IF NOT EXISTS idx_resident_household_area_id ON resident (household_area_id);
+CREATE INDEX IF NOT EXISTS idx_resident_gender ON resident (gender);
+CREATE INDEX IF NOT EXISTS idx_resident_nation ON resident (nation);
 COMMENT ON TABLE resident IS '户籍人员表';
 
+-- ============================================================
+-- 2. 人员关系表 (分片键: relation_person_uuid)
+-- ============================================================
 CREATE TABLE IF NOT EXISTS resident_relation (
     rid BIGSERIAL PRIMARY KEY,
     relation_person_uuid VARCHAR(36) NOT NULL,
@@ -46,6 +58,9 @@ CREATE TABLE IF NOT EXISTS resident_relation (
 );
 COMMENT ON TABLE resident_relation IS '人员关系表';
 
+-- ============================================================
+-- 3. 户籍人员信息变更请求表 (分片键: applicant_uuid)
+-- ============================================================
 CREATE TABLE IF NOT EXISTS resident_change_request (
     rid BIGSERIAL PRIMARY KEY,
     applicant_uuid VARCHAR(36) NOT NULL,
@@ -59,8 +74,13 @@ CREATE TABLE IF NOT EXISTS resident_change_request (
     update_time TIMESTAMP,
     is_deleted SMALLINT NOT NULL DEFAULT 0
 );
+CREATE INDEX IF NOT EXISTS idx_change_request_applicant ON resident_change_request (applicant_uuid);
+CREATE INDEX IF NOT EXISTS idx_change_request_status ON resident_change_request (status);
 COMMENT ON TABLE resident_change_request IS '户籍人员信息变更请求表';
 
+-- ============================================================
+-- 4. 居住证表 (分片键: uuid)
+-- ============================================================
 CREATE TABLE IF NOT EXISTS resident_permit (
     id BIGSERIAL PRIMARY KEY,
     permit_no VARCHAR(36) NOT NULL,
@@ -74,8 +94,12 @@ CREATE TABLE IF NOT EXISTS resident_permit (
     CONSTRAINT uk_permit_no UNIQUE (permit_no)
 );
 CREATE INDEX IF NOT EXISTS idx_resident_permit_uuid ON resident_permit (uuid);
+CREATE INDEX IF NOT EXISTS idx_resident_permit_expiry ON resident_permit (expiry_date, status);
 COMMENT ON TABLE resident_permit IS '居住证表';
 
+-- ============================================================
+-- 5. 居住地登记表 (分片键: uuid)
+-- ============================================================
 CREATE TABLE IF NOT EXISTS resident_registration (
     rid BIGSERIAL PRIMARY KEY,
     uuid VARCHAR(36) NOT NULL,
@@ -93,8 +117,12 @@ CREATE TABLE IF NOT EXISTS resident_registration (
     is_deleted SMALLINT NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_resident_registration_uuid ON resident_registration (uuid);
+CREATE INDEX IF NOT EXISTS idx_resident_registration_area ON resident_registration (area_id);
 COMMENT ON TABLE resident_registration IS '居住地登记表';
 
+-- ============================================================
+-- 6. 流动人口登记表 (分片键: uuid)
+-- ============================================================
 CREATE TABLE IF NOT EXISTS fp_register_record (
     rid BIGSERIAL PRIMARY KEY,
     residence_permit_no VARCHAR(36),
@@ -109,8 +137,13 @@ CREATE TABLE IF NOT EXISTS fp_register_record (
     update_time TIMESTAMP,
     is_deleted SMALLINT NOT NULL DEFAULT 0
 );
+CREATE INDEX IF NOT EXISTS idx_fp_uuid ON fp_register_record (uuid);
+CREATE INDEX IF NOT EXISTS idx_fp_register_date ON fp_register_record (register_date);
 COMMENT ON TABLE fp_register_record IS '流动人口登记表';
 
+-- ============================================================
+-- 7. 重点人员表 (分片键: uuid)
+-- ============================================================
 CREATE TABLE IF NOT EXISTS key_person (
     id BIGSERIAL PRIMARY KEY,
     uuid VARCHAR(36) NOT NULL,
@@ -124,4 +157,40 @@ CREATE TABLE IF NOT EXISTS key_person (
     is_deleted SMALLINT NOT NULL DEFAULT 0,
     CONSTRAINT uk_key_person_uuid UNIQUE (uuid)
 );
+CREATE INDEX IF NOT EXISTS idx_kp_control_level ON key_person (control_level);
+CREATE INDEX IF NOT EXISTS idx_kp_police ON key_person (responsible_police_no);
+CREATE INDEX IF NOT EXISTS idx_kp_control_type ON key_person (control_type);
 COMMENT ON TABLE key_person IS '重点人员表';
+
+-- ============================================================
+-- 广播表
+-- ============================================================
+
+-- 区域表 (广播到所有分片)
+CREATE TABLE IF NOT EXISTS area (
+    area_id BIGSERIAL PRIMARY KEY,
+    area_code VARCHAR(12) NOT NULL,
+    area_name VARCHAR(100) NOT NULL,
+    parent_id BIGINT,
+    area_level VARCHAR(10) NOT NULL CHECK (area_level IN ('省','市','区县','街道','社区')),
+    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP,
+    is_deleted SMALLINT NOT NULL DEFAULT 0,
+    CONSTRAINT uk_area_code UNIQUE (area_code)
+);
+CREATE INDEX IF NOT EXISTS idx_area_parent_id ON area (parent_id);
+CREATE INDEX IF NOT EXISTS idx_area_level ON area (area_level);
+COMMENT ON TABLE area IS '区域表(广播)';
+
+-- 权限组表 (广播到所有分片)
+CREATE TABLE IF NOT EXISTS permission_group (
+    group_id BIGSERIAL PRIMARY KEY,
+    group_name VARCHAR(50) NOT NULL,
+    description VARCHAR(200),
+    permissions TEXT,
+    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP,
+    is_deleted SMALLINT NOT NULL DEFAULT 0,
+    CONSTRAINT uk_group_name UNIQUE (group_name)
+);
+COMMENT ON TABLE permission_group IS '权限组表(广播)';

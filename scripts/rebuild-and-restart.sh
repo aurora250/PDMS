@@ -53,7 +53,7 @@ echo "============================================================"
 
 # 等待关键服务
 sleep 5
-for svc in pdm-postgresql pdm-redis pdm-elasticsearch pdm-nacos; do
+for svc in pdm-postgresql pdm-pgbouncer pdm-redis pdm-elasticsearch pdm-nacos; do
     if docker ps --format '{{.Names}}' | grep -q "$svc"; then
         echo "  [OK] $svc 运行中"
     else
@@ -64,5 +64,10 @@ done
 echo ""
 echo "============================================================"
 echo " 所有操作完成!"
-echo " Gateway: http://localhost:8080"
+echo ""
+echo " 服务地址:"
+echo "   Gateway:   http://localhost:8080"
+echo "   PG:        localhost:15432"
+echo "   PgBouncer: localhost:6432"
+echo "   Redis:     localhost:16379"
 echo "============================================================"

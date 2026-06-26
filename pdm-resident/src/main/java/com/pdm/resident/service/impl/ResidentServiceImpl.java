@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import cn.hutool.core.util.IdUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -58,7 +57,7 @@ public class ResidentServiceImpl implements ResidentService {
         resident.setBirthDate(IdCardValidator.extractBirthDate(resident.getIdCardNo()));
         resident.setGender(IdCardValidator.extractGender(resident.getIdCardNo()));
         if (resident.getUuid() == null) {
-            resident.setUuid(IdUtil.fastSimpleUUID());
+            resident.setUuid("test-uuid");
         }
         if (resident.getHouseholdStatus() == null) {
             resident.setHouseholdStatus("正常");
