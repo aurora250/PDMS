@@ -19,6 +19,18 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 @EnableWebFluxSecurity
 public class GatewaySecurityConfig {
 
+    /**
+     * 配置响应式安全过滤器链。
+     *
+     * <p>
+     * 禁用 CSRF 防护（JWT 无状态架构不需要）、放行所有请求经过网关层、 关闭表单登录和 HTTP Basic 认证，Token 校验交由
+     * {@link com.pdm.gateway.filter.AuthGlobalFilter} 统一处理。
+     * </p>
+     *
+     * @param http
+     *            ServerHttpSecurity 配置对象
+     * @return 构建好的 SecurityWebFilterChain
+     */
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
         http
