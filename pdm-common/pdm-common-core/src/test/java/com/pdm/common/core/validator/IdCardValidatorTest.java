@@ -72,4 +72,57 @@ class IdCardValidatorTest {
         assertTrue(IdCardValidator.isValid(VALID_MALE_X));
         assertTrue(IdCardValidator.isValid(VALID_MALE_X.toLowerCase()));
     }
+
+    @Test
+    @DisplayName("非法地区码应校验失败 - GB/T 2260-2007")
+    void shouldFailInvalidAreaCode() {
+        // 999999开头的地区码不存在
+        assertFalse(IdCardValidator.isValid("99999919900307663X"));
+        // 000000非法地区码
+        assertFalse(IdCardValidator.isValid("00000019900307663X"));
+        // 123456不在标准地区码列表中
+        assertFalse(IdCardValidator.isValid("12345619900307663X"));
+    }
+
+    @Test
+    @DisplayName("提取地区码")
+    void shouldExtractAreaCode() {
+        assertEquals("110101", IdCardValidator.extractAreaCode(VALID_MALE_1990));
+        assertEquals("440305", IdCardValidator.extractAreaCode(VALID_FEMALE_1995));
+        assertEquals("320102", IdCardValidator.extractAreaCode(VALID_FEMALE_1988));
+    }
+
+    @Test
+    @DisplayName("验证地区码有效性")
+    void shouldValidateAreaCode() {
+        assertTrue(IdCardValidator.isValidAreaCode("110000")); // 北京市
+        assertTrue(IdCardValidator.isValidAreaCode("110101")); // 北京市东城区
+        assertTrue(IdCardValidator.isValidAreaCode("320100")); // 江苏省南京市
+        assertFalse(IdCardValidator.isValidAreaCode("999999")); // 不存在
+        assertFalse(IdCardValidator.isValidAreaCode("000000")); // 非法
+        assertFalse(IdCardValidator.isValidAreaCode(null));
+    }
+
+    @Test
+    @DisplayName("未来出生日期应校验失败")
+    void shouldFailFutureBirthDate() {
+        // 出生日期为未来（2099年）
+        assertFalse(IdCardValidator.isValid("110101209901010019"));
+    }
+
+    @Test
+    @DisplayName("过早出生日期应校验失败")
+    void shouldFailTooOldBirthDate() {
+        // 出生日期早于1900年
+        assertFalse(IdCardValidator.isValid("110101189001010013"));
+    }
+
+    @Test
+    @DisplayName("非法日期格式应校验失败")
+    void shouldFailInvalidDateFormat() {
+        // 13月份（非法）
+        assertFalse(IdCardValidator.isValid("110101199013010010"));
+        // 32号（非法）
+        assertFalse(IdCardValidator.isValid("110101199001320018"));
+    }
 }
