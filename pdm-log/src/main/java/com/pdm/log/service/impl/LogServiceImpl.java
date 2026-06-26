@@ -21,9 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * 日志服务实现类
  * 实现LogService接口，提供审计日志、登录日志的记录、查询、导出等功能
- *
- * @author 开发者
- * @since 1.0.0
  */
 @Slf4j
 @Service

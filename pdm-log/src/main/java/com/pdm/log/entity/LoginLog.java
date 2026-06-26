@@ -12,9 +12,6 @@ import lombok.EqualsAndHashCode;
 /**
  * 登录日志实体类
  * 对应数据库表login_log，存储用户登录相关信息
- *
- * @author 开发者
- * @since 1.0.0
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

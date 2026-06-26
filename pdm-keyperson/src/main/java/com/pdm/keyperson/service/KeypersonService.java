@@ -10,9 +10,6 @@ import java.util.Map;
 /**
  * 重点人员业务服务接口
  * 定义重点人员全生命周期管理、走访计划、信访记录等核心业务方法
- *
- * @author 开发者
- * @since 1.0.0
  */
 public interface KeypersonService {
 

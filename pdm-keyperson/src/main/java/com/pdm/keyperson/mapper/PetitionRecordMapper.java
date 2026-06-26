@@ -8,8 +8,6 @@ import org.apache.ibatis.annotations.Mapper;
  * 信访记录Mapper接口
  * 基于MyBatis-Plus实现信访记录表（petition_record）的CRUD操作
  *
- * @author 开发者
- * @since 1.0.0
  */
 @Mapper
 public interface PetitionRecordMapper extends BaseMapper<PetitionRecord> {

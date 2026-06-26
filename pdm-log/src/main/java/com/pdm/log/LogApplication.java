@@ -8,9 +8,6 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 /**
  * 日志服务启动类
  * 启动SpringBoot应用，开启服务发现、MyBatis Mapper扫描等功能
- *
- * @author 开发者
- * @since 1.0.0
  */
 @SpringBootApplication(scanBasePackages = { "com.pdm.log", "com.pdm.common" })
 @EnableDiscoveryClient

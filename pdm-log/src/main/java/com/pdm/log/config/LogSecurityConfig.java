@@ -14,9 +14,6 @@ import lombok.RequiredArgsConstructor;
 /**
  * 日志模块安全配置类
  * 配置JWT认证、CSRF防护、会话管理等安全规则
- *
- * @author 开发者
- * @since 1.0.0
  */
 @Configuration
 @RequiredArgsConstructor

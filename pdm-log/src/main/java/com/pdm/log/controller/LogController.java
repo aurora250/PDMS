@@ -14,9 +14,6 @@ import lombok.RequiredArgsConstructor;
 /**
  * 日志管理控制器
  * 提供审计日志、登录日志的查询、导出等接口
- *
- * @author 开发者
- * @since 1.0.0
  */
 @RestController
 @RequestMapping("/api/log")

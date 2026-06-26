@@ -8,9 +8,6 @@ import org.springframework.context.annotation.Configuration;
 /**
  * 日志模块Bean配置类
  * 负责初始化JWT相关Bean
- *
- * @author 开发者
- * @since 1.0.0
  */
 @Configuration
 public class LogBeanConfig {

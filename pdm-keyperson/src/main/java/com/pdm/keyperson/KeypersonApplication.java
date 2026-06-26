@@ -8,9 +8,6 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 /**
  * 重点人员管理服务启动类
  * 负责启动SpringBoot应用，开启服务注册发现，扫描MyBatis Mapper接口和指定包下的组件
- *
- * @author 开发者
- * @since 1.0.0
  */
 @SpringBootApplication(scanBasePackages = { "com.pdm.keyperson", "com.pdm.common" })
 @EnableDiscoveryClient

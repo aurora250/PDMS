@@ -12,9 +12,6 @@ import lombok.EqualsAndHashCode;
 /**
  * 审计日志实体类
  * 对应数据库表audit_log，存储系统操作审计相关信息
- *
- * @author 开发者
- * @since 1.0.0
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

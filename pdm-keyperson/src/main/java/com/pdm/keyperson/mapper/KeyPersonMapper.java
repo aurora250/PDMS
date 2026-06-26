@@ -9,9 +9,6 @@ import org.apache.ibatis.annotations.Select;
 /**
  * 重点人员Mapper接口
  * 基于MyBatis-Plus实现重点人员表（key_person）的CRUD操作，扩展自定义查询方法
- *
- * @author 开发者
- * @since 1.0.0
  */
 @Mapper
 public interface KeyPersonMapper extends BaseMapper<KeyPerson> {

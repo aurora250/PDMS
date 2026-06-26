@@ -12,9 +12,6 @@ import lombok.EqualsAndHashCode;
 /**
  * 走访计划实体类
  * 对应数据库表：visit_plan，存储重点人员走访计划信息
- *
- * @author 开发者
- * @since 1.0.0
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

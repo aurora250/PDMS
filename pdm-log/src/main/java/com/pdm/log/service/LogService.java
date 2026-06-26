@@ -9,9 +9,6 @@ import jakarta.servlet.http.HttpServletResponse;
 /**
  * 日志服务接口
  * 定义审计日志、登录日志的记录、查询、导出等核心业务方法
- *
- * @author 开发者
- * @since 1.0.0
  */
 public interface LogService {
 

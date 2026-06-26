@@ -10,9 +10,6 @@ import lombok.EqualsAndHashCode;
 /**
  * 重点人员实体类
  * 对应数据库表：key_person，存储重点人员基础信息和管控状态
- *
- * @author 开发者
- * @since 1.0.0
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

@@ -14,9 +14,6 @@ import lombok.RequiredArgsConstructor;
 /**
  * 重点人员管理控制器
  * 处理重点人员相关HTTP接口请求，包括新增、修改、撤销、查询、走访计划、信访记录等功能
- *
- * @author 开发者
- * @since 1.0.0
  */
 @RestController
 @RequiredArgsConstructor

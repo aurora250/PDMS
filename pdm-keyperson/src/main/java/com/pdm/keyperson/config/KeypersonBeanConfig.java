@@ -8,9 +8,6 @@ import org.springframework.context.annotation.Configuration;
 /**
  * 重点人员服务Bean配置类
  * 配置自定义Bean实例，如JwtTokenProvider
- *
- * @author 开发者
- * @since 1.0.0
  */
 @Configuration
 public class KeypersonBeanConfig {

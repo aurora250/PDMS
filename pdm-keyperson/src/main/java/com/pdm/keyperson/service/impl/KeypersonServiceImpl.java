@@ -21,9 +21,6 @@ import lombok.RequiredArgsConstructor;
 /**
  * 重点人员业务服务实现类
  * 实现KeypersonService接口，处理重点人员核心业务逻辑
- *
- * @author 开发者
- * @since 1.0.0
  */
 @Service
 @RequiredArgsConstructor

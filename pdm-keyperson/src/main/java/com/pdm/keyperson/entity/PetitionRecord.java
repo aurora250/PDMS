@@ -14,9 +14,6 @@ import lombok.EqualsAndHashCode;
 /**
  * 信访记录实体类
  * 对应数据库表：petition_record，存储重点人员信访相关信息
- *
- * @author 开发者
- * @since 1.0.0
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

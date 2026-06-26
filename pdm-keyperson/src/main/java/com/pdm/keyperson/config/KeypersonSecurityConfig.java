@@ -14,9 +14,6 @@ import lombok.RequiredArgsConstructor;
 /**
  * 重点人员服务安全配置类
  * 配置SpringSecurity规则，启用JWT认证过滤，关闭CSRF，设置无状态会话
- *
- * @author 开发者
- * @since 1.0.0
  */
 @Configuration
 @RequiredArgsConstructor

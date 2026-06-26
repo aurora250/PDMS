@@ -12,9 +12,6 @@ import lombok.EqualsAndHashCode;
 /**
  * 告警实体类
  * 对应数据库表：alert，存储重点人员相关告警信息
- *
- * @author 开发者
- * @since 1.0.0
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
