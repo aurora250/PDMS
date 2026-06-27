@@ -101,8 +101,12 @@ public class ResidentServiceImpl implements ResidentService {
             resident.setName(updates.getName());
         if (StringUtils.hasText(updates.getNation()))
             resident.setNation(updates.getNation());
+        if (StringUtils.hasText(updates.getNationCode()))
+            resident.setNationCode(updates.getNationCode());
         if (StringUtils.hasText(updates.getEducationLevel()))
             resident.setEducationLevel(updates.getEducationLevel());
+        if (StringUtils.hasText(updates.getEducationCode()))
+            resident.setEducationCode(updates.getEducationCode());
         if (StringUtils.hasText(updates.getBloodType()))
             resident.setBloodType(updates.getBloodType());
         if (StringUtils.hasText(updates.getMaritalStatus()))

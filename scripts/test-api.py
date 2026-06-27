@@ -357,7 +357,7 @@ test("新增常住人口", "POST", "/api/resident",
      {"uuid": resident_uuid, "name": "测试张三", "formerName": "",
       "gender": "男", "idCardNo": id_card,
       "nation": "汉族", "birthDate": "1990-01-01",
-      "educationLevel": "本科", "bloodType": "A",
+      "educationLevel": "大学本科", "bloodType": "A",
       "maritalStatus": "未婚", "occupation": "工程师",
       "phone": "13800138001", "photo": "",
       "residence": "北京市东城区测试路1号", "areaId": None,
@@ -370,7 +370,7 @@ test("根据UUID查询人口", "GET", f"/api/resident/{resident_uuid}")
 
 # 2.3 修改
 test("修改人口信息", "PUT", f"/api/resident/{resident_uuid}",
-     {"phone": "13900139001", "educationLevel": "硕士研究生",
+     {"phone": "13900139001", "educationLevel": "研究生",
       "occupation": "高级工程师", "residence": "北京市东城区测试路2号"})
 
 # 2.4 多条件搜索
@@ -391,7 +391,7 @@ test("创建配偶(前置)", "POST", "/api/resident",
      {"uuid": spouse_uuid, "name": "测试李四", "formerName": "",
       "gender": "女", "idCardNo": spouse_card,
       "nation": "汉族", "birthDate": "1992-02-02",
-      "educationLevel": "本科", "bloodType": "B",
+      "educationLevel": "大学本科", "bloodType": "B",
       "maritalStatus": "已婚", "occupation": "教师",
       "phone": "13800138002", "photo": "",
       "residence": "北京市东城区测试路1号", "areaId": None,
@@ -411,7 +411,7 @@ print("\n── 2.7-2.8 信息变更申请 ──")
 change_rid = test("提交人口变更申请", "POST", "/api/resident/change-request",
      {"applicantUuid": resident_uuid,
       "changeField": "educationLevel",
-      "originalData": "本科", "modifiedData": "硕士研究生",
+      "originalData": "大学本科", "modifiedData": "研究生",
       "status": "请求"}, extract="data.rid")
 
 if change_rid:

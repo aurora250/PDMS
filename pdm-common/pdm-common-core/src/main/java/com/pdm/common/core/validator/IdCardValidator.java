@@ -14,13 +14,14 @@ import java.util.Set;
 /**
  * 身份证号校验器 - 完全符合 GB 11643-1999 标准
  *
- * <p>标准要求：
+ * <p>
+ * 标准要求：
  * <ul>
- *   <li>1. 18位数字（最后一位可为X）</li>
- *   <li>2. 前6位为有效地区码（必须在GB/T 2260中存在）</li>
- *   <li>3. 第7-14位为出生日期（yyyyMMdd）</li>
- *   <li>4. 第15-17位为顺序码（第17位表示性别）</li>
- *   <li>5. 第18位为校验码（按ISO 7064:1983.MOD 11-2算法计算）</li>
+ * <li>1. 18位数字（最后一位可为X）</li>
+ * <li>2. 前6位为有效地区码（必须在GB/T 2260中存在）</li>
+ * <li>3. 第7-14位为出生日期（yyyyMMdd）</li>
+ * <li>4. 第15-17位为顺序码（第17位表示性别）</li>
+ * <li>5. 第18位为校验码（按ISO 7064:1983.MOD 11-2算法计算）</li>
  * </ul>
  *
  * @see <a href="http://www.stats.gov.cn/">国家标准 GB 11643-1999</a>
@@ -41,7 +42,8 @@ public final class IdCardValidator {
      * 从外部JSON配置文件加载有效地区码
      *
      * @return 不可变的地区码集合
-     * @throws RuntimeException 如果配置文件加载失败
+     * @throws RuntimeException
+     *             如果配置文件加载失败
      */
     private static Set<String> loadValidAreaCodes() {
         try (InputStream is = IdCardValidator.class.getResourceAsStream("/gb-area-codes.json")) {
@@ -61,7 +63,8 @@ public final class IdCardValidator {
     /**
      * 验证身份证号是否有效
      *
-     * @param idCardNo 18位身份证号
+     * @param idCardNo
+     *            18位身份证号
      * @return true 如果身份证号完全符合GB 11643-1999标准
      */
     public static boolean isValid(String idCardNo) {
@@ -112,7 +115,8 @@ public final class IdCardValidator {
     /**
      * 验证地区码是否有效（符合GB/T 2260-2007标准）
      *
-     * @param areaCode 6位地区码
+     * @param areaCode
+     *            6位地区码
      * @return true 如果地区码存在于标准中
      */
     public static boolean isValidAreaCode(String areaCode) {
@@ -122,9 +126,11 @@ public final class IdCardValidator {
     /**
      * 提取身份证号中的地区码（前6位）
      *
-     * @param idCardNo 18位身份证号
+     * @param idCardNo
+     *            18位身份证号
      * @return 6位地区码
-     * @throws IllegalArgumentException 如果身份证号无效
+     * @throws IllegalArgumentException
+     *             如果身份证号无效
      */
     public static String extractAreaCode(String idCardNo) {
         if (!isValid(idCardNo)) {

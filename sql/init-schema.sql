@@ -83,10 +83,10 @@ CREATE TABLE IF NOT EXISTS resident (
     gender VARCHAR(4) NOT NULL CHECK (gender IN ('男','女')),
     id_card_no CHAR(18) NOT NULL,
     nation VARCHAR(20) NOT NULL,
-    nation_code CHAR(2) COMMENT '民族代码 - 符合 GB 3304-1991，01-56为标准民族，97=其他，98=外籍',
+    nation_code CHAR(2),
     birth_date DATE NOT NULL,
     education_level VARCHAR(20) CHECK (education_level IN ('研究生','大学本科','大学专科','中等职业教育','技工学校','高中','初中','小学','文盲或半文盲','未知')),
-    education_code CHAR(2) COMMENT '学历代码 - 符合 GB/T 4658-2006',
+    education_code CHAR(2),
     blood_type VARCHAR(6) CHECK (blood_type IN ('A','B','AB','O','未知')),
     marital_status VARCHAR(20) CHECK (marital_status IN ('未婚','已婚','初婚','再婚','复婚','丧偶','离婚','未说明的婚姻状况')),
     occupation VARCHAR(100),
@@ -112,6 +112,8 @@ CREATE INDEX IF NOT EXISTS idx_resident_nation ON resident (nation);
 CREATE INDEX IF NOT EXISTS idx_resident_nation_code ON resident (nation_code);
 CREATE INDEX IF NOT EXISTS idx_resident_education_code ON resident (education_code);
 COMMENT ON TABLE resident IS '户籍人员表';
+COMMENT ON COLUMN resident.nation_code IS '民族代码 - 符合 GB 3304-1991，01-56为标准民族，97=其他，98=外籍';
+COMMENT ON COLUMN resident.education_code IS '学历代码 - 符合 GB/T 4658-2006';
 
 -- ============================================================
 -- 5. 人员关系表
