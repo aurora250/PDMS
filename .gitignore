@@ -67,8 +67,8 @@ performance/gatling/target/
 # JMeter generated logs and debug files
 performance/jmeter/debug-*.jmx
 jmeter.log
-# Generated test data SQL (large files)
-performance/test-data/insert-pdm_*.sql
+# Generated test data SQL (large auto-generated files)
+performance/test-data/insert-*.sql
 # JVM crash and compiler replay dumps
 hs_err_pid*.log
 replay_pid*.log

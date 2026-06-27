@@ -14,6 +14,7 @@ import com.pdm.floatingpopulation.service.FloatingPopulationService;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -186,8 +187,12 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
     }
 
     @Override
+    @Cacheable(value = "fpHeatmap", unless = "#result == null || #result.isEmpty()")
     public List<Map<String, Object>> getHeatmapData() {
-        List<ResidentRegistration> list = residentRegistrationMapper.selectList(null);
+        // Limit full table scan to 10,000 rows max
+        LambdaQueryWrapper<ResidentRegistration> wrapper = new LambdaQueryWrapper<>();
+        wrapper.last("LIMIT 10000");
+        List<ResidentRegistration> list = residentRegistrationMapper.selectList(wrapper);
         return list.stream().map(r -> {
             Map<String, Object> item = new java.util.HashMap<>();
             item.put("areaId", r.getAreaId());
@@ -198,8 +203,12 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
     }
 
     @Override
+    @Cacheable(value = "fpTrend", unless = "#result == null || #result.isEmpty()")
     public List<Map<String, Object>> getTrendData() {
-        List<FpRegisterRecord> list = fpRegisterRecordMapper.selectList(null);
+        // Limit full table scan to 10,000 rows max
+        LambdaQueryWrapper<FpRegisterRecord> wrapper = new LambdaQueryWrapper<>();
+        wrapper.last("LIMIT 10000");
+        List<FpRegisterRecord> list = fpRegisterRecordMapper.selectList(wrapper);
         return list.stream().map(r -> {
             Map<String, Object> item = new java.util.HashMap<>();
             item.put("registerDate", r.getRegisterDate() != null ? r.getRegisterDate().toString() : null);
