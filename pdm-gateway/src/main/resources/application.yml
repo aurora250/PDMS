@@ -38,8 +38,8 @@ spring:
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter:
-                  replenishRate: 50
-                  burstCapacity: 100
+                  replenishRate: 100
+                  burstCapacity: 200
                   requestedTokens: 1
         - id: pdm-resident
           uri: lb://pdm-resident
@@ -50,8 +50,8 @@ spring:
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter:
-                  replenishRate: 200
-                  burstCapacity: 400
+                  replenishRate: 300
+                  burstCapacity: 600
                   requestedTokens: 1
         - id: pdm-household
           uri: lb://pdm-household
@@ -62,8 +62,8 @@ spring:
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter:
-                  replenishRate: 50
-                  burstCapacity: 100
+                  replenishRate: 100
+                  burstCapacity: 200
                   requestedTokens: 1
         - id: pdm-keyperson
           uri: lb://pdm-keyperson
@@ -74,8 +74,8 @@ spring:
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter:
-                  replenishRate: 50
-                  burstCapacity: 100
+                  replenishRate: 80
+                  burstCapacity: 160
                   requestedTokens: 1
         - id: pdm-floating-population
           uri: lb://pdm-floating-population
@@ -86,8 +86,8 @@ spring:
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter:
-                  replenishRate: 100
-                  burstCapacity: 200
+                  replenishRate: 150
+                  burstCapacity: 300
                   requestedTokens: 1
         - id: pdm-missingperson
           uri: lb://pdm-missingperson
@@ -98,8 +98,8 @@ spring:
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter:
-                  replenishRate: 30
-                  burstCapacity: 60
+                  replenishRate: 60
+                  burstCapacity: 120
                   requestedTokens: 1
         - id: pdm-log
           uri: lb://pdm-log
@@ -110,8 +110,8 @@ spring:
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter:
-                  replenishRate: 50
-                  burstCapacity: 100
+                  replenishRate: 80
+                  burstCapacity: 160
                   requestedTokens: 1
         - id: pdm-notification
           uri: lb://pdm-notification
@@ -122,8 +122,8 @@ spring:
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter:
-                  replenishRate: 50
-                  burstCapacity: 100
+                  replenishRate: 80
+                  burstCapacity: 160
                   requestedTokens: 1
 
 jwt:

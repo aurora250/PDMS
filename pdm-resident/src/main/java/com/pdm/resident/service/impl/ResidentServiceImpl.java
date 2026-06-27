@@ -18,6 +18,8 @@ import com.pdm.resident.service.ResidentService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -45,6 +47,7 @@ public class ResidentServiceImpl implements ResidentService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "residentSearch", allEntries = true)
     public Resident createResident(Resident resident) {
         // Validate ID card
         if (!IdCardValidator.isValid(resident.getIdCardNo())) {
@@ -87,6 +90,7 @@ public class ResidentServiceImpl implements ResidentService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "residentSearch", allEntries = true)
     public Resident updateResident(String uuid, Resident updates) {
         Resident resident = residentMapper.selectByUuid(uuid);
         if (resident == null) {
@@ -131,6 +135,7 @@ public class ResidentServiceImpl implements ResidentService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "residentSearch", allEntries = true)
     public void deleteResident(String uuid) {
         Resident resident = residentMapper.selectByUuid(uuid);
         if (resident == null) {
@@ -145,6 +150,7 @@ public class ResidentServiceImpl implements ResidentService {
     }
 
     @Override
+    @Cacheable(value = "residentSearch", key = "#request.cacheKey()", unless = "#result == null || #result.total == 0")
     public PageResult<Resident> search(ResidentSearchRequest request) {
         try {
             List<Resident> residents = residentEsRepository.multiConditionSearch(request.getName(), request.getGender(),
@@ -156,8 +162,23 @@ public class ResidentServiceImpl implements ResidentService {
             return PageResult.of(residents, total, request.getPage(), request.getSize());
         } catch (Exception e) {
             log.warn("ES search failed, fallback to DB", e);
-            // Fallback to MySQL queries
-            return PageResult.empty();
+            // Fallback: query local shard via MyBatis-Plus
+            LambdaQueryWrapper<Resident> wrapper = new LambdaQueryWrapper<>();
+            if (StringUtils.hasText(request.getName())) {
+                wrapper.like(Resident::getName, request.getName());
+            }
+            if (StringUtils.hasText(request.getGender())) {
+                wrapper.eq(Resident::getGender, request.getGender());
+            }
+            if (StringUtils.hasText(request.getNation())) {
+                wrapper.eq(Resident::getNation, request.getNation());
+            }
+            if (StringUtils.hasText(request.getMaritalStatus())) {
+                wrapper.eq(Resident::getMaritalStatus, request.getMaritalStatus());
+            }
+            wrapper.last("LIMIT " + request.getSize() + " OFFSET " + request.getOffset());
+            List<Resident> residents = residentMapper.selectList(wrapper);
+            return PageResult.of(residents, residents.size(), request.getPage(), request.getSize());
         }
     }
 

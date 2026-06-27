@@ -20,11 +20,11 @@ spring:
     password: pdm123
     driver-class-name: org.postgresql.Driver
     hikari:
-      minimum-idle: 3
-      maximum-pool-size: 10
+      minimum-idle: 8
+      maximum-pool-size: 20
       idle-timeout: 300000
       max-lifetime: 1200000
-      connection-timeout: 30000
+      connection-timeout: 10000
   data:
     redis:
       host: 127.0.0.1

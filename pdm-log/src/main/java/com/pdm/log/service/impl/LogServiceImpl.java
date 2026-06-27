@@ -107,6 +107,8 @@ public class LogServiceImpl implements LogService {
             wrapper.eq(AuditLog::getOperationType, operationType);
         }
         wrapper.orderByDesc(AuditLog::getOperationTime);
+        // Safety limit: max 10,000 records per export to prevent OOM
+        wrapper.last("LIMIT 10000");
 
         List<AuditLog> logs = auditLogMapper.selectList(wrapper);
 

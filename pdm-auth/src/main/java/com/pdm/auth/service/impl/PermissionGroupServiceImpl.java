@@ -10,6 +10,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +38,7 @@ public class PermissionGroupServiceImpl implements PermissionGroupService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "permissions", key = "#groupId")
     public PermissionGroup updateGroupPermissions(Long groupId, String permissions) {
         PermissionGroup group = permissionGroupMapper.selectById(groupId);
         if (group == null) {
@@ -62,6 +65,7 @@ public class PermissionGroupServiceImpl implements PermissionGroupService {
     }
 
     @Override
+    @Cacheable(value = "permissions", key = "#groupId", unless = "#result == null || #result.isEmpty()")
     public List<String> getPermissionsByGroupId(Long groupId) {
         if (groupId == null) {
             return Collections.emptyList();
