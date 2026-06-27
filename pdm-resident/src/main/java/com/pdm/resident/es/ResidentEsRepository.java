@@ -31,8 +31,9 @@ public class ResidentEsRepository extends EsBaseRepository<Resident> {
         return Resident.class;
     }
 
-    public List<Resident> multiConditionSearch(String name, String gender, String nation, String educationLevel,
-            String maritalStatus, String householdStatus, int from, int size) throws IOException {
+    public List<Resident> multiConditionSearch(String name, String gender, String nation, String nationCode,
+            String educationLevel, String educationCode, String maritalStatus, String householdStatus, int from,
+            int size) throws IOException {
         BoolQuery.Builder boolBuilder = new BoolQuery.Builder();
         if (name != null) {
             boolBuilder.must(Query.of(q -> q.match(m -> m.field("name").query(name))));
@@ -43,8 +44,14 @@ public class ResidentEsRepository extends EsBaseRepository<Resident> {
         if (nation != null) {
             boolBuilder.must(Query.of(q -> q.term(t -> t.field("nation").value(nation))));
         }
+        if (nationCode != null) {
+            boolBuilder.must(Query.of(q -> q.term(t -> t.field("nationCode").value(nationCode))));
+        }
         if (educationLevel != null) {
             boolBuilder.must(Query.of(q -> q.term(t -> t.field("educationLevel").value(educationLevel))));
+        }
+        if (educationCode != null) {
+            boolBuilder.must(Query.of(q -> q.term(t -> t.field("educationCode").value(educationCode))));
         }
         if (maritalStatus != null) {
             boolBuilder.must(Query.of(q -> q.term(t -> t.field("maritalStatus").value(maritalStatus))));
