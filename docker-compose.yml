@@ -23,6 +23,7 @@ services:
       - ./sql/init-shard-schema.sql:/docker-entrypoint-initdb.d/02-init-shard-schema.sql
       - ./sql/init-schema.sql:/docker-entrypoint-initdb.d/01-init-schema.sql
       - ./sql/init-area-data.sql:/docker-entrypoint-initdb.d/03-init-area-data.sql
+      - ./sql/init-test-data.sql:/docker-entrypoint-initdb.d/04-init-test-data.sql
     command: >
       postgres
       -c config_file=/etc/postgresql/postgresql.conf

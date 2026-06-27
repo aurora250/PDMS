@@ -3,6 +3,8 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 scripts/__pycache__
+frontend/dist
+frontend/node_modules
 
 ### IntelliJ IDEA ###
 .idea
