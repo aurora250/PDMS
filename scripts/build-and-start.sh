@@ -1,8 +1,7 @@
 #!/bin/bash
 set -e
 
-PROJECT_DIR="/mnt/d/Workspace/Java Workspace/IDEA/PeopleDatabaseManagement"
-export JAVA_HOME="/mnt/d/Java/jdk-21"
+PROJECT_DIR="/media/huenqi/Programming/Workspace/Java Workspace/IDEA/PeopleDatabaseManagement-Linux"
 export PATH="$JAVA_HOME/bin:$PATH"
 
 cd "$PROJECT_DIR"

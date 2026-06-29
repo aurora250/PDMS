@@ -12,14 +12,42 @@ import time
 import json
 import statistics
 import sys
+import os
 import argparse
 import threading
+import resource
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from typing import Optional
 
-BASE_URL = "http://172.22.217.154:8080"
+BASE_URL = "http://127.0.0.1:8080"
 TEST_USER = {"username": "admin", "password": "Admin@123"}
+
+
+def apply_resource_limits(cpu_cores: int = 0, max_memory_mb: int = 0):
+    """限制进程可用的 CPU 核心数和最大内存。
+
+    Args:
+        cpu_cores: 允许使用的 CPU 核心数（0 = 不限制）。Linux 下通过 sched_setaffinity 实现。
+        max_memory_mb: 最大虚拟内存（MB，0 = 不限制）。通过 setrlimit(RLIMIT_AS) 实现，
+                       超出后进程收到 SIGSEGV。
+    """
+    if cpu_cores > 0 and hasattr(os, "sched_setaffinity"):
+        try:
+            cpu_count = os.cpu_count() or 1
+            cores = list(range(min(cpu_cores, cpu_count)))
+            os.sched_setaffinity(0, cores)
+            print(f"  🔒 CPU affinity: cores {cores}")
+        except Exception as e:
+            print(f"  ⚠️  无法设置 CPU affinity: {e}")
+
+    if max_memory_mb > 0:
+        limit_bytes = max_memory_mb * 1024 * 1024
+        try:
+            resource.setrlimit(resource.RLIMIT_AS, (limit_bytes, limit_bytes))
+            print(f"  🔒 Memory limit: {max_memory_mb} MB")
+        except Exception as e:
+            print(f"  ⚠️  无法设置内存限制: {e}")
 
 
 @dataclass
@@ -323,7 +351,14 @@ def main():
                         help="Ramp-up time in seconds")
     parser.add_argument("--output", type=str, default=None,
                         help="Output JSON file path")
+    parser.add_argument("--cpu-cores", type=int, default=0,
+                        help="Restrict to N CPU cores (0 = no limit, Linux only)")
+    parser.add_argument("--max-memory", type=int, default=0,
+                        help="Max virtual memory in MB (0 = no limit)")
     args = parser.parse_args()
+
+    # 应用资源限制（必须在创建线程池之前）
+    apply_resource_limits(cpu_cores=args.cpu_cores, max_memory_mb=args.max_memory)
 
     print("=" * 65)
     print("  PDM 性能基准测试 v3")

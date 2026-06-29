@@ -33,4 +33,13 @@ public interface HouseholdService {
     List<Area> getAreaTree();
 
     List<Area> getAreasByParent(Long parentId);
+
+    /** 获取区域的完整祖先链（省→市→区） */
+    List<Area> getAreaAncestors(Long areaId);
+
+    /** 获取区域的完整路径字符串（省+市+区） */
+    String getAreaPath(Long areaId);
+
+    /** 获取全部区域数据（用于前端级联树） */
+    List<Area> getAllAreas();
 }

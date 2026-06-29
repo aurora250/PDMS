@@ -2,6 +2,7 @@ package com.pdm.household.service.impl;
 
 import com.pdm.common.core.exception.BusinessException;
 import com.pdm.common.core.result.ErrorCode;
+import com.pdm.common.core.util.PermitNumberGenerator;
 import com.pdm.household.entity.*;
 import com.pdm.household.mapper.*;
 import com.pdm.household.service.HouseholdService;
@@ -114,7 +115,8 @@ public class HouseholdServiceImpl implements HouseholdService {
     @Transactional
     public ApprovalPermit issueApprovalPermit(ApprovalPermit permit) {
         if (permit.getPermitNo() == null)
-            permit.setPermitNo("AP" + IdUtil.fastSimpleUUID().substring(0, 20));
+            permit.setPermitNo(PermitNumberGenerator.approvalPermit(null, LocalDate.now(),
+                    System.currentTimeMillis() % 1_000_000));
         permit.setIssueDate(LocalDate.now());
         permit.setStatus("有效");
         approvalPermitMapper.insert(permit);
@@ -125,7 +127,8 @@ public class HouseholdServiceImpl implements HouseholdService {
     @Transactional
     public MigrationPermit issueMigrationPermit(MigrationPermit permit) {
         if (permit.getPermitNo() == null)
-            permit.setPermitNo("MP" + IdUtil.fastSimpleUUID().substring(0, 20));
+            permit.setPermitNo(PermitNumberGenerator.migrationPermit(null, LocalDate.now(),
+                    System.currentTimeMillis() % 1_000_000));
         permit.setIssueDate(LocalDate.now());
         permit.setStatus("有效");
         migrationPermitMapper.insert(permit);
@@ -140,5 +143,20 @@ public class HouseholdServiceImpl implements HouseholdService {
     @Override
     public List<Area> getAreasByParent(Long parentId) {
         return areaMapper.selectByParentId(parentId);
+    }
+
+    @Override
+    public List<Area> getAreaAncestors(Long areaId) {
+        return areaMapper.selectAncestors(areaId);
+    }
+
+    @Override
+    public String getAreaPath(Long areaId) {
+        return areaMapper.selectAreaPath(areaId);
+    }
+
+    @Override
+    public List<Area> getAllAreas() {
+        return areaMapper.selectAll();
     }
 }

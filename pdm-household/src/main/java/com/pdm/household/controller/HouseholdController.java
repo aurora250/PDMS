@@ -148,4 +148,22 @@ public class HouseholdController {
             return Result.success(householdService.getAreasByParent(parentId));
         return Result.success(householdService.getAreaTree());
     }
+
+    /** 获取区域祖先链（省→市→区） */
+    @GetMapping("/api/area/{areaId}/ancestors")
+    public Result<List<Area>> getAreaAncestors(@PathVariable Long areaId) {
+        return Result.success(householdService.getAreaAncestors(areaId));
+    }
+
+    /** 获取区域完整路径字符串（用于地址拼接） */
+    @GetMapping("/api/area/{areaId}/path")
+    public Result<String> getAreaPath(@PathVariable Long areaId) {
+        return Result.success(householdService.getAreaPath(areaId));
+    }
+
+    /** 获取全部区域数据（前端级联选择器一次性加载完整树） */
+    @GetMapping("/api/area/tree")
+    public Result<List<Area>> getAreaTreeFull() {
+        return Result.success(householdService.getAllAreas());
+    }
 }

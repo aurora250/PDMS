@@ -1,6 +1,6 @@
 <template>
-  <el-drawer v-model="visible" :title="isEdit ? '编辑人口信息' : '新增人口'" size="600px" @close="resetForm">
-    <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+  <el-drawer v-model="visible" :title="isEdit ? '编辑人口信息' : '新增人口'" size="650px" @close="resetForm">
+    <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
       <el-form-item label="姓名" prop="name"><el-input v-model="form.name" /></el-form-item>
       <el-form-item label="曾用名"><el-input v-model="form.formerName" /></el-form-item>
       <el-form-item label="性别" prop="gender">
@@ -34,7 +34,19 @@
       </el-form-item>
       <el-form-item label="职业"><el-input v-model="form.occupation" /></el-form-item>
       <el-form-item label="电话" prop="phone"><el-input v-model="form.phone" /></el-form-item>
-      <el-form-item label="居住地址" prop="residence"><el-input v-model="form.residence" /></el-form-item>
+
+      <!-- 居住地址: 省市区级联 + 详细地址 -->
+      <el-form-item label="居住地区" prop="areaId">
+        <AreaCascader v-model="addressForm.areaId" placeholder="选择居住地省市区" />
+      </el-form-item>
+      <el-form-item label="居住详址" prop="addressDetail">
+        <el-input v-model="addressForm.detail" placeholder="街道/路/号/楼/室" />
+        <span class="form-tip">请填写与所选地区对应的街道门牌号等详细地址</span>
+      </el-form-item>
+      <div v-if="addressForm.preview" class="address-preview">
+        <el-text type="info" size="small">预览: {{ addressForm.preview }}</el-text>
+      </div>
+
       <el-form-item label="户口类型" prop="householdType">
         <el-select v-model="form.householdType">
           <el-option label="农业户口" value="农业户口" />
@@ -50,7 +62,18 @@
           <el-option label="迁出注销" value="迁出注销" />
         </el-select>
       </el-form-item>
-      <el-form-item label="户口地址" prop="householdAddress"><el-input v-model="form.householdAddress" /></el-form-item>
+
+      <!-- 户籍地址: 省市区级联 + 详细地址 -->
+      <el-form-item label="户籍地区" prop="householdAreaId">
+        <AreaCascader v-model="addressForm.householdAreaId" placeholder="选择户籍地省市区" />
+      </el-form-item>
+      <el-form-item label="户籍详址" prop="householdDetail">
+        <el-input v-model="addressForm.householdDetail" placeholder="街道/路/号/楼/室" />
+        <span class="form-tip">请填写与所选地区对应的详细门牌号</span>
+      </el-form-item>
+      <div v-if="addressForm.householdPreview" class="address-preview">
+        <el-text type="info" size="small">预览: {{ addressForm.householdPreview }}</el-text>
+      </div>
     </el-form>
     <template #footer>
       <el-button @click="visible = false">取消</el-button>
@@ -60,11 +83,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import { residentApi } from '@/api/resident'
+import { areaApi } from '@/api/area'
 import { useGbConstants } from '@/composables/useGbConstants'
 import { showError, showSuccess } from '@/utils/auth'
 import type { Resident } from '@/types/resident'
+import AreaCascader from '@/components/AreaCascader.vue'
 
 const { NATIONS, EDUCATIONS, MARITAL_STATUSES, BLOOD_TYPES, nationCode, educationCode } = useGbConstants()
 
@@ -86,6 +111,16 @@ const defaultForm = () => ({
 
 const form = reactive<Resident>(defaultForm())
 
+// 地址拆分表单
+const addressForm = reactive({
+  areaId: null as number | null,
+  detail: '',
+  preview: '',
+  householdAreaId: null as number | null,
+  householdDetail: '',
+  householdPreview: '',
+})
+
 const rules = {
   name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
   gender: [{ required: true }],
@@ -95,9 +130,11 @@ const rules = {
   educationLevel: [{ required: true }],
   maritalStatus: [{ required: true }],
   phone: [{ required: true }],
-  residence: [{ required: true }],
+  areaId: [{ required: true, message: '请选择居住地区', trigger: 'change' }],
+  addressDetail: [{ required: true, message: '请填写详细地址', trigger: 'blur' }],
   householdType: [{ required: true }],
-  householdAddress: [{ required: true }],
+  householdAreaId: [{ required: true, message: '请选择户籍地区', trigger: 'change' }],
+  householdDetail: [{ required: true, message: '请填写详细地址', trigger: 'blur' }],
 }
 
 function onNationChange() { form.nationCode = nationCode(form.nation) }
@@ -106,19 +143,70 @@ function onIdCardBlur() {
   const v = form.idCardNo
   if (v.length === 18) {
     const d = v.substring(6, 14)
-    form.birthDate = `${d.substring(0,4)}-${d.substring(4,6)}-${d.substring(6,8)}`
+    form.birthDate = `${d.substring(0, 4)}-${d.substring(4, 6)}-${d.substring(6, 8)}`
     form.gender = parseInt(v.charAt(16)) % 2 === 1 ? '男' : '女'
   }
 }
 
-function open(row?: Resident) {
+/** 拼接地区路径 + 详细地址 → 完整地址预览 */
+async function buildPreview(areaId: number | null, detail: string): Promise<string> {
+  if (!areaId) return detail || ''
+  try {
+    const path: string = await areaApi.getPath(areaId)
+    return (path || '') + (detail || '')
+  } catch {
+    return detail || ''
+  }
+}
+
+// 居住地址预览
+watch(
+  () => [addressForm.areaId, addressForm.detail],
+  async () => {
+    addressForm.preview = await buildPreview(addressForm.areaId, addressForm.detail)
+  }
+)
+
+// 户籍地址预览
+watch(
+  () => [addressForm.householdAreaId, addressForm.householdDetail],
+  async () => {
+    addressForm.householdPreview = await buildPreview(addressForm.householdAreaId, addressForm.householdDetail)
+  }
+)
+
+async function open(row?: Resident) {
   Object.assign(form, defaultForm())
+  addressForm.areaId = null
+  addressForm.detail = ''
+  addressForm.preview = ''
+  addressForm.householdAreaId = null
+  addressForm.householdDetail = ''
+  addressForm.householdPreview = ''
   isEdit.value = !!row
   visible.value = true
   if (row) {
     editUuid = row.uuid!
     Object.assign(form, row)
+    // 地区ID来自 row，级联菜单据此显示默认值
+    addressForm.areaId = row.areaId ?? null
+    addressForm.householdAreaId = row.householdAreaId ?? null
+    // 从完整地址中剥离级联菜单已覆盖的省市区部分，仅保留街道门牌号
+    addressForm.detail = await stripAreaPrefix(row.residence || '', row.areaId)
+    addressForm.householdDetail = await stripAreaPrefix(row.householdAddress || '', row.householdAreaId)
   }
+}
+
+/** 从完整地址中剥离地区前缀，仅保留街道门牌号部分 */
+async function stripAreaPrefix(fullAddress: string, areaId: number | null | undefined): Promise<string> {
+  if (!fullAddress || !areaId) return fullAddress
+  try {
+    const path: string = await areaApi.getPath(areaId)
+    if (path && fullAddress.startsWith(path)) {
+      return fullAddress.substring(path.length)
+    }
+  } catch { /* ignore */ }
+  return fullAddress
 }
 
 function resetForm() {
@@ -126,13 +214,38 @@ function resetForm() {
 }
 
 async function handleSave() {
+  // 先验证 Element Plus 表单规则
+  try {
+    await formRef.value?.validate()
+  } catch {
+    return // 验证未通过
+  }
+
+  // 检查自定义必填项
+  if (!addressForm.areaId) { showError('请选择居住地区'); return }
+  if (!addressForm.detail.trim()) { showError('请填写居住详址'); return }
+  if (!addressForm.householdAreaId) { showError('请选择户籍地区'); return }
+  if (!addressForm.householdDetail.trim()) { showError('请填写户籍详址'); return }
+
   saving.value = true
   try {
+    // 拼接完整地址: 地区路径 + 详细地址
+    const residencePath = await buildPreview(addressForm.areaId, addressForm.detail)
+    const householdPath = await buildPreview(addressForm.householdAreaId, addressForm.householdDetail)
+
+    const payload = {
+      ...form,
+      residence: residencePath || addressForm.detail,
+      areaId: addressForm.areaId,
+      householdAddress: householdPath || addressForm.householdDetail,
+      householdAreaId: addressForm.householdAreaId,
+    }
+
     if (isEdit.value) {
-      await residentApi.update(editUuid, { ...form })
+      await residentApi.update(editUuid, payload)
       showSuccess('修改成功')
     } else {
-      await residentApi.create({ ...form })
+      await residentApi.create(payload)
       showSuccess('新增成功')
     }
     visible.value = false
@@ -144,3 +257,18 @@ async function handleSave() {
 
 defineExpose({ open })
 </script>
+
+<style scoped>
+.form-tip {
+  display: block;
+  font-size: 11px;
+  color: #909399;
+  line-height: 1.5;
+}
+.address-preview {
+  margin: -8px 0 12px 110px;
+  padding: 4px 8px;
+  background: #f5f7fa;
+  border-radius: 4px;
+}
+</style>

@@ -2,6 +2,7 @@ package com.pdm.floatingpopulation.service.impl;
 
 import com.pdm.common.core.exception.BusinessException;
 import com.pdm.common.core.result.ErrorCode;
+import com.pdm.common.core.util.PermitNumberGenerator;
 import com.pdm.floatingpopulation.entity.FpRegisterRecord;
 import com.pdm.floatingpopulation.entity.ResidentPermit;
 import com.pdm.floatingpopulation.entity.ResidentPermitRenewal;
@@ -22,7 +23,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
-import cn.hutool.core.util.IdUtil;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -68,7 +68,8 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
     @Override
     @Transactional
     public ResidentPermit applyPermit(ResidentPermit permit) {
-        permit.setPermitNo("RP" + IdUtil.fastSimpleUUID().substring(0, 20));
+        permit.setPermitNo(
+                PermitNumberGenerator.residentPermit(null, LocalDate.now(), System.currentTimeMillis() % 1_000_000));
         permit.setStatus("有效");
         if (permit.getIssueDate() == null) {
             permit.setIssueDate(LocalDate.now());

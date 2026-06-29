@@ -45,4 +45,12 @@ service.interceptors.response.use(
   }
 )
 
-export default service
+/** Typed wrapper — interceptors unwrap response.data, so return type is the actual data */
+const request = {
+  get: (url: string, config?: any): any => service.get(url, config),
+  post: (url: string, data?: any, config?: any): any => service.post(url, data, config),
+  put: (url: string, data?: any, config?: any): any => service.put(url, data, config),
+  delete: (url: string, config?: any): any => service.delete(url, config),
+}
+
+export default request

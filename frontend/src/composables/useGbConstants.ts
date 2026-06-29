@@ -1,7 +1,12 @@
-export { NATIONS, NATION_CODE_MAP, NATION_NAME_MAP } from '@/constants/nations'
-export { EDUCATIONS, EDUCATION_CODE_MAP, EDUCATION_NAME_MAP } from '@/constants/educations'
-export { MARITAL_STATUSES, MARITAL_CODE_MAP } from '@/constants/maritalStatuses'
-export { BLOOD_TYPES } from '@/constants/bloodTypes'
+import { NATIONS, NATION_CODE_MAP, NATION_NAME_MAP } from '@/constants/nations'
+import { EDUCATIONS, EDUCATION_CODE_MAP, EDUCATION_NAME_MAP } from '@/constants/educations'
+import { MARITAL_STATUSES, MARITAL_CODE_MAP } from '@/constants/maritalStatuses'
+import { BLOOD_TYPES } from '@/constants/bloodTypes'
+
+export { NATIONS, NATION_CODE_MAP, NATION_NAME_MAP }
+export { EDUCATIONS, EDUCATION_CODE_MAP, EDUCATION_NAME_MAP }
+export { MARITAL_STATUSES, MARITAL_CODE_MAP }
+export { BLOOD_TYPES }
 
 /** 国标常量组合式函数 */
 export function useGbConstants() {

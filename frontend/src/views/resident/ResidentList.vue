@@ -82,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePermission } from '@/composables/usePermission'
 import { useGbConstants } from '@/composables/useGbConstants'
@@ -158,7 +158,7 @@ async function handleExport() {
   } catch (e: any) { showError('导出失败') }
 }
 
-doSearch()
+onMounted(doSearch)
 </script>
 
 <style scoped>

@@ -1,6 +1,9 @@
 <template>
   <div class="change-request-page">
-    <div class="page-header"><h3>变更申请管理</h3></div>
+    <div class="page-header">
+      <h3>变更申请管理</h3>
+      <el-button type="primary" @click="openCreate" v-if="hasPermission('resident:write')">提交变更申请</el-button>
+    </div>
     <el-card>
       <el-form inline>
         <el-form-item label="状态">
@@ -14,13 +17,15 @@
       </el-form>
       <el-table :data="list" v-loading="loading" stripe>
         <el-table-column prop="rid" label="ID" width="60" />
-        <el-table-column prop="applicantUuid" label="申请人" width="200" />
+        <el-table-column prop="applicantUuid" label="申请人" width="180" show-overflow-tooltip />
         <el-table-column prop="changeField" label="变更字段" width="120" />
         <el-table-column prop="originalData" label="原值" width="150" />
         <el-table-column prop="modifiedData" label="新值" width="150" />
-        <el-table-column prop="status" label="状态" width="80" />
+        <el-table-column prop="status" label="状态" width="80">
+          <template #default="{ row }"><ApprovalBadge :status="row.status" /></template>
+        </el-table-column>
         <el-table-column prop="requestTime" label="申请时间" width="120" />
-        <el-table-column label="操作" width="160">
+        <el-table-column label="操作" width="200">
           <template #default="{ row }">
             <el-button v-if="hasPermission('resident:change-request:approve') && row.status === '请求'" text size="small" type="success" @click="approve(row, '通过')">通过</el-button>
             <el-button v-if="hasPermission('resident:change-request:approve') && row.status === '请求'" text size="small" type="danger" @click="approve(row, '驳回')">驳回</el-button>
@@ -33,6 +38,39 @@
           layout="total,prev,pager,next" @current-change="load" @size-change="load" />
       </div>
     </el-card>
+
+    <!-- 提交变更申请对话框 -->
+    <el-dialog v-model="dialogVisible" title="提交变更申请" width="500px" @close="resetForm">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+        <el-form-item label="申请人UUID" prop="applicantUuid">
+          <el-input v-model="form.applicantUuid" placeholder="请输入申请人UUID" />
+        </el-form-item>
+        <el-form-item label="变更字段" prop="changeField">
+          <el-select v-model="form.changeField" placeholder="选择要变更的字段" style="width:100%">
+            <el-option label="姓名" value="name" />
+            <el-option label="性别" value="gender" />
+            <el-option label="民族" value="nation" />
+            <el-option label="出生日期" value="birthDate" />
+            <el-option label="学历" value="educationLevel" />
+            <el-option label="婚姻状况" value="maritalStatus" />
+            <el-option label="职业" value="occupation" />
+            <el-option label="电话" value="phone" />
+            <el-option label="居住地址" value="residence" />
+            <el-option label="户口地址" value="householdAddress" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="原始值" prop="originalData">
+          <el-input v-model="form.originalData" type="textarea" placeholder="请输入原始值" />
+        </el-form-item>
+        <el-form-item label="新值" prop="modifiedData">
+          <el-input v-model="form.modifiedData" type="textarea" placeholder="请输入变更后的值" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSubmit" :loading="submitting">确认提交</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -41,12 +79,30 @@ import { ref, reactive, onMounted } from 'vue'
 import { residentApi } from '@/api/resident'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
+import ApprovalBadge from '@/components/ApprovalBadge.vue'
 
 const { hasPermission } = usePermission()
 const list = ref<any[]>([])
 const loading = ref(false)
 const statusFilter = ref('')
 const page = reactive({ current: 1, size: 20, total: 0 })
+
+const dialogVisible = ref(false)
+const submitting = ref(false)
+const formRef = ref()
+const form = reactive({
+  applicantUuid: '',
+  changeField: '',
+  originalData: '',
+  modifiedData: '',
+})
+
+const rules = {
+  applicantUuid: [{ required: true, message: '请输入申请人UUID', trigger: 'blur' }],
+  changeField: [{ required: true, message: '请选择变更字段', trigger: 'change' }],
+  originalData: [{ required: true, message: '请输入原始值', trigger: 'blur' }],
+  modifiedData: [{ required: true, message: '请输入新值', trigger: 'blur' }],
+}
 
 async function load() {
   loading.value = true
@@ -69,10 +125,36 @@ async function approve(row: any, status: string) {
   } catch (e: any) { showError(e.message || '操作失败') }
 }
 
+function openCreate() {
+  form.applicantUuid = ''
+  form.changeField = ''
+  form.originalData = ''
+  form.modifiedData = ''
+  dialogVisible.value = true
+}
+
+function resetForm() {
+  formRef.value?.resetFields()
+}
+
+async function handleSubmit() {
+  const valid = await formRef.value?.validate().catch(() => false)
+  if (!valid) return
+  submitting.value = true
+  try {
+    await residentApi.submitChangeRequest({ ...form, status: '请求' })
+    showSuccess('提交成功')
+    dialogVisible.value = false
+    load()
+  } catch (e: any) {
+    showError(e.message || '提交失败')
+  } finally { submitting.value = false }
+}
+
 onMounted(load)
 </script>
 
 <style scoped>
-.page-header { margin-bottom: 16px; }
+.page-header { margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
 .page-header h3 { margin: 0; }
 </style>

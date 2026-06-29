@@ -43,15 +43,17 @@
         <router-view />
       </el-main>
     </el-container>
+    <ChangePasswordDialog ref="changePwdDialogRef" />
   </el-container>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import { usePermission } from '@/composables/usePermission'
+import ChangePasswordDialog from '@/components/ChangePasswordDialog.vue'
 
 const auth = useAuthStore()
 const app = useAppStore()
@@ -134,12 +136,14 @@ const visibleMenus = computed(() => {
   })
 })
 
+const changePwdDialogRef = ref()
+
 function handleCommand(cmd: string) {
   if (cmd === 'logout') {
     auth.logout()
     router.push('/login')
   } else if (cmd === 'changePwd') {
-    // TODO: change password dialog
+    changePwdDialogRef.value?.open()
   }
 }
 </script>

@@ -1,30 +1,210 @@
 <template>
   <div>
-    <div class="page-header"><h3>失踪人口管理</h3><el-button v-if="hasPermission('missing:write')" type="primary" @click="dialogVisible=true">登记失踪</el-button></div>
+    <div class="page-header">
+      <h3>失踪人口管理</h3>
+      <el-button v-if="hasPermission('missing:write')" type="primary" @click="openCreate">登记失踪</el-button>
+    </div>
     <el-card>
-      <el-table :data="list" stripe>
-        <el-table-column prop="name" label="姓名" /><el-table-column prop="gender" label="性别" /><el-table-column prop="missingDate" label="失踪日期" /><el-table-column prop="missingAddress" label="失踪地址" /><el-table-column prop="status" label="状态" />
+      <el-form inline>
+        <el-form-item label="状态">
+          <el-select v-model="statusFilter" placeholder="全部" clearable @change="load">
+            <el-option label="失踪中" value="失踪中" /><el-option label="已寻回" value="已寻回" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="姓名">
+          <el-input v-model="nameFilter" placeholder="姓名" clearable @keyup.enter="load" />
+        </el-form-item>
+        <el-form-item><el-button @click="load">刷新</el-button></el-form-item>
+      </el-form>
+      <el-table :data="list" v-loading="loading" stripe>
+        <el-table-column prop="name" label="姓名" width="100" />
+        <el-table-column prop="gender" label="性别" width="60" />
+        <el-table-column prop="missingDate" label="失踪日期" width="120" />
+        <el-table-column prop="missingPlace" label="失踪地点" min-width="180" />
+        <el-table-column prop="status" label="状态" width="100">
+          <template #default="{ row }"><ApprovalBadge :status="row.status" /></template>
+        </el-table-column>
         <el-table-column label="操作" width="200">
           <template #default="{ row }">
-            <el-button v-if="hasPermission('missing:recovery:write')" text size="small" type="success" @click="recover(row)">寻回</el-button>
+            <el-button v-if="hasPermission('missing:recovery:write') && row.status !== '已寻回'" text size="small" type="success" @click="openRecover(row)">寻回</el-button>
             <el-button v-if="hasPermission('missing:delete')" text size="small" type="danger" @click="del(row)">撤销</el-button>
           </template>
         </el-table-column>
       </el-table>
+      <div style="margin-top:16px;text-align:right">
+        <el-pagination v-model:current-page="page.current" v-model:page-size="page.size" :total="page.total"
+          layout="total,prev,pager,next" @current-change="load" @size-change="load" />
+      </div>
     </el-card>
+
+    <!-- 登记失踪对话框 -->
+    <el-dialog v-model="dialogVisible" title="登记失踪" width="550px" @close="resetForm">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+        <el-form-item label="居民UUID" prop="residentUuid">
+          <el-input v-model="form.residentUuid" placeholder="请输入失踪人员UUID" />
+        </el-form-item>
+        <el-form-item label="身份证号">
+          <IdCardInput v-model="form.idCardNo" @parsed="onIdParsed" />
+        </el-form-item>
+        <el-form-item label="姓名" prop="name">
+          <el-input v-model="form.name" placeholder="自动填充或手动输入" />
+        </el-form-item>
+        <el-form-item label="失踪日期" prop="missingDate">
+          <el-date-picker v-model="form.missingDate" type="date" value-format="YYYY-MM-DD" style="width:100%" />
+        </el-form-item>
+        <el-form-item label="失踪地点" prop="missingPlace">
+          <el-input v-model="form.missingPlace" placeholder="最后出现地点" />
+        </el-form-item>
+        <el-form-item label="体貌特征">
+          <el-input v-model="form.appearance" type="textarea" :rows="2" placeholder="身高、体型、发型等" />
+        </el-form-item>
+        <el-form-item label="可能去向">
+          <el-input v-model="form.possibleWay" placeholder="如: 疑似被拐卖" />
+        </el-form-item>
+        <el-form-item label="联系电话">
+          <el-input v-model="form.contactPhone" placeholder="家属联系电话" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleCreate" :loading="submitting">确认登记</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 寻回对话框 -->
+    <el-dialog v-model="showRecover" title="登记寻回" width="450px" @close="resetRecoverForm">
+      <el-form ref="recoverFormRef" :model="recoverForm" :rules="recoverRules" label-width="100px">
+        <el-form-item label="寻回日期" prop="recoveryDate">
+          <el-date-picker v-model="recoverForm.recoveryDate" type="date" value-format="YYYY-MM-DD" style="width:100%" />
+        </el-form-item>
+        <el-form-item label="寻回说明" prop="summary">
+          <el-input v-model="recoverForm.summary" type="textarea" :rows="3" placeholder="寻回经过..." />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showRecover = false">取消</el-button>
+        <el-button type="primary" @click="handleRecover" :loading="recovering">确认寻回</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { missingApi } from '@/api/missing'
 import { usePermission } from '@/composables/usePermission'
-import { showSuccess } from '@/utils/auth'
+import { showError, showSuccess } from '@/utils/auth'
+import IdCardInput from '@/components/IdCardInput.vue'
+import ApprovalBadge from '@/components/ApprovalBadge.vue'
+
 const { hasPermission } = usePermission()
 const list = ref<any[]>([])
+const loading = ref(false)
+const statusFilter = ref('')
+const nameFilter = ref('')
+const page = reactive({ current: 1, size: 20, total: 0 })
+
+// Create dialog
 const dialogVisible = ref(false)
-async function load() { try { list.value = await missingApi.search() } catch { /* */ } }
-async function del(row: any) { try { await missingApi.delete(row.rid ?? row.id); showSuccess('已撤销'); load() } catch { /* */ } }
-async function recover(_row: any) { /* */ }
+const submitting = ref(false)
+const formRef = ref()
+const form = reactive({
+  residentUuid: '', idCardNo: '', name: '', missingDate: new Date().toISOString().slice(0, 10),
+  missingPlace: '', appearance: '', possibleWay: '', contactPhone: '', medicalHistory: '', status: '失踪中',
+})
+const rules = {
+  residentUuid: [{ required: true, message: '请输入居民UUID', trigger: 'blur' }],
+  name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
+  missingDate: [{ required: true, message: '请选择失踪日期', trigger: 'change' }],
+  missingPlace: [{ required: true, message: '请输入失踪地点', trigger: 'blur' }],
+}
+
+// Recover dialog
+const showRecover = ref(false)
+const recovering = ref(false)
+const recoverFormRef = ref()
+let recoverRid = 0
+const recoverForm = reactive({ recoveryDate: new Date().toISOString().slice(0, 10), summary: '' })
+const recoverRules = {
+  recoveryDate: [{ required: true, message: '请选择寻回日期', trigger: 'change' }],
+  summary: [{ required: true, message: '请输入寻回说明', trigger: 'blur' }],
+}
+
+function onIdParsed(data: { birthDate: string; gender: string }) {
+  /* auto-fill handled by IdCardInput */
+}
+
+async function load() {
+  loading.value = true
+  try {
+    const res = await missingApi.search({
+      status: statusFilter.value || undefined,
+      name: nameFilter.value || undefined,
+      page: page.current, size: page.size,
+    })
+    list.value = Array.isArray(res) ? res : (res.records || [])
+    page.total = res.total || 0
+  } catch { /* ignore */ }
+  finally { loading.value = false }
+}
+
+async function del(row: any) {
+  try { await missingApi.delete(row.rid ?? row.id); showSuccess('已撤销'); load() } catch { /* ignore */ }
+}
+
+function openCreate() {
+  Object.assign(form, {
+    residentUuid: '', idCardNo: '', name: '', missingDate: new Date().toISOString().slice(0, 10),
+    missingPlace: '', appearance: '', possibleWay: '', contactPhone: '', medicalHistory: '', status: '失踪中',
+  })
+  dialogVisible.value = true
+}
+
+function resetForm() { formRef.value?.resetFields() }
+
+async function handleCreate() {
+  const valid = await formRef.value?.validate().catch(() => false)
+  if (!valid) return
+  submitting.value = true
+  try {
+    await missingApi.create({ ...form })
+    showSuccess('登记成功')
+    dialogVisible.value = false
+    load()
+  } catch (e: any) { showError(e.message || '登记失败') }
+  finally { submitting.value = false }
+}
+
+function openRecover(row: any) {
+  recoverRid = row.rid ?? row.id
+  recoverForm.recoveryDate = new Date().toISOString().slice(0, 10)
+  recoverForm.summary = ''
+  showRecover.value = true
+}
+
+function resetRecoverForm() { recoverFormRef.value?.resetFields() }
+
+async function handleRecover() {
+  const valid = await recoverFormRef.value?.validate().catch(() => false)
+  if (!valid) return
+  recovering.value = true
+  try {
+    await missingApi.recovery({
+      missingRecordRid: recoverRid,
+      recoveryDate: recoverForm.recoveryDate,
+      summary: recoverForm.summary,
+    })
+    showSuccess('寻回登记成功')
+    showRecover.value = false
+    load()
+  } catch (e: any) { showError(e.message || '寻回登记失败') }
+  finally { recovering.value = false }
+}
+
 onMounted(load)
 </script>
+
+<style scoped>
+.page-header { margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+.page-header h3 { margin: 0; }
+</style>

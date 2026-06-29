@@ -61,4 +61,34 @@ public class ResidentEsRepository extends EsBaseRepository<Resident> {
         }
         return search(boolBuilder.build()._toQuery(), from, size);
     }
+
+    public long multiConditionCount(String name, String gender, String nation, String nationCode, String educationLevel,
+            String educationCode, String maritalStatus, String householdStatus) throws IOException {
+        BoolQuery.Builder boolBuilder = new BoolQuery.Builder();
+        if (name != null) {
+            boolBuilder.must(Query.of(q -> q.match(m -> m.field("name").query(name))));
+        }
+        if (gender != null) {
+            boolBuilder.must(Query.of(q -> q.term(t -> t.field("gender").value(gender))));
+        }
+        if (nation != null) {
+            boolBuilder.must(Query.of(q -> q.term(t -> t.field("nation").value(nation))));
+        }
+        if (nationCode != null) {
+            boolBuilder.must(Query.of(q -> q.term(t -> t.field("nationCode").value(nationCode))));
+        }
+        if (educationLevel != null) {
+            boolBuilder.must(Query.of(q -> q.term(t -> t.field("educationLevel").value(educationLevel))));
+        }
+        if (educationCode != null) {
+            boolBuilder.must(Query.of(q -> q.term(t -> t.field("educationCode").value(educationCode))));
+        }
+        if (maritalStatus != null) {
+            boolBuilder.must(Query.of(q -> q.term(t -> t.field("maritalStatus").value(maritalStatus))));
+        }
+        if (householdStatus != null) {
+            boolBuilder.must(Query.of(q -> q.term(t -> t.field("householdStatus").value(householdStatus))));
+        }
+        return count(boolBuilder.build()._toQuery());
+    }
 }

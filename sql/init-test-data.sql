@@ -101,6 +101,121 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql VOLATILE;
 
+-- 真实中国街道名生成
+CREATE OR REPLACE FUNCTION random_street()
+RETURNS TEXT AS $$
+DECLARE
+    roads TEXT[] := ARRAY[
+        '中山路','解放路','人民路','建设路','文化路','长安街','南京路','北京路',
+        '建国路','和平路','新华路','朝阳路','滨海路','长江路','黄河路','长城路',
+        '青年路','学府路','科技路','创业路','光明路','幸福路','花园路','迎宾路',
+        '复兴路','团结路','友谊路','前进路','发展路','振兴路','文明路','和谐路',
+        '东风路','红旗路','延安路','井冈山路','大庆路','五一东路','五四西路',
+        '太白路','子午路','雁塔路','未央路','钟楼街','鼓楼街','书院街','东大街',
+        '西大街','南大街','北大街','正阳街','朝阳街','柳巷','平江路','观前街',
+        '春熙路','锦里路','宽窄巷','武侯祠大街','夫子庙','秦淮路','户部巷',
+        '天河路','北京路步行街','上下九','海岸城','福田路','华强北路'
+    ];
+BEGIN
+    RETURN roads[floor(random() * array_length(roads, 1))::INT + 1];
+END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+-- 真实地址生成 (省/市/区 + 街道 + 门牌号)
+CREATE OR REPLACE FUNCTION gen_address(p_area_id BIGINT, p_seq BIGINT)
+RETURNS TEXT AS $$
+DECLARE
+    v_area_name TEXT;
+    v_parent_name TEXT;
+    v_grandparent_name TEXT;
+    v_parent_id BIGINT;
+    v_grandparent_id BIGINT;
+    v_level TEXT;
+    v_street TEXT;
+    v_door_no INT;
+    v_building INT;
+    v_room INT;
+    v_suffix TEXT;
+BEGIN
+    -- 查找区名 (parent_id 存储的是 area_code, 不是 area_id)
+    SELECT area_name, parent_id, area_level INTO v_area_name, v_parent_id, v_level
+    FROM area WHERE area_id = p_area_id;
+
+    -- 查找市名 (parent_id 是 area_code, 需通过 area_code 匹配)
+    IF v_parent_id IS NOT NULL THEN
+        SELECT area_name, parent_id INTO v_parent_name, v_grandparent_id
+        FROM area WHERE area_code::BIGINT = v_parent_id;
+    END IF;
+
+    -- 查找省名
+    IF v_grandparent_id IS NOT NULL THEN
+        SELECT area_name INTO v_grandparent_name
+        FROM area WHERE area_code::BIGINT = v_grandparent_id;
+    END IF;
+
+    IF v_area_name IS NULL THEN
+        v_area_name := '';
+    END IF;
+
+    v_street := random_street();
+    -- 用 seq 哈希保证确定性
+    v_door_no := ((p_seq * 17 + 31) % 800)::INT + 1;
+    v_building := (p_seq % 20)::INT + 1;
+    v_room := ((p_seq * 7) % 30)::INT + 101;
+
+    -- 随机选择后缀格式
+    v_suffix := CASE (p_seq % 5)
+        WHEN 0 THEN v_street || v_door_no || '号'
+        WHEN 1 THEN v_street || v_door_no || '号' || v_building || '号楼'
+        WHEN 2 THEN v_street || v_door_no || '号' || v_building || '栋' || v_room || '室'
+        WHEN 3 THEN v_street || v_door_no || '号院' || v_building || '号楼' || v_room || '室'
+        ELSE v_street || v_door_no || '弄' || v_building || '号'
+    END;
+
+    -- 格式: 省-市-区 + 街道门牌号
+    IF v_grandparent_name IS NOT NULL AND v_parent_name IS NOT NULL THEN
+        RETURN v_grandparent_name || v_parent_name || v_area_name || v_suffix;
+    ELSIF v_parent_name IS NOT NULL THEN
+        RETURN v_parent_name || v_area_name || v_suffix;
+    ELSE
+        RETURN COALESCE(v_area_name, '') || v_suffix;
+    END IF;
+END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+-- 行政区域路径生成 (仅省/市/区，无街道门牌号 — 适用于失踪地点等粗略位置)
+CREATE OR REPLACE FUNCTION gen_area_path(p_area_id BIGINT)
+RETURNS TEXT AS $$
+DECLARE
+    v_area_name TEXT;
+    v_parent_name TEXT;
+    v_grandparent_name TEXT;
+    v_parent_id BIGINT;
+    v_grandparent_id BIGINT;
+BEGIN
+    SELECT area_name, parent_id INTO v_area_name, v_parent_id
+    FROM area WHERE area_id = p_area_id;
+
+    IF v_parent_id IS NOT NULL THEN
+        SELECT area_name, parent_id INTO v_parent_name, v_grandparent_id
+        FROM area WHERE area_code::BIGINT = v_parent_id;
+    END IF;
+
+    IF v_grandparent_id IS NOT NULL THEN
+        SELECT area_name INTO v_grandparent_name
+        FROM area WHERE area_code::BIGINT = v_grandparent_id;
+    END IF;
+
+    IF v_grandparent_name IS NOT NULL AND v_parent_name IS NOT NULL THEN
+        RETURN v_grandparent_name || v_parent_name || COALESCE(v_area_name, '');
+    ELSIF v_parent_name IS NOT NULL THEN
+        RETURN v_parent_name || COALESCE(v_area_name, '');
+    ELSE
+        RETURN COALESCE(v_area_name, '');
+    END IF;
+END;
+$$ LANGUAGE plpgsql VOLATILE;
+
 -- ============================================================
 -- 初始化: 缓存 area_id 到数组
 -- ============================================================
@@ -109,10 +224,10 @@ DECLARE
     area_arr BIGINT[];
     district_arr BIGINT[];
 BEGIN
-    -- 将区县级 area_id 存入临时表供后续使用
+    -- 将市级 area_id 存入临时表（市级别覆盖全国34省，区县级仅4个直辖市有数据）
     DROP TABLE IF EXISTS _area_districts;
     CREATE TEMP TABLE _area_districts AS
-    SELECT array_agg(area_id) AS ids FROM area WHERE area_level = '区县';
+    SELECT array_agg(area_id) AS ids FROM area WHERE area_level = '市';
 END $$;
 
 -- ============================================================
@@ -210,7 +325,7 @@ BEGIN
         VALUES ('P' || LPAD(i::TEXT, 6, '0'),
                 user_uuids[i],
                 seq_uuid(i + 51000),
-                arr_rand(stations), '辖区' || i::TEXT || '号',
+                arr_rand(stations), gen_address(arr_rand(area_ids), i + 600000),
                 arr_rand(area_ids),
                 arr_rand(depts),
                 weighted_pick(ranks, cum_r),
@@ -290,14 +405,17 @@ BEGIN
     former_name := CASE WHEN random() < 0.05 THEN surnames[floor(random()*100)::INT+1] || CASE WHEN g_val='男' THEN m_names[floor(random()*35)::INT+1] ELSE f_names[floor(random()*34)::INT+1] END ELSE NULL END;
     gender := g_val;
 
-    -- 身份证号 (利用 seq 保证唯一)
+    -- 出生日期 (确定性派生自seq，素数步长保证单射: gcd(499,25568)=1)
+    -- 499:prime, 25568=2^5*17*47, coprime → injective for seq < 25,568,000
+    birth_date := TO_DATE('1950-01-01', 'YYYY-MM-DD')
+                  + (((seq / 1000)::INT * 499) % 25568)::INTEGER;
+
+    -- 身份证号 (确定性派生，seq∈[1,50000]内保证无碰撞)
+    -- seq%1000=序列号, seq/1000*499%25568=出生日偏移, 数学可证单射
     id_card_no := '11010' || LPAD((1 + (seq / 1000) % 9)::TEXT, 1, '0') ||
-                  TO_CHAR(CURRENT_DATE - (((seq * 17 + 31) % 29200) || ' days')::INTERVAL, 'YYYYMMDD') ||
+                  TO_CHAR(birth_date, 'YYYYMMDD') ||
                   LPAD((seq % 1000)::TEXT, 3, '0');
     id_card_no := id_card_no || id_card_checksum(id_card_no);
-
-    -- 出生日期 (从身份证提取)
-    birth_date := TO_DATE(SUBSTRING(id_card_no, 7, 8), 'YYYYMMDD');
 
     -- 民族
     r := random();
@@ -341,10 +459,11 @@ BEGIN
     occupation := occs[floor(random()*24)::INT+1];
     phone := random_phone();
     photo := CASE WHEN random()<0.02 THEN 'http://photo.pdm.test/'||seq||'.jpg' ELSE NULL END;
-    residence := '测试地址'||seq::TEXT||'号';
-    household_address := '户籍地址'||seq::TEXT||'号';
+    -- 先选取 area_id，再基于同一 ID 生成地址，确保地址文本与 area_id 对应
     area_id := area_ids[floor(random()*ac)::INT+1];
     household_area_id := area_ids[floor(random()*ac)::INT+1];
+    residence := gen_address(area_id, seq);
+    household_address := gen_address(household_area_id, seq + 100000);
     uuid := gen_random_uuid();
     RETURN NEXT;
 END;
@@ -374,6 +493,96 @@ END $$;
 
 -- 3d. 清理生成函数和参考表
 DROP FUNCTION IF EXISTS gen_resident;
+
+-- 3e. 按七普省份权重重新分配居民（替换均匀分布）
+-- 优化: 预计算省份城市数避免关联子查询，减少_ca副本数
+DO $$
+DECLARE
+    total INT := 50000;
+    max_per_prov INT;
+BEGIN
+    -- 省份权重表（第七次全国人口普查）
+    DROP TABLE IF EXISTS _pa;
+    CREATE TEMP TABLE _pa AS
+    SELECT province_name,
+      ROUND(total * population::NUMERIC / SUM(population) OVER()) AS n
+    FROM (VALUES
+      ('广东省',126012510),('山东省',101527453),('河南省',99365519),
+      ('江苏省',84748016),('四川省',83674866),('河北省',74610235),
+      ('湖南省',66444864),('浙江省',64567568),('安徽省',61027171),
+      ('湖北省',57752557),('广西壮族自治区',50126804),
+      ('云南省',47209277),('江西省',45188635),('辽宁省',42591407),
+      ('福建省',41540086),('陕西省',39528999),('贵州省',38562148),
+      ('山西省',34915616),('重庆市',32054159),('黑龙江省',31850088),
+      ('新疆维吾尔自治区',25852345),('甘肃省',25019831),
+      ('上海市',24870895),('吉林省',24073453),('内蒙古自治区',24049155),
+      ('北京市',21893095),('天津市',13866009),('海南省',10081232),
+      ('宁夏回族自治区',7202654),('青海省',5923957),
+      ('西藏自治区',3648100),('香港特别行政区',7474200),
+      ('澳门特别行政区',683218),('台湾省',23561236)
+    ) t(province_name, population);
+    UPDATE _pa SET n = n + (total - (SELECT SUM(n) FROM _pa)) WHERE province_name = '广东省';
+
+    -- 城市→省份映射
+    DROP TABLE IF EXISTS _cp;
+    CREATE TEMP TABLE _cp AS
+    SELECT a.area_id, COALESCE(p.area_name, c.area_name) AS prov
+    FROM area a
+    LEFT JOIN area c ON a.parent_id = c.area_code::BIGINT
+    LEFT JOIN area p ON c.parent_id = p.area_code::BIGINT
+    WHERE a.area_level = '市' AND a.is_deleted = 0;
+
+    -- 居民→省份（按id排序，省份累积区间分配）
+    DROP TABLE IF EXISTS _res;
+    CREATE TEMP TABLE _res AS
+    SELECT r.id, r2.province_name,
+      row_number() OVER (PARTITION BY r2.province_name ORDER BY r.id) AS prov_rn
+    FROM (
+      SELECT id, row_number() OVER (ORDER BY id) AS rn FROM resident WHERE is_deleted = 0
+    ) r
+    JOIN (
+      SELECT province_name, n,
+        SUM(n) OVER (ORDER BY n DESC) - n + 1 AS lo,
+        SUM(n) OVER (ORDER BY n DESC) AS hi
+      FROM _pa
+    ) r2 ON r.rn BETWEEN r2.lo AND r2.hi;
+
+    -- 预计算各省城市数（避免关联子查询扫全表）
+    DROP TABLE IF EXISTS _prov_cnt;
+    CREATE TEMP TABLE _prov_cnt AS
+    SELECT prov, COUNT(*) AS cnt FROM _cp GROUP BY prov;
+    CREATE INDEX IF NOT EXISTS idx_prov_cnt ON _prov_cnt (prov);
+
+    -- 最大居民数的省份所需的城市副本数（省份最多 ~4350人，最少城市数 ~1）
+    SELECT CEIL(MAX(n)::NUMERIC / 2) INTO max_per_prov FROM _pa;
+    IF max_per_prov < 100 THEN max_per_prov := 100; END IF;
+
+    -- 城市分配表（副本数匹配最大省份需求）
+    DROP TABLE IF EXISTS _ca;
+    CREATE TEMP TABLE _ca AS
+    SELECT prov, area_id,
+      row_number() OVER (PARTITION BY prov ORDER BY random()) AS city_rn
+    FROM _cp CROSS JOIN generate_series(1, max_per_prov) g;
+    CREATE INDEX IF NOT EXISTS idx_ca_prov_rn ON _ca (prov, city_rn);
+
+    -- 更新area_id并重新生成地址（使用预计算的省份城市数）
+    UPDATE resident r SET
+      area_id = ca.area_id,
+      household_area_id = ca2.area_id,
+      residence = gen_address(ca.area_id, r.id),
+      household_address = gen_address(ca2.area_id, r.id + 100000)
+    FROM _res
+    JOIN _prov_cnt pc ON pc.prov = _res.province_name
+    JOIN _ca ca ON ca.prov = _res.province_name
+      AND ca.city_rn = ((_res.prov_rn - 1) % pc.cnt) + 1
+    JOIN _ca ca2 ON ca2.prov = _res.province_name
+      AND ca2.city_rn = (((_res.prov_rn + 7919) - 1) % pc.cnt) + 1
+    WHERE r.id = _res.id;
+
+    DROP TABLE IF EXISTS _pa; DROP TABLE IF EXISTS _cp;
+    DROP TABLE IF EXISTS _res; DROP TABLE IF EXISTS _ca;
+    DROP TABLE IF EXISTS _prov_cnt;
+END $$;
 
 -- 清理临时表
 DROP TABLE IF EXISTS _surnames;
@@ -406,7 +615,7 @@ BEGIN
         VALUES ('HB' || LPAD(i::TEXT, 10, '0') || '-' || TO_CHAR(CURRENT_DATE, 'YYYY'),
                 res_uuids[i],
                 CURRENT_DATE - (floor(random() * 3650)::INT || ' days')::INTERVAL,
-                '户籍地址' || i::TEXT || '号',
+                gen_address(arr_rand(area_ids), i),
                 arr_rand(area_ids),
                 CASE WHEN random() < 0.90 THEN '有效'
                      WHEN random() < 0.55 THEN '审批中'
@@ -533,11 +742,14 @@ BEGIN
     FOR i IN 1..5000 LOOP
         issue_d := CURRENT_DATE - (floor(random()*1095)::INT || ' days')::INTERVAL;
         INSERT INTO resident_permit (permit_no, uuid, issue_date, expiry_date, status, is_deleted)
-        VALUES ('RSP' || LPAD(i::TEXT, 12, '0'), pool[floor(random()*pc)::INT+1], issue_d,
+        VALUES ('000000' || TO_CHAR(issue_d, 'YYYYMM') || LPAD(i::TEXT, 6, '0'), pool[floor(random()*pc)::INT+1], issue_d,
             issue_d + (365 + floor(random()*1095)::INT || ' days')::INTERVAL,
             CASE WHEN random()<0.85 THEN '有效' WHEN random()<0.70 THEN '过期' ELSE '注销' END, 0);
     END LOOP;
-    -- 刷新居住证池
+    -- 刷新居住证池（全部有效证，供流动人口登记引用）
+    DROP TABLE IF EXISTS _permit_pool_all;
+    CREATE TEMP TABLE _permit_pool_all AS SELECT permit_no FROM resident_permit;
+    -- 刷新过期居住证池（供延期记录引用）
     DROP TABLE IF EXISTS _permit_pool;
     CREATE TEMP TABLE _permit_pool AS SELECT permit_no, expiry_date FROM resident_permit WHERE status = '过期';
 END $$;
@@ -547,23 +759,26 @@ END $$;
 -- ============================================================
 DO $$
 DECLARE
-    pool VARCHAR(36)[]; pc INT; i INT;
+    pool VARCHAR(36)[]; pc INT; i INT; r1 FLOAT; r2 FLOAT; r3 FLOAT; r4 FLOAT;
     area_ids BIGINT[]; ac INT;
 BEGIN
     SELECT array_agg(uuid) INTO pool FROM _res_pool; pc := array_length(pool,1);
     SELECT ids INTO area_ids FROM _area_districts; ac := array_length(area_ids,1);
     FOR i IN 1..6000 LOOP
+        r1 := random(); r2 := random(); r3 := random(); r4 := random();
         INSERT INTO resident_registration (uuid, original_address, current_address, area_id, address_type,
             house_ownership, purpose, expected_duration, work_unit, register_date, is_deleted)
         VALUES (pool[floor(random()*pc)::INT+1],
-            '原地址'||i, '现地址'||i, area_ids[floor(random()*ac)::INT+1],
-            CASE WHEN random()<0.45 THEN '租赁房屋' WHEN random()<0.75 THEN '自有住房'
-                 WHEN random()<0.87 THEN '单位宿舍' WHEN random()<0.92 THEN '学校宿舍'
-                 WHEN random()<0.97 THEN '亲友借住' ELSE '其他' END,
-            CASE WHEN random()<0.60 THEN '自有产权' ELSE '租赁' END,
-            CASE WHEN random()<0.55 THEN '务工' WHEN random()<0.70 THEN '经商'
-                 WHEN random()<0.82 THEN '投靠亲属' WHEN random()<0.92 THEN '求学' ELSE '其他' END,
-            CASE WHEN random()<0.35 THEN '短租' WHEN random()<0.75 THEN '中租' ELSE '长租' END,
+            gen_address(area_ids[floor(random()*ac)::INT+1], i),
+            gen_address(area_ids[floor(random()*ac)::INT+1], i + 10000),
+            area_ids[floor(random()*ac)::INT+1],
+            CASE WHEN r1<0.45 THEN '租赁房屋' WHEN r1<0.75 THEN '自有住房'
+                 WHEN r1<0.87 THEN '单位宿舍' WHEN r1<0.92 THEN '学校宿舍'
+                 WHEN r1<0.97 THEN '亲友借住' ELSE '其他' END,
+            CASE WHEN r2<0.60 THEN '自有产权' ELSE '租赁' END,
+            CASE WHEN r3<0.55 THEN '务工' WHEN r3<0.70 THEN '经商'
+                 WHEN r3<0.82 THEN '投靠亲属' WHEN r3<0.92 THEN '求学' ELSE '其他' END,
+            CASE WHEN r4<0.35 THEN '短租' WHEN r4<0.75 THEN '中租' ELSE '长租' END,
             arr_rand(ARRAY['XX公司','YY工厂','ZZ集团','AA企业','BB有限公司','CC科技','DD商贸','EE实业']),
             CURRENT_DATE - (floor(random()*730)::INT || ' days')::INTERVAL, 0);
     END LOOP;
@@ -576,15 +791,20 @@ DO $$
 DECLARE
     pool VARCHAR(36)[]; pc INT; i INT; reg_d DATE;
     agents VARCHAR(36)[]; reviewers VARCHAR(36)[];
+    p_permit_nos VARCHAR(20)[]; p_pc INT;
 BEGIN
     SELECT array_agg(uuid) INTO pool FROM _res_pool; pc := array_length(pool,1);
     SELECT array_agg(user_uuid) INTO agents FROM _user_pool WHERE user_role='采集员';
     SELECT array_agg(user_uuid) INTO reviewers FROM _user_pool WHERE user_role='数据审查员';
+    -- 居住证号池（引用真实 resident_permit 数据）
+    SELECT array_agg(permit_no) INTO p_permit_nos FROM _permit_pool_all;
+    p_pc := array_length(p_permit_nos, 1);
+
     FOR i IN 1..5000 LOOP
         reg_d := CURRENT_DATE - (floor(random()*365)::INT || ' days')::INTERVAL;
         INSERT INTO fp_register_record (residence_permit_no, uuid, agent_uuid, attachment,
             reviewer_uuid, reject_reason, register_date, review_date, is_deleted)
-        VALUES (CASE WHEN random()<0.60 THEN 'RSP'||LPAD(floor(random()*9999999)::TEXT,12,'0') ELSE NULL END,
+        VALUES (CASE WHEN random()<0.60 AND p_pc > 0 THEN p_permit_nos[floor(random()*p_pc)::INT+1] ELSE NULL END,
             pool[floor(random()*pc)::INT+1],
             CASE WHEN random()<0.70 AND agents IS NOT NULL THEN agents[floor(random()*array_length(agents,1))::INT+1] ELSE NULL END,
             CASE WHEN random()<0.20 THEN 'attachment_'||i||'.pdf' ELSE NULL END,
@@ -623,7 +843,7 @@ END $$;
 -- ============================================================
 DO $$
 DECLARE
-    pool VARCHAR(36)[]; pc INT; i INT; idx INT; r_uuid VARCHAR(36);
+    pool VARCHAR(36)[]; pc INT; i INT; idx INT; r_uuid VARCHAR(36); r1 FLOAT; r2 FLOAT;
     p_nos VARCHAR(20)[];
 BEGIN
     SELECT array_agg(uuid) INTO pool FROM _res_pool; pc := array_length(pool,1);
@@ -634,13 +854,14 @@ BEGIN
         r_uuid := pool[i]; pool[i] := pool[idx]; pool[idx] := r_uuid;
     END LOOP;
     FOR i IN 1..1000 LOOP
+        r1 := random(); r2 := random();
         INSERT INTO key_person (uuid, control_level, control_type, designated_at, revoked_at,
             responsible_police_no, is_deleted)
         VALUES (pool[i],
-            CASE WHEN random()<0.50 THEN '一级' WHEN random()<0.75 THEN '二级' ELSE '三级' END,
-            CASE WHEN random()<0.22 THEN '刑满释放人员' WHEN random()<0.42 THEN '社区矫正人员'
-                 WHEN random()<0.60 THEN '涉毒人员' WHEN random()<0.75 THEN '信访重点人员'
-                 WHEN random()<0.85 THEN '涉稳人员' WHEN random()<0.93 THEN '精神障碍患者(肇事肇祸风险)'
+            CASE WHEN r1<0.50 THEN '一级' WHEN r1<0.75 THEN '二级' ELSE '三级' END,
+            CASE WHEN r2<0.22 THEN '刑满释放人员' WHEN r2<0.42 THEN '社区矫正人员'
+                 WHEN r2<0.60 THEN '涉毒人员' WHEN r2<0.75 THEN '信访重点人员'
+                 WHEN r2<0.85 THEN '涉稳人员' WHEN r2<0.93 THEN '精神障碍患者(肇事肇祸风险)'
                  ELSE '其他重点人员' END,
             CURRENT_DATE - (floor(random()*1095)::INT || ' days')::INTERVAL,
             CASE WHEN random()<0.15 THEN CURRENT_DATE - (floor(random()*365)::INT || ' days')::INTERVAL ELSE NULL END,
@@ -680,16 +901,18 @@ END $$;
 DO $$
 DECLARE
     kp_uuids VARCHAR(36)[]; kp_police VARCHAR(20)[]; kc INT; i INT; idx INT;
+    area_ids BIGINT[]; ac INT;
 BEGIN
     SELECT array_agg(uuid), array_agg(responsible_police_no) INTO kp_uuids, kp_police FROM _kp_pool;
     kc := array_length(kp_uuids, 1);
+    SELECT ids INTO area_ids FROM _area_districts; ac := array_length(area_ids,1);
     FOR i IN 1..1500 LOOP
         idx := floor(random()*kc)::INT + 1;
         INSERT INTO petition_record (key_person_uuid, handler_police_no, petition_time, address,
             remark, evaluation, is_deleted)
         VALUES (kp_uuids[idx], kp_police[idx],
             CURRENT_TIMESTAMP - (floor(random()*730)::INT || ' days')::INTERVAL,
-            '信访地址'||i,
+            gen_address(area_ids[floor(random()*ac)::INT+1], i + 300000),
             CASE WHEN random()<0.40 THEN arr_rand(ARRAY['反映问题已解决','情绪稳定','要求复查','已解释政策']) ELSE NULL END,
             arr_rand(ARRAY['满意','基本满意','不满意','待评价','无法评价']), 0);
     END LOOP;
@@ -701,14 +924,16 @@ END $$;
 DO $$
 DECLARE
     pool VARCHAR(36)[]; pc INT; i INT;
+    area_ids BIGINT[]; ac INT;
 BEGIN
     SELECT array_agg(uuid) INTO pool FROM _res_pool; pc := array_length(pool,1);
+    SELECT ids INTO area_ids FROM _area_districts; ac := array_length(area_ids,1);
     FOR i IN 1..200 LOOP
         INSERT INTO missing_person (resident_uuid, missing_date, missing_place, photo, appearance,
             medical_history, possible_way, contact_phone, status, is_deleted)
         VALUES (pool[floor(random()*pc)::INT+1],
             CURRENT_DATE - (floor(random()*730)::INT || ' days')::INTERVAL,
-            '失踪地点'||i, 'http://photo.pdm.test/missing_'||i||'.jpg',
+            gen_area_path(area_ids[floor(random()*ac)::INT+1]), 'http://photo.pdm.test/missing_'||i||'.jpg',
             arr_rand(ARRAY['身高约170cm，体型中等','身高约165cm，偏瘦','身高约175cm，偏胖','身高约160cm','身高约180cm','身高约155cm，微胖']),
             CASE WHEN random()<0.15 THEN arr_rand(ARRAY['高血压','糖尿病','心脏病','抑郁症史']) ELSE NULL END,
             CASE WHEN random()<0.30 THEN arr_rand(ARRAY['可能去往外省','可能去往邻市','可能投靠亲属']) ELSE NULL END,
@@ -781,8 +1006,8 @@ BEGIN
             migration_permit_no, remark, is_deleted)
         VALUES (CASE WHEN random()<0.70 AND handlers IS NOT NULL THEN handlers[floor(random()*array_length(handlers,1))::INT+1] ELSE NULL END,
             pool[floor(random()*pc)::INT+1],
-            '迁入地址'||i, area_ids[floor(random()*ac)::INT+1],
-            '迁出地址'||i, area_ids[floor(random()*ac)::INT+1],
+            gen_address(area_ids[floor(random()*ac)::INT+1], i + 400000), area_ids[floor(random()*ac)::INT+1],
+            gen_address(area_ids[floor(random()*ac)::INT+1], i + 500000), area_ids[floor(random()*ac)::INT+1],
             'attachment_migration_'||i||'.pdf',
             CASE WHEN random()<0.60 THEN '市内' WHEN random()<0.88 THEN '省内' ELSE '跨省' END,
             CURRENT_DATE - (floor(random()*180)::INT || ' days')::INTERVAL,
@@ -804,7 +1029,7 @@ END $$;
 -- ============================================================
 INSERT INTO approval_permit (permit_no, issue_date, expiry_date, issuing_authority, status, is_deleted)
 SELECT
-    'AP' || LPAD(gs::TEXT, 10, '0'),
+    '000000' || TO_CHAR(issue_d, 'YYYY') || LPAD(gs::TEXT, 6, '0'),
     issue_d,
     issue_d + (30 + floor(random() * 60)::INT || ' days')::INTERVAL,
     arr_rand(ARRAY['北京市公安局','上海市公安局','广州市公安局','深圳市公安局',
@@ -819,7 +1044,7 @@ LATERAL (SELECT CURRENT_DATE - (floor(random() * 365)::INT || ' days')::INTERVAL
 -- ============================================================
 INSERT INTO migration_permit (permit_no, issue_date, expiry_date, outgoing_police_station, status, is_deleted)
 SELECT
-    'MP' || LPAD(gs::TEXT, 10, '0'),
+    '000000' || TO_CHAR(issue_d, 'YYYY') || LPAD(gs::TEXT, 6, '0'),
     issue_d,
     issue_d + (30 + floor(random() * 60)::INT || ' days')::INTERVAL,
     arr_rand(ARRAY['东城分局','西城分局','朝阳分局','海淀分局','丰台分局',
@@ -905,6 +1130,7 @@ DROP TABLE IF EXISTS _res_pool;
 DROP TABLE IF EXISTS _user_pool;
 DROP TABLE IF EXISTS _police_pool;
 DROP TABLE IF EXISTS _permit_pool;
+DROP TABLE IF EXISTS _permit_pool_all;
 DROP TABLE IF EXISTS _kp_pool;
 DROP TABLE IF EXISTS _missing_pool;
 DROP TABLE IF EXISTS _area_districts;

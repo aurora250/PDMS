@@ -498,5 +498,3 @@ v3 优化聚焦于 PDM 系统的**三大性能瓶颈**，实施了分层优化�
 *代码版本：yiyako branch, commit based on 2d68b55*
 *测试工具链：Maven 3.9.11 → Docker Compose v3 → Python 3.10 (40 threads × 3 scenarios)*
 *上一版本：[BASELINE-REPORT-v2.md](./BASELINE-REPORT-v2.md)*
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)

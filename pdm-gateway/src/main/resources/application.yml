@@ -53,6 +53,18 @@ spring:
                   replenishRate: 300
                   burstCapacity: 600
                   requestedTokens: 1
+        - id: pdm-statistics
+          uri: lb://pdm-resident
+          predicates:
+            - Path=/api/statistics/**
+          filters:
+            - StripPrefix=0
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter:
+                  replenishRate: 100
+                  burstCapacity: 200
+                  requestedTokens: 1
         - id: pdm-household
           uri: lb://pdm-household
           predicates:

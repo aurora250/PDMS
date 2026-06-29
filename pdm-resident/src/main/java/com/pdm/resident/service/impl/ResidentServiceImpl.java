@@ -19,7 +19,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -150,19 +149,19 @@ public class ResidentServiceImpl implements ResidentService {
     }
 
     @Override
-    @Cacheable(value = "residentSearch", key = "#request.cacheKey()", unless = "#result == null || #result.total == 0")
     public PageResult<Resident> search(ResidentSearchRequest request) {
         try {
             List<Resident> residents = residentEsRepository.multiConditionSearch(request.getName(), request.getGender(),
                     request.getNation(), request.getNationCode(), request.getEducationLevel(),
                     request.getEducationCode(), request.getMaritalStatus(), request.getHouseholdStatus(),
                     request.getOffset(), request.getSize());
-            // Estimate total from ES (simplified)
-            long total = residents.size();
+            long total = residentEsRepository.multiConditionCount(request.getName(), request.getGender(),
+                    request.getNation(), request.getNationCode(), request.getEducationLevel(),
+                    request.getEducationCode(), request.getMaritalStatus(), request.getHouseholdStatus());
             return PageResult.of(residents, total, request.getPage(), request.getSize());
         } catch (Exception e) {
             log.warn("ES search failed, fallback to DB", e);
-            // Fallback: query local shard via MyBatis-Plus
+            // Fallback: query local shard via MyBatis-Plus with proper pagination
             LambdaQueryWrapper<Resident> wrapper = new LambdaQueryWrapper<>();
             if (StringUtils.hasText(request.getName())) {
                 wrapper.like(Resident::getName, request.getName());
@@ -176,9 +175,10 @@ public class ResidentServiceImpl implements ResidentService {
             if (StringUtils.hasText(request.getMaritalStatus())) {
                 wrapper.eq(Resident::getMaritalStatus, request.getMaritalStatus());
             }
-            wrapper.last("LIMIT " + request.getSize() + " OFFSET " + request.getOffset());
-            List<Resident> residents = residentMapper.selectList(wrapper);
-            return PageResult.of(residents, residents.size(), request.getPage(), request.getSize());
+            com.baomidou.mybatisplus.extension.plugins.pagination.Page<Resident> pageResult = residentMapper.selectPage(
+                    com.baomidou.mybatisplus.extension.plugins.pagination.Page.of(request.getPage(), request.getSize()),
+                    wrapper);
+            return PageResult.of(pageResult.getRecords(), pageResult.getTotal(), request.getPage(), request.getSize());
         }
     }
 
