@@ -1,0 +1,16 @@
+searchBody
+{"page":1,"size":50}
+{"page":1,"size":50,"name":"张"}
+{"page":1,"size":50,"gender":"男"}
+{"page":1,"size":50,"nation":"汉族"}
+{"page":1,"size":50,"maritalStatus":"已婚"}
+{"page":1,"size":50,"name":"张","gender":"男","nation":"汉族"}
+{"page":1,"size":20,"name":"王","gender":"女","maritalStatus":"未婚","householdStatus":"正常"}
+{"page":2,"size":30,"name":"李","nation":"汉族","educationLevel":"大学本科"}
+{"page":1,"size":50,"name":"张","gender":"男","nation":"汉族","maritalStatus":"已婚","householdStatus":"正常","minAge":20,"maxAge":60}
+{"page":1,"size":50,"name":"刘","gender":"女","nation":"回族","nationCode":"03","educationLevel":"研究生","educationCode":"22","maritalStatus":"已婚","householdStatus":"正常","minAge":25,"maxAge":55}
+{"page":1,"size":50,"gender":"男","educationLevel":"大学本科","maritalStatus":"未婚","householdStatus":"正常","minAge":18,"maxAge":35}
+{"page":3,"size":20,"name":"陈","nation":"汉族","maritalStatus":"已婚"}
+{"page":1,"size":10,"name":"赵","nation":"满族","nationCode":"11","educationLevel":"高中","educationCode":"30","maritalStatus":"已婚","householdStatus":"正常"}
+{"page":1,"size":50,"minAge":60,"maxAge":90}
+{"page":1,"size":50,"name":"孙","gender":"男","nation":"汉族","educationLevel":"大学本科","educationCode":"21","maritalStatus":"已婚","householdStatus":"正常","minAge":30,"maxAge":50}
