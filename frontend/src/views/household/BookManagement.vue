@@ -12,8 +12,8 @@
         <el-form-item><el-button type="primary" @click="load">搜索</el-button></el-form-item>
       </el-form>
       <el-table :data="list" v-loading="loading" stripe>
-        <el-table-column prop="bookNo" label="户口簿号" width="200" />
-        <el-table-column prop="householderName" label="户主" width="120" />
+        <el-table-column prop="householdBookNo" label="户口簿号" width="200" />
+        <el-table-column prop="householderUuid" label="户主UUID" width="240" />
         <el-table-column prop="hukouAddress" label="户籍地址" min-width="200" />
         <el-table-column prop="establishDate" label="成立日期" width="120" />
         <el-table-column prop="status" label="状态" width="100">
@@ -102,11 +102,11 @@ async function load() {
 }
 
 async function handleReissue(row: any) {
-  try { await householdApi.reissueBook({ bookNo: row.bookNo }); showSuccess('补办申请已提交'); load() } catch { /* ignore */ }
+  try { await householdApi.reissueBook({ bookNo: row.householdBookNo }); showSuccess('补办申请已提交'); load() } catch { /* ignore */ }
 }
 
 async function handleRenew(row: any) {
-  try { await householdApi.renewBook({ bookNo: row.bookNo }); showSuccess('换发申请已提交'); load() } catch { /* ignore */ }
+  try { await householdApi.renewBook({ bookNo: row.householdBookNo }); showSuccess('换发申请已提交'); load() } catch { /* ignore */ }
 }
 
 function openApply() {
