@@ -17,7 +17,7 @@
         </el-form-item>
         <el-form-item><el-button type="primary" @click="load">搜索</el-button></el-form-item>
       </el-form>
-      <el-table :data="list" v-loading="loading" stripe>
+      <el-table :data="list" v-loading="loading" stripe border>
         <el-table-column prop="householdBookNo" label="户口簿号" width="200" />
         <el-table-column prop="householderName" label="户主" width="120" />
         <el-table-column prop="hukouAddress" label="户籍地址" min-width="200" />
@@ -34,7 +34,7 @@
       </el-table>
       <div style="margin-top:16px;text-align:right">
         <el-pagination v-model:current-page="page.current" v-model:page-size="page.size" :total="page.total"
-          layout="total,prev,pager,next" @current-change="load" @size-change="load" />
+          layout="total,sizes,prev,pager,next" :page-sizes="[10,20,50,100]" @current-change="load" @size-change="load" />
       </div>
     </el-card>
 

@@ -46,8 +46,62 @@ export const phoneRule = {
   trigger: 'blur',
 }
 
+/** 邮箱格式校验 */
+export function isValidEmail(email: string): boolean {
+  if (!email) return false
+  return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)
+}
+
+export const emailRule = {
+  pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+  message: '请输入正确的邮箱地址',
+  trigger: 'blur',
+}
+
 /** UUID 格式校验 */
 export function isValidUUID(uuid: string): boolean {
   if (!uuid) return false
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid)
 }
+
+export const uuidRule = {
+  pattern: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+  message: '请输入合法的UUID格式',
+  trigger: 'blur',
+}
+
+/** 警号格式校验 (P + 8位数字) */
+export function isValidPoliceNo(no: string): boolean {
+  if (!no) return false
+  return /^P\d{8}$/.test(no)
+}
+
+export const policeNoRule = {
+  pattern: /^P\d{8}$/,
+  message: '警号格式应为P开头+8位数字，如 P20260001',
+  trigger: 'blur',
+}
+
+/** 中文姓名校验 (2-20个中文字符) */
+export function isValidChineseName(name: string): boolean {
+  if (!name) return false
+  return /^[一-龥·]{2,20}$/.test(name)
+}
+
+export const chineseNameRule = {
+  pattern: /^[一-龥·]{2,20}$/,
+  message: '请输入2-20位中文姓名',
+  trigger: 'blur',
+}
+
+/** 密码强度校验 (6-20位) */
+export const passwordRule = {
+  min: 6,
+  max: 20,
+  message: '密码长度需在6-20位之间',
+  trigger: 'blur',
+}
+
+/** 通用必填提示 */
+export const requiredMsg = (label: string) => `请输入${label}`
+export const selectRequiredMsg = (label: string) => `请选择${label}`

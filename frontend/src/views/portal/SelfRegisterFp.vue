@@ -139,6 +139,7 @@ const form = reactive({
 
 const rules = {
   name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
+  gender: [{ required: true, message: '请选择性别', trigger: 'change' }],
   idCardNo: [{ required: true, message: '请输入身份证号', trigger: 'blur' }, idCardRule],
   nation: [{ required: true, message: '请选择民族', trigger: 'change' }],
   birthDate: [{ required: true, message: '请选择出生日期', trigger: 'change' }],

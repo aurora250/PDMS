@@ -5,7 +5,7 @@
       <el-button v-if="hasPermission('keyperson:petition:write')" type="primary" @click="openCreate">登记信访</el-button>
     </div>
     <el-card>
-      <el-table :data="list" v-loading="loading" stripe>
+      <el-table :data="list" v-loading="loading" stripe border>
         <el-table-column prop="keyPersonUuid" label="人员UUID" width="200" show-overflow-tooltip />
         <el-table-column prop="petitionTime" label="信访时间" width="170" />
         <el-table-column prop="address" label="信访地点" min-width="150" />
@@ -15,7 +15,7 @@
       </el-table>
       <div style="margin-top:16px;text-align:right">
         <el-pagination v-model:current-page="page.current" v-model:page-size="page.size" :total="page.total"
-          layout="total,prev,pager,next" @current-change="load" @size-change="load" />
+          layout="total,sizes,prev,pager,next" :page-sizes="[10,20,50,100]" @current-change="load" @size-change="load" />
       </div>
     </el-card>
 

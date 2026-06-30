@@ -23,7 +23,7 @@
           <el-button @click="resetFilters">重置</el-button>
         </el-form-item>
       </el-form>
-      <el-table :data="list" v-loading="loading" stripe>
+      <el-table :data="list" v-loading="loading" stripe border>
         <el-table-column prop="operatorUuid" label="操作人" width="200" show-overflow-tooltip />
         <el-table-column prop="operationType" label="操作类型" width="80" />
         <el-table-column prop="targetType" label="目标类型" width="120" />
@@ -33,7 +33,7 @@
       </el-table>
       <div style="margin-top:16px;text-align:right">
         <el-pagination v-model:current-page="page.current" v-model:page-size="page.size" :total="page.total"
-          layout="total,prev,pager,next" @current-change="load" @size-change="load" />
+          layout="total,sizes,prev,pager,next" :page-sizes="[10,20,50,100]" @current-change="load" @size-change="load" />
       </div>
     </el-card>
   </div>

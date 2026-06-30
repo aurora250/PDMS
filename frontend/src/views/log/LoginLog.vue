@@ -20,7 +20,7 @@
           <el-button @click="resetFilters">重置</el-button>
         </el-form-item>
       </el-form>
-      <el-table :data="list" v-loading="loading" stripe>
+      <el-table :data="list" v-loading="loading" stripe border>
         <el-table-column prop="userUuid" label="用户UUID" width="200" show-overflow-tooltip />
         <el-table-column prop="loginTime" label="登录时间" width="170" />
         <el-table-column prop="ipAddress" label="IP地址" width="140" />
@@ -35,7 +35,7 @@
       </el-table>
       <div style="margin-top:16px;text-align:right">
         <el-pagination v-model:current-page="page.current" v-model:page-size="page.size" :total="page.total"
-          layout="total,prev,pager,next" @current-change="load" @size-change="load" />
+          layout="total,sizes,prev,pager,next" :page-sizes="[10,20,50,100]" @current-change="load" @size-change="load" />
       </div>
     </el-card>
   </div>
@@ -83,6 +83,6 @@ onMounted(load)
 </script>
 
 <style scoped>
-.page-header { margin-bottom: 16px; }
+.page-header { margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
 .page-header h3 { margin: 0; }
 </style>

@@ -1,8 +1,21 @@
 <template>
   <el-container class="app-layout">
     <el-aside :width="app.sidebarCollapsed ? '64px' : '220px'" class="sidebar">
-      <div class="logo">PDM</div>
-      <el-menu :default-active="route.path" :collapse="app.sidebarCollapsed" router>
+      <div class="logo">
+        <svg class="logo-shield" viewBox="0 0 32 32" width="28" height="28" v-show="!app.sidebarCollapsed">
+          <path d="M16 2 L28 6 L28 16 C28 22 16 30 16 30 C16 30 4 22 4 16 L4 6 Z" fill="#c9a84c" stroke="#d4b55a" stroke-width="1.2"/>
+          <polygon points="16,8 18.5,13.5 24.5,14 20,18 21.5,23.5 16,20 10.5,23.5 12,18 7.5,14 13.5,13.5" fill="#0f1f38"/>
+        </svg>
+        <svg class="logo-shield-mini" viewBox="0 0 32 32" width="24" height="24" v-show="app.sidebarCollapsed">
+          <path d="M16 2 L28 6 L28 16 C28 22 16 30 16 30 C16 30 4 22 4 16 L4 6 Z" fill="#c9a84c" stroke="#d4b55a" stroke-width="1.2"/>
+          <polygon points="16,8 18.5,13.5 24.5,14 20,18 21.5,23.5 16,20 10.5,23.5 12,18 7.5,14 13.5,13.5" fill="#0f1f38"/>
+        </svg>
+        <div class="logo-text" v-show="!app.sidebarCollapsed">
+          <span class="logo-title">人口数据库管理</span>
+          <span class="logo-subtitle">人口数据库管理信息平台</span>
+        </div>
+      </div>
+      <el-menu :default-active="route.path" :collapse="app.sidebarCollapsed" router background-color="#0f1f38" text-color="#b0c4da" active-text-color="#ffffff" class="sidebar-menu">
         <template v-for="item in visibleMenus" :key="item.path">
           <el-sub-menu v-if="item.children" :index="item.path">
             <template #title>
@@ -25,9 +38,13 @@
         <el-icon class="collapse-btn" @click="app.toggleSidebar()" :size="20">
           <Expand v-if="app.sidebarCollapsed" /><Fold v-else />
         </el-icon>
+        <span class="topbar-title">人口数据库管理系统</span>
         <div class="flex-1" />
         <el-dropdown @command="handleCommand">
           <span class="user-info">
+            <svg class="police-badge" viewBox="0 0 16 16" width="16" height="16">
+              <path d="M8 1 L14 3 L14 8 C14 11 8 15 8 15 C8 15 2 11 2 8 L2 3 Z" fill="#c9a84c" stroke="#d4b55a" stroke-width=".6"/>
+            </svg>
             {{ auth.username }} ({{ auth.role }})
             <el-icon><ArrowDown /></el-icon>
           </span>
@@ -54,6 +71,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import { usePermission } from '@/composables/usePermission'
 import ChangePasswordDialog from '@/components/ChangePasswordDialog.vue'
+import {ArrowDown, Expand, Fold} from "@element-plus/icons-vue";
 
 const auth = useAuthStore()
 const app = useAppStore()
@@ -163,10 +181,80 @@ function handleCommand(cmd: string) {
 
 <style scoped>
 .app-layout { height: 100vh; }
-.sidebar { background: #1d1e2c; overflow-y: auto; }
-.sidebar .logo { color: #fff; text-align: center; padding: 16px; font-size: 20px; font-weight: bold; }
-.topbar { display: flex; align-items: center; background: #fff; border-bottom: 1px solid #e4e7ed; padding: 0 16px; }
-.collapse-btn { cursor: pointer; }
+
+/* ── 侧栏 ── */
+.sidebar {
+  background: var(--pdm-sidebar);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.sidebar .logo {
+  color: #fff;
+  text-align: center;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.logo-shield, .logo-shield-mini {
+  flex-shrink: 0;
+}
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.logo-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #ffffff;
+}
+.logo-subtitle {
+  font-size: 11px;
+  color: var(--pdm-accent);
+  letter-spacing: 2px;
+  font-weight: 500;
+}
+
+/* 侧栏菜单覆盖 */
+.sidebar-menu {
+  border-right: none !important;
+}
+.sidebar-menu .el-menu-item.is-active {
+  background-color: var(--pdm-sidebar-active) !important;
+}
+
+/* ── 顶栏 ── */
+.topbar {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-bottom: 1px solid var(--pdm-header-border);
+  padding: 0 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  z-index: 10;
+}
+.topbar-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--pdm-primary);
+  margin-left: 12px;
+  letter-spacing: 1px;
+}
+.collapse-btn { cursor: pointer; color: #606266; }
+.collapse-btn:hover { color: var(--pdm-primary); }
 .flex-1 { flex: 1; }
-.user-info { cursor: pointer; display: flex; align-items: center; gap: 4px; }
+.user-info {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #303133;
+  font-size: 13px;
+}
+.police-badge { vertical-align: middle; }
 </style>

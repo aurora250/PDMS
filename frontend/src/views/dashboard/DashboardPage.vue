@@ -532,23 +532,24 @@ onMounted(async () => {
 }
 .top-filter-bar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 16px; background: #fff; border-radius: 8px;
-  margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.06); flex-shrink: 0;
+  padding: 8px 16px; background: var(--pdm-header-bg); border-radius: 8px;
+  margin-bottom: 12px; box-shadow: var(--pdm-card-shadow); flex-shrink: 0;
 }
 .filter-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .filter-label { font-size: 13px; color: #606266; white-space: nowrap; }
-.filter-title h3 { margin: 0; font-size: 16px; }
+.filter-title h3 { margin: 0; font-size: 16px; color: var(--pdm-primary); }
 .dashboard-body { display: flex; flex: 1; gap: 12px; min-height: 0; overflow: hidden; }
 
 /* 左侧面板 */
 .left-panel {
   position: relative; width: 190px; flex-shrink: 0;
-  background: #fff; border-radius: 8px; padding: 12px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.06); overflow-y: auto; transition: width 0.2s;
+  background: var(--pdm-header-bg); border-radius: 8px; padding: 12px;
+  box-shadow: var(--pdm-card-shadow); overflow-y: auto; transition: width 0.2s;
+  border-top: 3px solid var(--pdm-primary);
 }
 .left-panel.collapsed { width: 36px; padding: 8px; }
 .panel-toggle { position: absolute; top: 8px; right: 8px; cursor: pointer; color: #909399; z-index: 1; }
-.panel-toggle:hover { color: #409eff; }
+.panel-toggle:hover { color: var(--pdm-primary-light); }
 .filter-group { margin-bottom: 16px; }
 .filter-group h4 { font-size: 13px; color: #303133; margin: 0 0 8px; }
 .hint { font-size: 11px; color: #909399; }
@@ -562,12 +563,12 @@ onMounted(async () => {
 .color-dot.green { background: linear-gradient(135deg, #006d2c, #edf8e9); }
 .color-dot.orange { background: linear-gradient(135deg, #a63603, #feedde); }
 .color-dot.purple { background: linear-gradient(135deg, #6b3fb8, #f3e8ff); }
-.color-dot.active { border-color: #303133; }
+.color-dot.active { border-color: var(--pdm-primary); }
 
 /* 中央地图 */
 .map-area {
-  flex: 1; min-width: 500px; background: #fff; border-radius: 8px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.06); overflow: hidden;
+  flex: 1; min-width: 500px; background: var(--pdm-header-bg); border-radius: 8px;
+  box-shadow: var(--pdm-card-shadow); overflow: hidden;
   display: flex; min-height: 0;
 }
 .map-area > :deep(.china-map-wrapper) { flex: 1; display: flex; flex-direction: column; min-height: 0; }
@@ -576,9 +577,10 @@ onMounted(async () => {
 /* 右侧面板 */
 .right-panel {
   position: relative; width: 340px; flex-shrink: 0;
-  background: #fff; border-radius: 8px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  background: var(--pdm-header-bg); border-radius: 8px;
+  box-shadow: var(--pdm-card-shadow);
   transition: width 0.2s; overflow: hidden; display: flex; flex-direction: column;
+  border-top: 3px solid var(--pdm-primary);
 }
 .right-panel.collapsed { width: 36px; }
 .right-toggle { left: 8px; right: auto; }

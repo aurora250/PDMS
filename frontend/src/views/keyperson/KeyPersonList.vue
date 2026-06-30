@@ -24,7 +24,7 @@
         </el-form-item>
         <el-form-item><el-button @click="load">刷新</el-button></el-form-item>
       </el-form>
-      <el-table :data="list" v-loading="loading" stripe>
+      <el-table :data="list" v-loading="loading" stripe border>
         <el-table-column prop="uuid" label="UUID" width="200" show-overflow-tooltip />
         <el-table-column prop="controlLevel" label="管控级别" width="100" />
         <el-table-column prop="controlType" label="管控类型" min-width="150" />
@@ -39,7 +39,7 @@
       </el-table>
       <div style="margin-top:16px;text-align:right">
         <el-pagination v-model:current-page="page.current" v-model:page-size="page.size" :total="page.total"
-          layout="total,prev,pager,next" @current-change="load" @size-change="load" />
+          layout="total,sizes,prev,pager,next" :page-sizes="[10,20,50,100]" @current-change="load" @size-change="load" />
       </div>
     </el-card>
 
@@ -113,6 +113,7 @@ const rules = {
   controlLevel: [{ required: true, message: '请选择管控级别', trigger: 'change' }],
   controlType: [{ required: true, message: '请选择管控类型', trigger: 'change' }],
   responsiblePoliceNo: [{ required: true, message: '请输入责任民警编号', trigger: 'blur' }],
+  designatedAt: [{ required: true, message: '请选择列管日期', trigger: 'change' }],
 }
 
 async function load() {
