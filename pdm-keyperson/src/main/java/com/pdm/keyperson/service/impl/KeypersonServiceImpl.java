@@ -56,12 +56,15 @@ public class KeypersonServiceImpl implements KeypersonService {
 
     @Override
     @Transactional
-    public KeyPerson updateControlLevel(String uuid, String controlLevel) {
+    public KeyPerson updateControlLevel(String uuid, String controlLevel, String controlType) {
         KeyPerson keyPerson = keyPersonMapper.selectByUuid(uuid);
         if (keyPerson == null) {
             throw new BusinessException(ErrorCode.KEY_PERSON_NOT_FOUND);
         }
         keyPerson.setControlLevel(controlLevel);
+        if (controlType != null && !controlType.isEmpty()) {
+            keyPerson.setControlType(controlType);
+        }
         keyPersonMapper.updateById(keyPerson);
         return keyPerson;
     }

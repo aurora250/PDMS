@@ -662,14 +662,6 @@ BEGIN
     DROP TABLE IF EXISTS _permit_pool;
     CREATE TEMP TABLE _permit_pool AS SELECT permit_no, expiry_date FROM resident_permit WHERE status = '过期';
 
-    -- 所有 key_person
-    DROP TABLE IF EXISTS _kp_pool;
-    CREATE TEMP TABLE _kp_pool AS SELECT uuid, responsible_police_no FROM key_person;
-
-    -- 所有 missing_person (已寻回)
-    DROP TABLE IF EXISTS _missing_pool;
-    CREATE TEMP TABLE _missing_pool AS SELECT rid, missing_date FROM missing_person WHERE status = '已经寻回';
-
     CREATE INDEX IF NOT EXISTS _res_pool_idx ON _res_pool(uuid);
     CREATE INDEX IF NOT EXISTS _user_pool_idx ON _user_pool(user_uuid);
 END $$;
@@ -768,7 +760,13 @@ BEGIN
         INSERT INTO resident_permit (permit_no, uuid, issue_date, expiry_date, status, is_deleted)
         VALUES ('000000' || TO_CHAR(issue_d, 'YYYYMM') || LPAD(i::TEXT, 6, '0'), pool[floor(random()*pc)::INT+1], issue_d,
             issue_d + (365 + floor(random()*1095)::INT || ' days')::INTERVAL,
-            CASE WHEN random()<0.85 THEN '有效' WHEN random()<0.70 THEN '过期' ELSE '注销' END, 0);
+            CASE
+                WHEN random()<0.10 THEN '申领'
+                WHEN random()<0.25 THEN '已批准'
+                WHEN random()<0.75 THEN '有效'
+                WHEN random()<0.85 THEN '过期'
+                ELSE '注销'
+            END, 0);
     END LOOP;
     -- 刷新居住证池（全部有效证，供流动人口登记引用）
     DROP TABLE IF EXISTS _permit_pool_all;
@@ -949,21 +947,24 @@ DO $$
 DECLARE
     pool VARCHAR(36)[]; pc INT; i INT;
     area_ids BIGINT[]; ac INT;
+    v_uuid VARCHAR(36); v_name VARCHAR(50); v_gender VARCHAR(4);
 BEGIN
     SELECT array_agg(uuid) INTO pool FROM _res_pool; pc := array_length(pool,1);
     SELECT ids INTO area_ids FROM _area_districts; ac := array_length(area_ids,1);
     FOR i IN 1..200 LOOP
+        -- 预取随机 UUID 和对应的 name/gender，避免每轮全表扫描 _res_pool
+        v_uuid := pool[floor(random()*pc)::INT+1];
+        SELECT name, gender INTO v_name, v_gender FROM _res_pool WHERE uuid = v_uuid;
         INSERT INTO missing_person (resident_uuid, name, gender, missing_date, missing_place, photo, appearance,
             medical_history, possible_way, contact_phone, status, is_deleted)
-        SELECT r.uuid, r.name, r.gender,
+        VALUES (v_uuid, v_name, v_gender,
             CURRENT_DATE - (floor(random()*730)::INT || ' days')::INTERVAL,
             gen_area_path(area_ids[floor(random()*ac)::INT+1]), 'http://photo.pdm.test/missing_'||i||'.jpg',
             arr_rand(ARRAY['身高约170cm，体型中等','身高约165cm，偏瘦','身高约175cm，偏胖','身高约160cm','身高约180cm','身高约155cm，微胖']),
             CASE WHEN random()<0.15 THEN arr_rand(ARRAY['高血压','糖尿病','心脏病','抑郁症史']) ELSE NULL END,
             CASE WHEN random()<0.30 THEN arr_rand(ARRAY['可能去往外省','可能去往邻市','可能投靠亲属']) ELSE NULL END,
             '138'||LPAD(floor(random()*100000000)::TEXT,8,'0'),
-            CASE WHEN random()<0.75 THEN '失踪中' ELSE '已经寻回' END, 0
-        FROM _res_pool r WHERE r.uuid = pool[floor(random()*pc)::INT+1];
+            CASE WHEN random()<0.75 THEN '失踪中' ELSE '已经寻回' END, 0);
     END LOOP;
     -- 刷新失踪池
     DROP TABLE IF EXISTS _missing_pool;
@@ -1040,7 +1041,7 @@ BEGIN
 
         FOR j IN 1..v_chain_len LOOP
             v_curr_area := area_ids[1 + ((i + j) % ac)];
-            v_bt := CASE WHEN j % 3 = 0 THEN '跨省' WHEN j % 3 = 1 THEN '省内' ELSE '市内' END;
+            v_bt := CASE WHEN (i + j) % 3 = 0 THEN '跨省' WHEN (i + j) % 3 = 1 THEN '省内' ELSE '市内' END;
 
             INSERT INTO household_migration_request (
                 handler_uuid, applicant_uuid, incoming_address,

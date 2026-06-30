@@ -76,6 +76,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { ElMessageBox } from 'element-plus'
 import { residentApi } from '@/api/resident'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
@@ -120,10 +121,12 @@ async function load() {
 
 async function approve(row: any, status: string) {
   try {
+    const actionText = status === '驳回' ? '确认驳回该变更请求？' : '确认通过该变更请求？'
+    await ElMessageBox.confirm(actionText, '确认操作', { type: 'warning' })
     await residentApi.approveChangeRequest(row.rid, status)
     showSuccess(status === '通过' ? '已通过' : '已驳回')
     load()
-  } catch (e: any) { showError(e.message || '操作失败') }
+  } catch (e: any) { if (e !== 'cancel') showError(e.message || '操作失败') }
 }
 
 function openCreate() {

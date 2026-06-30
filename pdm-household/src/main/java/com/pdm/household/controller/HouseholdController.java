@@ -31,11 +31,24 @@ public class HouseholdController {
     // ──────────── 户口簿 ────────────
     @GetMapping("/api/household/book/search")
     public Result<PageResult<HouseholdRegister>> listBooks(@RequestParam(required = false) String keyword,
-            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(required = false) String status, @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
         LambdaQueryWrapper<HouseholdRegister> w = new LambdaQueryWrapper<>();
-        if (keyword != null && !keyword.isEmpty())
-            w.and(wr -> wr.like(HouseholdRegister::getHouseholdBookNo, keyword).or()
-                    .like(HouseholdRegister::getHouseholderUuid, keyword));
+        // keyword: 先按户口簿号 LIKE 搜索；若匹配不到再通过 resident 表查户主姓名对应的 UUID
+        if (keyword != null && !keyword.isEmpty()) {
+            // 先查 resident 表中 name LIKE keyword 的 uuid
+            List<String> matchedUuids = residentMapper.selectUuidsByName(keyword);
+            if (!matchedUuids.isEmpty()) {
+                w.and(wr -> wr.like(HouseholdRegister::getHouseholdBookNo, keyword).or()
+                        .in(HouseholdRegister::getHouseholderUuid, matchedUuids).or()
+                        .like(HouseholdRegister::getHukouAddress, keyword));
+            } else {
+                w.and(wr -> wr.like(HouseholdRegister::getHouseholdBookNo, keyword).or()
+                        .like(HouseholdRegister::getHukouAddress, keyword));
+            }
+        }
+        if (status != null && !status.isEmpty())
+            w.eq(HouseholdRegister::getStatus, status);
         w.orderByDesc(HouseholdRegister::getCreateTime);
         Page<HouseholdRegister> r = bookMapper.selectPage(Page.of(page, size), w);
 
@@ -120,13 +133,18 @@ public class HouseholdController {
     // ──────────── 户籍迁移 ────────────
     @GetMapping("/api/household/migration")
     public Result<PageResult<HouseholdMigrationRequest>> listMigrations(@RequestParam(required = false) String status,
-            @RequestParam(required = false) String businessType, @RequestParam(defaultValue = "1") int page,
+            @RequestParam(required = false) String businessType, @RequestParam(required = false) String fromAddress,
+            @RequestParam(required = false) String toAddress, @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
         LambdaQueryWrapper<HouseholdMigrationRequest> w = new LambdaQueryWrapper<>();
         if (status != null && !status.isEmpty())
             w.eq(HouseholdMigrationRequest::getStatus, status);
         if (businessType != null && !businessType.isEmpty())
             w.eq(HouseholdMigrationRequest::getBusinessType, businessType);
+        if (fromAddress != null && !fromAddress.isEmpty())
+            w.like(HouseholdMigrationRequest::getOutgoingAddress, fromAddress);
+        if (toAddress != null && !toAddress.isEmpty())
+            w.like(HouseholdMigrationRequest::getIncomingAddress, toAddress);
         w.orderByDesc(HouseholdMigrationRequest::getCreateTime);
         Page<HouseholdMigrationRequest> r = migrationMapper.selectPage(Page.of(page, size), w);
         return Result.success(PageResult.of(r.getRecords(), r.getTotal(), page, size));
@@ -164,9 +182,14 @@ public class HouseholdController {
 
     // ──────────── 证件 ────────────
     @GetMapping("/api/household/approval-permit")
-    public Result<PageResult<ApprovalPermit>> listApprovalPermits(@RequestParam(defaultValue = "1") int page,
+    public Result<PageResult<ApprovalPermit>> listApprovalPermits(@RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String status, @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
         LambdaQueryWrapper<ApprovalPermit> w = new LambdaQueryWrapper<>();
+        if (keyword != null && !keyword.isEmpty())
+            w.like(ApprovalPermit::getPermitNo, keyword);
+        if (status != null && !status.isEmpty())
+            w.eq(ApprovalPermit::getStatus, status);
         w.orderByDesc(ApprovalPermit::getCreateTime);
         Page<ApprovalPermit> r = approvalPermitMapper.selectPage(Page.of(page, size), w);
         return Result.success(PageResult.of(r.getRecords(), r.getTotal(), page, size));
@@ -177,10 +200,20 @@ public class HouseholdController {
         return Result.success(householdService.issueApprovalPermit(permit));
     }
 
+    @PutMapping("/api/household/approval-permit/{id}/void")
+    public Result<ApprovalPermit> voidApprovalPermit(@PathVariable Long id) {
+        return Result.success(householdService.voidApprovalPermit(id));
+    }
+
     @GetMapping("/api/household/migration-permit")
-    public Result<PageResult<MigrationPermit>> listMigrationPermits(@RequestParam(defaultValue = "1") int page,
+    public Result<PageResult<MigrationPermit>> listMigrationPermits(@RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String status, @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
         LambdaQueryWrapper<MigrationPermit> w = new LambdaQueryWrapper<>();
+        if (keyword != null && !keyword.isEmpty())
+            w.like(MigrationPermit::getPermitNo, keyword);
+        if (status != null && !status.isEmpty())
+            w.eq(MigrationPermit::getStatus, status);
         w.orderByDesc(MigrationPermit::getCreateTime);
         Page<MigrationPermit> r = migrationPermitMapper.selectPage(Page.of(page, size), w);
         return Result.success(PageResult.of(r.getRecords(), r.getTotal(), page, size));
@@ -189,6 +222,11 @@ public class HouseholdController {
     @PostMapping("/api/household/migration-permit")
     public Result<MigrationPermit> issueMigrationPermit(@RequestBody MigrationPermit permit) {
         return Result.success(householdService.issueMigrationPermit(permit));
+    }
+
+    @PutMapping("/api/household/migration-permit/{id}/void")
+    public Result<MigrationPermit> voidMigrationPermit(@PathVariable Long id) {
+        return Result.success(householdService.voidMigrationPermit(id));
     }
 
     // ──────────── 行政区划 ────────────

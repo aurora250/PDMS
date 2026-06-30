@@ -28,7 +28,9 @@ export const householdApi = {
   // 准迁证
   listApprovalPermit: (params?: any) => request.get('/household/approval-permit', { params }),
   createApprovalPermit: (data: any) => request.post('/household/approval-permit', data),
+  voidApprovalPermit: (id: number) => request.put(`/household/approval-permit/${id}/void`),
   // 迁移证
   listMigrationPermit: (params?: any) => request.get('/household/migration-permit', { params }),
   createMigrationPermit: (data: any) => request.post('/household/migration-permit', data),
+  voidMigrationPermit: (id: number) => request.put(`/household/migration-permit/${id}/void`),
 }

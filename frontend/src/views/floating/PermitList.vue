@@ -85,6 +85,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { ElMessageBox } from 'element-plus'
 import { floatingApi } from '@/api/floating'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
@@ -130,11 +131,11 @@ async function load() {
 }
 
 async function approve(row: any) {
-  try { await floatingApi.approvePermit(row.id); showSuccess('已批准'); load() } catch { /* ignore */ }
+  try { await ElMessageBox.confirm('确认批准该居住证申请？', '确认操作', { type: 'warning' }); await floatingApi.approvePermit(row.id); showSuccess('已批准'); load() } catch { /* ignore */ }
 }
 
 async function issue(row: any) {
-  try { await floatingApi.issuePermit(row.id); showSuccess('已制发'); load() } catch { /* ignore */ }
+  try { await ElMessageBox.confirm('确认制发该居住证？', '确认操作', { type: 'warning' }); await floatingApi.issuePermit(row.id); showSuccess('已制发'); load() } catch { /* ignore */ }
 }
 
 function openApply() {

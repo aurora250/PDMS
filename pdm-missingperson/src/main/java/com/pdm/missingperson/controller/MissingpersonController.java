@@ -39,9 +39,10 @@ public class MissingpersonController {
     @GetMapping("/search")
     public Result<PageResult<MissingPerson>> search(@RequestParam(required = false) String residentUuid,
             @RequestParam(required = false) String status, @RequestParam(required = false) String name,
-            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(required = false) String province, @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
         PageRequest pageRequest = new PageRequest(page, size, null, "DESC");
-        return Result.success(missingpersonService.search(residentUuid, status, name, pageRequest));
+        return Result.success(missingpersonService.search(residentUuid, status, name, province, pageRequest));
     }
 
     @GetMapping("/statistics")

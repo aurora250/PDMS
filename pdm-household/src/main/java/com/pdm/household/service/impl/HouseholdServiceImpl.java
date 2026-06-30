@@ -233,6 +233,28 @@ public class HouseholdServiceImpl implements HouseholdService {
     }
 
     @Override
+    @Transactional
+    public ApprovalPermit voidApprovalPermit(Long id) {
+        ApprovalPermit permit = approvalPermitMapper.selectById(id);
+        if (permit == null)
+            throw new BusinessException(ErrorCode.DATA_NOT_FOUND, "证件不存在");
+        permit.setStatus("作废");
+        approvalPermitMapper.updateById(permit);
+        return permit;
+    }
+
+    @Override
+    @Transactional
+    public MigrationPermit voidMigrationPermit(Long id) {
+        MigrationPermit permit = migrationPermitMapper.selectById(id);
+        if (permit == null)
+            throw new BusinessException(ErrorCode.DATA_NOT_FOUND, "证件不存在");
+        permit.setStatus("作废");
+        migrationPermitMapper.updateById(permit);
+        return permit;
+    }
+
+    @Override
     public List<Area> getAreaTree() {
         return areaMapper.selectByLevel("省");
     }

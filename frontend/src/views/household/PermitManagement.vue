@@ -118,9 +118,10 @@ async function load() {
 async function handleVoid(row: any) {
   try {
     await ElMessageBox.confirm('确认作废该证件？', '确认作废', { type: 'warning' })
-    // Update status to 作废
     if (tab.value === 'approval') {
-      await householdApi.approveBusiness(row.rid, '已驳回')
+      await householdApi.voidApprovalPermit(row.id ?? row.rid)
+    } else {
+      await householdApi.voidMigrationPermit(row.id ?? row.rid)
     }
     showSuccess('已作废')
     load()

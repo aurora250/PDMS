@@ -82,6 +82,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { permissionGroupApi } from '@/api/auth'
 import { usePermission } from '@/composables/usePermission'
+import { ElMessageBox } from 'element-plus'
 import { showError, showSuccess } from '@/utils/auth'
 
 const { hasPermission } = usePermission()
@@ -226,8 +227,8 @@ async function handleSave() {
 }
 
 async function handleDelete(row: any) {
-  try { await permissionGroupApi.delete(row.groupId); showSuccess('删除成功'); load() }
-  catch (e: any) { showError(e.message || '删除失败') }
+  try { await ElMessageBox.confirm('确认删除该权限组？', '确认删除', { type: 'warning' }); await permissionGroupApi.delete(row.groupId); showSuccess('删除成功'); load() }
+  catch (e: any) { if (e !== 'cancel') showError(e.message || '删除失败') }
 }
 
 onMounted(load)

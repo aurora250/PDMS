@@ -73,7 +73,8 @@ public class MissingpersonServiceImpl implements MissingpersonService {
     }
 
     @Override
-    public PageResult<MissingPerson> search(String residentUuid, String status, String name, PageRequest pageRequest) {
+    public PageResult<MissingPerson> search(String residentUuid, String status, String name, String province,
+            PageRequest pageRequest) {
         LambdaQueryWrapper<MissingPerson> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(residentUuid)) {
             wrapper.eq(MissingPerson::getResidentUuid, residentUuid);
@@ -83,6 +84,9 @@ public class MissingpersonServiceImpl implements MissingpersonService {
         }
         if (StringUtils.hasText(name)) {
             wrapper.like(MissingPerson::getName, name);
+        }
+        if (StringUtils.hasText(province)) {
+            wrapper.like(MissingPerson::getMissingPlace, province);
         }
         wrapper.orderByDesc(MissingPerson::getCreateTime);
 

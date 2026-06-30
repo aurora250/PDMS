@@ -71,6 +71,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { ElMessageBox } from 'element-plus'
 import { householdApi } from '@/api/household'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
@@ -112,11 +113,11 @@ async function load() {
 }
 
 async function handleReissue(row: any) {
-  try { await householdApi.reissueBook({ bookNo: row.householdBookNo }); showSuccess('补办申请已提交'); load() } catch { /* ignore */ }
+  try { await ElMessageBox.confirm('确认补办该户口簿？', '确认操作', { type: 'warning' }); await householdApi.reissueBook({ bookNo: row.householdBookNo }); showSuccess('补办申请已提交'); load() } catch { /* ignore */ }
 }
 
 async function handleRenew(row: any) {
-  try { await householdApi.renewBook({ bookNo: row.householdBookNo }); showSuccess('换发申请已提交'); load() } catch { /* ignore */ }
+  try { await ElMessageBox.confirm('确认换发该户口簿？', '确认操作', { type: 'warning' }); await householdApi.renewBook({ bookNo: row.householdBookNo }); showSuccess('换发申请已提交'); load() } catch { /* ignore */ }
 }
 
 function openApply() {
