@@ -63,6 +63,7 @@ performance/results/*.jtl
 performance/results/*.json
 performance/results/jmeter-report/
 performance/results/debug-*
+performance/results/html-report
 performance/gatling/target/
 
 # JMeter generated logs and debug files

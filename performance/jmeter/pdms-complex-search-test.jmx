@@ -1,32 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
   <hashTree>
-
-    <!-- ============================================================ -->
-    <!-- PDMS 复杂查询性能测试 — 标准组件版 (JMeter 5.6 原生兼容)      -->
-    <!-- Target: http://172.22.217.154:8080                           -->
-    <!-- 核心 API: POST /api/resident/search (ES多条件搜索+PG回退)     -->
-    <!--                                                              -->
-    <!-- 图表报告通过 CLI 的 HTML Dashboard 生成:                      -->
-    <!--   jmeter -n -t this.jmx -l result.jtl -e -o report/          -->
-    <!-- Dashboard 包含: Response Times Over Time / Active Threads    -->
-    <!--   Over Time / TPS / Aggregate Report / Percentiles 等        -->
-    <!-- ============================================================ -->
     <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="PDMS - 复杂查询压测 (Resident Search)" enabled="true">
       <stringProp name="TestPlan.comments">
-PDMS 人口数据库管理系统 — 最复杂查询性能测试
-=============================================
-目标服务: http://172.22.217.154:8080
-核心 API: POST /api/resident/search
-
-查询路径: Elasticsearch 多条件匹配 (8字段) → PostgreSQL LambdaQuery 回退
-缓存层:   Redis (residentSearch cache)
-认证:     JWT Bearer Token
-
-线程模型: 阶梯加压 (通过 ThreadGroup ramp-up 模拟)
-  起始:  5 线程 (0s)
-  峰值: 50 线程 (150s)
-  持续时间: 300s
+Target: localhost:8080
+Core API: POST /api/resident/search (ES多条件 + PG回退)
+Threads: 5 -> 50 ramp-up 150s, duration 300s
       </stringProp>
       <boolProp name="TestPlan.functional_mode">false</boolProp>
       <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
@@ -47,13 +26,13 @@ PDMS 人口数据库管理系统 — 最复杂查询性能测试
             <stringProp name="Argument.value">http</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
-          <elementProp name="LOGIN_USERNAME" elementType="Argument">
-            <stringProp name="Argument.name">LOGIN_USERNAME</stringProp>
+          <elementProp name="USERNAME" elementType="Argument">
+            <stringProp name="Argument.name">USERNAME</stringProp>
             <stringProp name="Argument.value">admin</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
-          <elementProp name="LOGIN_PASSWORD" elementType="Argument">
-            <stringProp name="Argument.name">LOGIN_PASSWORD</stringProp>
+          <elementProp name="PASSWORD" elementType="Argument">
+            <stringProp name="Argument.name">PASSWORD</stringProp>
             <stringProp name="Argument.value">Admin@123</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
@@ -62,14 +41,10 @@ PDMS 人口数据库管理系统 — 最复杂查询性能测试
     </TestPlan>
     <hashTree>
 
-      <!-- ============================================================ -->
-      <!-- Thread Group: 阶梯加压模拟                                    -->
-      <!-- Ramp-up 150s: 5线程→50线程 线性递增 = 每30s增加约10线程      -->
-      <!-- Duration 300s + 30s shutdown                                 -->
-      <!-- ============================================================ -->
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Thread Group - 阶梯加压 (5→50)" enabled="true">
+      <!-- Thread Group: 50线程, 150s线性ramp-up, 300s持续 -->
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Thread Group (50 users / 300s)" enabled="true">
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
-        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop" enabled="true">
           <boolProp name="LoopController.continue_forever">false</boolProp>
           <intProp name="LoopController.loops">-1</intProp>
         </elementProp>
@@ -82,7 +57,7 @@ PDMS 人口数据库管理系统 — 最复杂查询性能测试
       <hashTree>
 
         <!-- HTTP Request Defaults -->
-        <ConfigTestElement guiclass="HttpDefaultsGui" testclass="ConfigTestElement" testname="HTTP Request Defaults" enabled="true">
+        <ConfigTestElement guiclass="HttpDefaultsGui" testclass="ConfigTestElement" testname="HTTP Defaults" enabled="true">
           <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
             <collectionProp name="Arguments.arguments"/>
           </elementProp>
@@ -90,15 +65,13 @@ PDMS 人口数据库管理系统 — 最复杂查询性能测试
           <stringProp name="HTTPSampler.port">${PORT}</stringProp>
           <stringProp name="HTTPSampler.protocol">${PROTOCOL}</stringProp>
           <stringProp name="HTTPSampler.contentEncoding">UTF-8</stringProp>
-          <stringProp name="HTTPSampler.path"></stringProp>
-          <stringProp name="HTTPSampler.concurrentPool">6</stringProp>
           <stringProp name="HTTPSampler.connect_timeout">10000</stringProp>
           <stringProp name="HTTPSampler.response_timeout">30000</stringProp>
         </ConfigTestElement>
         <hashTree/>
 
-        <!-- Common HTTP Headers -->
-        <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Common HTTP Headers" enabled="true">
+        <!-- Common Headers -->
+        <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Common Headers" enabled="true">
           <collectionProp name="HeaderManager.headers">
             <elementProp name="" elementType="Header">
               <stringProp name="Header.name">Content-Type</stringProp>
@@ -112,85 +85,62 @@ PDMS 人口数据库管理系统 — 最复杂查询性能测试
         </HeaderManager>
         <hashTree/>
 
-        <!-- ======================================================== -->
-        <!-- Once Only Controller: 登录 (每线程1次)                     -->
-        <!-- ======================================================== -->
-        <OnceOnlyController guiclass="OnceOnlyControllerGui" testclass="OnceOnlyController" testname="Once Only - 登录认证" enabled="true"/>
+        <!-- ================================================ -->
+        <!-- Login (Once Only per thread)                     -->
+        <!-- ================================================ -->
+        <OnceOnlyController guiclass="OnceOnlyControllerGui" testclass="OnceOnlyController" testname="Once Only - Login" enabled="true"/>
         <hashTree>
-
-          <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC-Login" enabled="true">
-            <boolProp name="TransactionController.includeTimers">false</boolProp>
-            <boolProp name="TransactionController.parent">true</boolProp>
-          </TransactionController>
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Login" enabled="true">
+            <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+              <collectionProp name="Arguments.arguments">
+                <elementProp name="" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                  <stringProp name="Argument.value">{"username":"${USERNAME}","password":"${PASSWORD}"}</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+              </collectionProp>
+            </elementProp>
+            <stringProp name="HTTPSampler.domain"></stringProp>
+            <stringProp name="HTTPSampler.port"></stringProp>
+            <stringProp name="HTTPSampler.protocol"></stringProp>
+            <stringProp name="HTTPSampler.path">/api/auth/login</stringProp>
+            <stringProp name="HTTPSampler.method">POST</stringProp>
+            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          </HTTPSamplerProxy>
           <hashTree>
-
-            <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="POST /api/auth/login" enabled="true">
-              <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" enabled="true">
-                <collectionProp name="Arguments.arguments"/>
-              </elementProp>
-              <stringProp name="HTTPSampler.domain"></stringProp>
-              <stringProp name="HTTPSampler.port"></stringProp>
-              <stringProp name="HTTPSampler.protocol"></stringProp>
-              <stringProp name="HTTPSampler.contentEncoding"></stringProp>
-              <stringProp name="HTTPSampler.path">/api/auth/login</stringProp>
-              <stringProp name="HTTPSampler.method">POST</stringProp>
-              <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
-              <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
-              <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
-              <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
-              <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
-              <stringProp name="HTTPSampler.connect_timeout"></stringProp>
-              <stringProp name="HTTPSampler.response_timeout"></stringProp>
-            </HTTPSamplerProxy>
-            <hashTree>
-
-              <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="Set Login Body" enabled="true">
-                <stringProp name="cacheKey">true</stringProp>
-                <stringProp name="filename"></stringProp>
-                <stringProp name="parameters"></stringProp>
-                <stringProp name="script">
-                  sampler.getArguments().removeAllArguments();
-                  sampler.addNonEncodedArgument("","{\"username\":\"${LOGIN_USERNAME}\",\"password\":\"${LOGIN_PASSWORD}\"}","");
-                  sampler.setPostBodyRaw(true);
-                </stringProp>
-                <stringProp name="scriptLanguage">groovy</stringProp>
-              </JSR223PreProcessor>
-              <hashTree/>
-
-              <JSONPostProcessor guiclass="org.apache.jmeter.extractor.json.jsonpath.gui.JSONPostProcessorGui" testclass="JSONPostProcessor" testname="Extract JWT Token" enabled="true">
-                <stringProp name="JSONPostProcessor.referenceNames">token</stringProp>
-                <stringProp name="JSONPostProcessor.jsonPathExprs">$.data.accessToken</stringProp>
-                <stringProp name="JSONPostProcessor.match_numbers"></stringProp>
-                <stringProp name="JSONPostProcessor.compute_concat">false</stringProp>
-                <stringProp name="JSONPostProcessor.defaultValues">NOT_FOUND</stringProp>
-              </JSONPostProcessor>
-              <hashTree/>
-
-              <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert Login Success (HTTP 200)" enabled="true">
-                <collectionProp name="Asserion.test_strings">
-                  <stringProp name="0">200</stringProp>
-                </collectionProp>
-                <stringProp name="Assertion.custom_message"></stringProp>
-                <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
-                <boolProp name="Assertion.assume_success">false</boolProp>
-                <intProp name="Assertion.test_type">8</intProp>
-              </ResponseAssertion>
-              <hashTree/>
-
-            </hashTree>
+            <JSONPostProcessor guiclass="org.apache.jmeter.extractor.json.jsonpath.gui.JSONPostProcessorGui" testclass="JSONPostProcessor" testname="Extract Token" enabled="true">
+              <stringProp name="JSONPostProcessor.referenceNames">token</stringProp>
+              <stringProp name="JSONPostProcessor.jsonPathExprs">$.data.accessToken</stringProp>
+              <stringProp name="JSONPostProcessor.defaultValues">NO_TOKEN</stringProp>
+            </JSONPostProcessor>
+            <hashTree/>
           </hashTree>
         </hashTree>
 
-        <!-- ======================================================== -->
-        <!-- Transaction Controller: 最复杂搜索                         -->
-        <!-- ======================================================== -->
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TC-ResidentSearch" enabled="true">
-          <boolProp name="TransactionController.includeTimers">false</boolProp>
-          <boolProp name="TransactionController.parent">true</boolProp>
-        </TransactionController>
+        <!-- ================================================ -->
+        <!-- Search (循环执行，每线程反复跑)                   -->
+        <!-- ================================================ -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Search" enabled="true">
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">{"page":1,"size":50,"name":"张","gender":"男","nation":"汉族","maritalStatus":"已婚","householdStatus":"正常","minAge":20,"maxAge":60}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain"></stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol"></stringProp>
+          <stringProp name="HTTPSampler.path">/api/resident/search</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+        </HTTPSamplerProxy>
         <hashTree>
-
-          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Auth Header (Bearer Token)" enabled="true">
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Auth Header" enabled="true">
             <collectionProp name="HeaderManager.headers">
               <elementProp name="" elementType="Header">
                 <stringProp name="Header.name">Authorization</stringProp>
@@ -199,33 +149,9 @@ PDMS 人口数据库管理系统 — 最复杂查询性能测试
             </collectionProp>
           </HeaderManager>
           <hashTree/>
-
-          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="POST /api/resident/search" enabled="true">
-            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" enabled="true">
-              <collectionProp name="Arguments.arguments"/>
-            </elementProp>
-            <stringProp name="HTTPSampler.domain"></stringProp>
-            <stringProp name="HTTPSampler.port"></stringProp>
-            <stringProp name="HTTPSampler.protocol"></stringProp>
-            <stringProp name="HTTPSampler.contentEncoding"></stringProp>
-            <stringProp name="HTTPSampler.path">/api/resident/search</stringProp>
-            <stringProp name="HTTPSampler.method">POST</stringProp>
-            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
-            <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
-            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
-            <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
-            <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
-            <stringProp name="HTTPSampler.connect_timeout"></stringProp>
-            <stringProp name="HTTPSampler.response_timeout"></stringProp>
-          </HTTPSamplerProxy>
-          <hashTree>
-
-            <!-- 随机选择15种搜索参数组合，覆盖无参数到9参数全条件 -->
-            <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="Randomize &amp; Set Search Body" enabled="true">
-              <stringProp name="cacheKey">true</stringProp>
-              <stringProp name="filename"></stringProp>
-              <stringProp name="parameters"></stringProp>
-              <stringProp name="script">
+          <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="Randomize Body" enabled="true">
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="script">
 String[] bodies = [
   '{"page":1,"size":50}',
   '{"page":1,"size":50,"name":"张"}',
@@ -244,127 +170,35 @@ String[] bodies = [
   '{"page":1,"size":50,"name":"孙","gender":"男","nation":"汉族","educationLevel":"大学本科","educationCode":"21","maritalStatus":"已婚","householdStatus":"正常","minAge":30,"maxAge":50}'
 ];
 int idx = new Random().nextInt(bodies.length);
-String body = bodies[idx];
 sampler.getArguments().removeAllArguments();
-sampler.addNonEncodedArgument("", body, "");
+sampler.addNonEncodedArgument("", bodies[idx], "");
 sampler.setPostBodyRaw(true);
-              </stringProp>
-              <stringProp name="scriptLanguage">groovy</stringProp>
-            </JSR223PreProcessor>
-            <hashTree/>
-
-            <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="Assert Search Success (HTTP 200)" enabled="true">
-              <collectionProp name="Asserion.test_strings">
-                <stringProp name="0">200</stringProp>
-              </collectionProp>
-              <stringProp name="Assertion.custom_message"></stringProp>
-              <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
-              <boolProp name="Assertion.assume_success">false</boolProp>
-              <intProp name="Assertion.test_type">8</intProp>
-            </ResponseAssertion>
-            <hashTree/>
-
-          </hashTree>
+            </stringProp>
+            <stringProp name="scriptLanguage">groovy</stringProp>
+          </JSR223PreProcessor>
+          <hashTree/>
         </hashTree>
 
-        <!-- Think Time -->
+        <!-- Think Time: 100-500ms -->
         <UniformRandomTimer guiclass="UniformRandomTimerGui" testclass="UniformRandomTimer" testname="Think Time (100-500ms)" enabled="true">
           <stringProp name="ConstantTimer.delay">100</stringProp>
           <stringProp name="RandomTimer.range">400</stringProp>
         </UniformRandomTimer>
         <hashTree/>
 
-        <!-- ======================================================== -->
-        <!-- Listeners (标准 JMeter 监听器)                            -->
-        <!-- 注: Active Threads/Response Times/TPS 图表               -->
-        <!-- 由 CLI HTML Dashboard (-e -o) 自动生成                    -->
-        <!-- ======================================================== -->
-
-        <!-- 1) View Results Tree (调试用) -->
+        <!-- ================================================ -->
+        <!-- Listeners                                        -->
+        <!-- ================================================ -->
         <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="true">
           <boolProp name="ResultCollector.error_logging">false</boolProp>
-          <objProp>
-            <name>saveConfig</name>
-            <value class="SampleSaveConfiguration">
-              <time>true</time>
-              <latency>true</latency>
-              <timestamp>true</timestamp>
-              <success>true</success>
-              <label>true</label>
-              <code>true</code>
-              <message>true</message>
-              <threadName>true</threadName>
-              <dataType>true</dataType>
-              <encoding>false</encoding>
-              <assertions>true</assertions>
-              <subresults>true</subresults>
-              <responseData>false</responseData>
-              <samplerData>false</samplerData>
-              <xml>false</xml>
-              <fieldNames>true</fieldNames>
-              <responseHeaders>false</responseHeaders>
-              <requestHeaders>false</requestHeaders>
-              <responseDataOnError>false</responseDataOnError>
-              <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
-              <assertionsResultsToSave>0</assertionsResultsToSave>
-              <bytes>true</bytes>
-              <sentBytes>true</sentBytes>
-              <url>true</url>
-              <threadCounts>true</threadCounts>
-              <idleTime>true</idleTime>
-              <connectTime>true</connectTime>
-            </value>
-          </objProp>
-          <stringProp name="filename"></stringProp>
         </ResultCollector>
         <hashTree/>
-
-        <!-- 2) Aggregate Report (聚合报告) -->
-        <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="Aggregate Report - 聚合报告" enabled="true">
+        <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="Aggregate Report" enabled="true">
           <boolProp name="ResultCollector.error_logging">false</boolProp>
-          <objProp>
-            <name>saveConfig</name>
-            <value class="SampleSaveConfiguration">
-              <time>true</time>
-              <latency>true</latency>
-              <timestamp>true</timestamp>
-              <success>true</success>
-              <label>true</label>
-              <code>true</code>
-              <message>true</message>
-              <threadName>true</threadName>
-              <dataType>true</dataType>
-              <encoding>false</encoding>
-              <assertions>true</assertions>
-              <subresults>true</subresults>
-              <responseData>false</responseData>
-              <samplerData>false</samplerData>
-              <xml>false</xml>
-              <fieldNames>true</fieldNames>
-              <responseHeaders>false</responseHeaders>
-              <requestHeaders>false</requestHeaders>
-              <responseDataOnError>false</responseDataOnError>
-              <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
-              <assertionsResultsToSave>0</assertionsResultsToSave>
-              <bytes>true</bytes>
-              <sentBytes>true</sentBytes>
-              <url>true</url>
-              <threadCounts>true</threadCounts>
-              <idleTime>true</idleTime>
-              <connectTime>true</connectTime>
-            </value>
-          </objProp>
-          <stringProp name="filename"></stringProp>
         </ResultCollector>
         <hashTree/>
-
-        <!-- 3) View Results Tree (duplicate for debugging) -->
 
       </hashTree>
-      <!-- End Thread Group -->
-
     </hashTree>
-    <!-- End Test Plan -->
-
   </hashTree>
 </jmeterTestPlan>
