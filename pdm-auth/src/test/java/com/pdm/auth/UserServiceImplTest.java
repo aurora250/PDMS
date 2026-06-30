@@ -154,8 +154,7 @@ class UserServiceImplTest {
         @Test
         @DisplayName("通过UUID查询成功")
         void shouldFindByUuid() {
-            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001"))
-                    .thenReturn(testUser);
+            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testUser);
 
             User result = userService.getUserByUuid("00000000-0000-0000-0000-000000000001");
 
@@ -188,8 +187,7 @@ class UserServiceImplTest {
             updates.setUserRole("数据审查员");
             updates.setPermissionGroupId(2L);
 
-            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001"))
-                    .thenReturn(testUser);
+            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testUser);
 
             User result = userService.updateUser("00000000-0000-0000-0000-000000000001", updates);
 
@@ -208,8 +206,7 @@ class UserServiceImplTest {
             updates.setPhone("13900001111");
             // 其他字段为null
 
-            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001"))
-                    .thenReturn(testUser);
+            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testUser);
 
             User result = userService.updateUser("00000000-0000-0000-0000-000000000001", updates);
 
@@ -239,8 +236,7 @@ class UserServiceImplTest {
         @Test
         @DisplayName("设置为有效")
         void shouldSetToActive() {
-            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001"))
-                    .thenReturn(testUser);
+            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testUser);
 
             userService.updateUserStatus("00000000-0000-0000-0000-000000000001", "有效");
 
@@ -251,8 +247,7 @@ class UserServiceImplTest {
         @Test
         @DisplayName("设置为冻结")
         void shouldSetToFrozen() {
-            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001"))
-                    .thenReturn(testUser);
+            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testUser);
 
             userService.updateUserStatus("00000000-0000-0000-0000-000000000001", "冻结");
 
@@ -262,8 +257,7 @@ class UserServiceImplTest {
         @Test
         @DisplayName("设置为锁定时自动设置解锁时间")
         void shouldSetToLockedWithUnlockTime() {
-            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001"))
-                    .thenReturn(testUser);
+            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testUser);
 
             userService.updateUserStatus("00000000-0000-0000-0000-000000000001", "锁定");
 
@@ -275,8 +269,7 @@ class UserServiceImplTest {
         @Test
         @DisplayName("设置为注销")
         void shouldSetToCancelled() {
-            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001"))
-                    .thenReturn(testUser);
+            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testUser);
 
             userService.updateUserStatus("00000000-0000-0000-0000-000000000001", "注销");
 
@@ -286,8 +279,7 @@ class UserServiceImplTest {
         @Test
         @DisplayName("设置为审批中")
         void shouldSetToPendingApproval() {
-            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001"))
-                    .thenReturn(testUser);
+            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testUser);
 
             userService.updateUserStatus("00000000-0000-0000-0000-000000000001", "审批中");
 
@@ -297,8 +289,7 @@ class UserServiceImplTest {
         @Test
         @DisplayName("非法状态应抛异常")
         void shouldRejectInvalidStatus() {
-            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001"))
-                    .thenReturn(testUser);
+            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testUser);
 
             BusinessException ex = assertThrows(BusinessException.class,
                     () -> userService.updateUserStatus("00000000-0000-0000-0000-000000000001", "无效状态"));
@@ -311,8 +302,7 @@ class UserServiceImplTest {
         void shouldThrowWhenUserNotFound() {
             when(userMapper.selectByUserUuid("non-existent-uuid")).thenReturn(null);
 
-            assertThrows(BusinessException.class,
-                    () -> userService.updateUserStatus("non-existent-uuid", "有效"));
+            assertThrows(BusinessException.class, () -> userService.updateUserStatus("non-existent-uuid", "有效"));
         }
     }
 
@@ -324,8 +314,7 @@ class UserServiceImplTest {
         @DisplayName("删除非活跃状态用户成功")
         void shouldDeleteInactiveUser() {
             testUser.setAccountStatus("冻结");
-            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001"))
-                    .thenReturn(testUser);
+            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testUser);
 
             userService.deleteUser("00000000-0000-0000-0000-000000000001");
 
@@ -336,11 +325,9 @@ class UserServiceImplTest {
         @DisplayName("删除活跃用户应拒绝")
         void shouldRejectDeletingActiveUser() {
             testUser.setAccountStatus("有效");
-            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001"))
-                    .thenReturn(testUser);
+            when(userMapper.selectByUserUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testUser);
 
-            assertThrows(BusinessException.class,
-                    () -> userService.deleteUser("00000000-0000-0000-0000-000000000001"));
+            assertThrows(BusinessException.class, () -> userService.deleteUser("00000000-0000-0000-0000-000000000001"));
             verify(userMapper, never()).deleteById(any());
         }
 

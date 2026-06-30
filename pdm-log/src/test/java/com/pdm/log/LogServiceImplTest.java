@@ -9,8 +9,6 @@ import com.pdm.log.service.impl.LogServiceImpl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
-import jakarta.servlet.http.HttpServletResponse;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -30,6 +28,8 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -138,10 +138,8 @@ class LogServiceImplTest {
 
             when(auditLogMapper.selectPage(any(Page.class), any())).thenReturn(mockPage);
 
-            PageResult<AuditLog> result = logService.searchAuditLogs(
-                    LocalDateTime.of(2026, 6, 1, 0, 0),
-                    LocalDateTime.of(2026, 6, 30, 23, 59),
-                    null, "LOGIN", 1, 20);
+            PageResult<AuditLog> result = logService.searchAuditLogs(LocalDateTime.of(2026, 6, 1, 0, 0),
+                    LocalDateTime.of(2026, 6, 30, 23, 59), null, "LOGIN", 1, 20);
 
             assertNotNull(result);
             assertEquals(1, result.getTotal());
@@ -156,8 +154,8 @@ class LogServiceImplTest {
 
             when(auditLogMapper.selectPage(any(Page.class), any())).thenReturn(mockPage);
 
-            PageResult<AuditLog> result = logService.searchAuditLogs(
-                    null, null, "00000000-0000-0000-0000-000000000001", null, 1, 20);
+            PageResult<AuditLog> result = logService.searchAuditLogs(null, null, "00000000-0000-0000-0000-000000000001",
+                    null, 1, 20);
 
             assertNotNull(result);
             assertEquals(1, result.getTotal());
@@ -192,11 +190,8 @@ class LogServiceImplTest {
 
             when(loginLogMapper.selectPage(any(Page.class), any())).thenReturn(mockPage);
 
-            PageResult<LoginLog> result = logService.searchLoginLogs(
-                    "00000000-0000-0000-0000-000000000001",
-                    LocalDateTime.of(2026, 6, 1, 0, 0),
-                    LocalDateTime.of(2026, 6, 30, 23, 59),
-                    1, 1, 20);
+            PageResult<LoginLog> result = logService.searchLoginLogs("00000000-0000-0000-0000-000000000001",
+                    LocalDateTime.of(2026, 6, 1, 0, 0), LocalDateTime.of(2026, 6, 30, 23, 59), 1, 1, 20);
 
             assertNotNull(result);
             assertEquals(1, result.getTotal());
@@ -213,8 +208,7 @@ class LogServiceImplTest {
 
             when(loginLogMapper.selectPage(any(Page.class), any())).thenReturn(mockPage);
 
-            PageResult<LoginLog> result = logService.searchLoginLogs(
-                    null, null, null, 0, 1, 20);
+            PageResult<LoginLog> result = logService.searchLoginLogs(null, null, null, 0, 1, 20);
 
             assertEquals(0, result.getRecords().get(0).getIsSuccess());
         }
@@ -247,13 +241,11 @@ class LogServiceImplTest {
             PrintWriter mockWriter = mock(PrintWriter.class);
             when(httpServletResponse.getWriter()).thenReturn(mockWriter);
 
-            logService.exportAuditLogs(
-                    LocalDateTime.of(2026, 6, 1, 0, 0),
-                    LocalDateTime.of(2026, 6, 30, 23, 59),
-                    null, null, httpServletResponse);
+            logService.exportAuditLogs(LocalDateTime.of(2026, 6, 1, 0, 0), LocalDateTime.of(2026, 6, 30, 23, 59), null,
+                    null, httpServletResponse);
 
-            verify(httpServletResponse).setContentType(
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            verify(httpServletResponse)
+                    .setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             verify(httpServletResponse).setHeader(eq("Content-Disposition"), contains(".xlsx"));
             verify(mockWriter).flush();
         }
@@ -268,8 +260,8 @@ class LogServiceImplTest {
 
             logService.exportAuditLogs(null, null, null, null, httpServletResponse);
 
-            verify(httpServletResponse).setContentType(
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            verify(httpServletResponse)
+                    .setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             verify(mockWriter).flush();
         }
     }

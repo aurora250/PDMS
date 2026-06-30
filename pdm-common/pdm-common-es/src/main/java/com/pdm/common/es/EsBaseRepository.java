@@ -35,8 +35,8 @@ public abstract class EsBaseRepository<T> {
     }
 
     /**
-     * 创建索引（使用动态映射，ES 自动推断字段类型）。
-     * 子类可覆盖 {@link #getIndexSettings()} 和 {@link #getIndexMappings()} 提供自定义配置。
+     * 创建索引（使用动态映射，ES 自动推断字段类型）。 子类可覆盖 {@link #getIndexSettings()} 和
+     * {@link #getIndexMappings()} 提供自定义配置。
      */
     public void createIndex() throws IOException {
         if (indexExists()) {

@@ -117,8 +117,7 @@ class FloatingPopulationServiceImplTest {
 
             when(fpRegisterRecordMapper.selectById(999L)).thenReturn(null);
 
-            BusinessException ex = assertThrows(BusinessException.class,
-                    () -> fpService.updateFp(999L, updates));
+            BusinessException ex = assertThrows(BusinessException.class, () -> fpService.updateFp(999L, updates));
             assertEquals(ErrorCode.FP_RECORD_NOT_FOUND.getCode(), ex.getCode());
             verify(fpRegisterRecordMapper, never()).updateById(any(FpRegisterRecord.class));
         }
@@ -143,8 +142,7 @@ class FloatingPopulationServiceImplTest {
         void shouldThrowWhenRecordNotFound() {
             when(fpRegisterRecordMapper.selectById(999L)).thenReturn(null);
 
-            BusinessException ex = assertThrows(BusinessException.class,
-                    () -> fpService.cancelFp(999L));
+            BusinessException ex = assertThrows(BusinessException.class, () -> fpService.cancelFp(999L));
             assertEquals(ErrorCode.FP_RECORD_NOT_FOUND.getCode(), ex.getCode());
             verify(fpRegisterRecordMapper, never()).deleteById(any());
         }
@@ -257,8 +255,7 @@ class FloatingPopulationServiceImplTest {
 
             when(residentPermitMapper.selectById(999L)).thenReturn(null);
 
-            BusinessException ex = assertThrows(BusinessException.class,
-                    () -> fpService.renewPermit(999L, renewal));
+            BusinessException ex = assertThrows(BusinessException.class, () -> fpService.renewPermit(999L, renewal));
             assertEquals(ErrorCode.RESIDENT_PERMIT_NOT_FOUND.getCode(), ex.getCode());
         }
 
@@ -270,8 +267,7 @@ class FloatingPopulationServiceImplTest {
 
             when(residentPermitMapper.selectById(1L)).thenReturn(testPermit);
 
-            BusinessException ex = assertThrows(BusinessException.class,
-                    () -> fpService.renewPermit(1L, renewal));
+            BusinessException ex = assertThrows(BusinessException.class, () -> fpService.renewPermit(1L, renewal));
             assertEquals(ErrorCode.RESIDENT_PERMIT_EXPIRED.getCode(), ex.getCode());
             verify(residentPermitRenewalMapper, never()).insert(any(ResidentPermitRenewal.class));
         }
@@ -349,8 +345,7 @@ class FloatingPopulationServiceImplTest {
         void shouldThrowWhenResidenceNotFound() {
             when(residentRegistrationMapper.selectById(999L)).thenReturn(null);
 
-            BusinessException ex = assertThrows(BusinessException.class,
-                    () -> fpService.cancelResidence(999L));
+            BusinessException ex = assertThrows(BusinessException.class, () -> fpService.cancelResidence(999L));
             assertEquals(ErrorCode.DATA_NOT_FOUND.getCode(), ex.getCode());
         }
     }

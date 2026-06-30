@@ -199,7 +199,8 @@ class PermissionGroupServiceImplTest {
             testGroup.setPermissions("invalid-json");
             when(permissionGroupMapper.selectById(1L)).thenReturn(testGroup);
             when(objectMapper.readValue(anyString(), any(com.fasterxml.jackson.core.type.TypeReference.class)))
-                    .thenThrow(new JsonProcessingException("Invalid JSON") {});
+                    .thenThrow(new JsonProcessingException("Invalid JSON") {
+                    });
 
             List<String> result = permissionGroupService.getPermissionsByGroupId(1L);
 

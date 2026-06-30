@@ -118,8 +118,7 @@ class HouseholdServiceImplTest {
         void shouldThrowOnReissueNonExistentBook() {
             when(bookMapper.selectByBookNo("HB999")).thenReturn(null);
 
-            BusinessException ex = assertThrows(BusinessException.class,
-                    () -> householdService.reissueBook("HB999"));
+            BusinessException ex = assertThrows(BusinessException.class, () -> householdService.reissueBook("HB999"));
             assertEquals(ErrorCode.HOUSEHOLD_BOOK_NOT_FOUND.getCode(), ex.getCode());
         }
 
@@ -158,8 +157,7 @@ class HouseholdServiceImplTest {
         void shouldApproveBusiness() {
             when(businessMapper.selectById(301L)).thenReturn(testBusiness);
 
-            HouseholdBusinessRequest result = householdService.approveBusiness(
-                    301L, "通过", "admin-uuid", null);
+            HouseholdBusinessRequest result = householdService.approveBusiness(301L, "通过", "admin-uuid", null);
 
             assertNotNull(result);
             assertEquals("通过", result.getStatus());
@@ -171,8 +169,7 @@ class HouseholdServiceImplTest {
         void shouldRejectBusiness() {
             when(businessMapper.selectById(301L)).thenReturn(testBusiness);
 
-            HouseholdBusinessRequest result = householdService.approveBusiness(
-                    301L, "驳回", "admin-uuid", "材料不齐全");
+            HouseholdBusinessRequest result = householdService.approveBusiness(301L, "驳回", "admin-uuid", "材料不齐全");
 
             assertNotNull(result);
             assertEquals("驳回", result.getStatus());
@@ -214,8 +211,7 @@ class HouseholdServiceImplTest {
         void shouldApproveMigration() {
             when(migrationMapper.selectById(401L)).thenReturn(testMigration);
 
-            HouseholdMigrationRequest result = householdService.approveMigration(
-                    401L, "通过", "admin-uuid", null);
+            HouseholdMigrationRequest result = householdService.approveMigration(401L, "通过", "admin-uuid", null);
 
             assertNotNull(result);
             assertEquals("通过", result.getStatus());
@@ -227,8 +223,7 @@ class HouseholdServiceImplTest {
         void shouldRejectMigration() {
             when(migrationMapper.selectById(401L)).thenReturn(testMigration);
 
-            HouseholdMigrationRequest result = householdService.approveMigration(
-                    401L, "驳回", "admin-uuid", "不符合迁移条件");
+            HouseholdMigrationRequest result = householdService.approveMigration(401L, "驳回", "admin-uuid", "不符合迁移条件");
 
             assertNotNull(result);
             assertEquals("驳回", result.getStatus());
@@ -254,8 +249,8 @@ class HouseholdServiceImplTest {
 
             when(migrationMapper.selectList(any())).thenReturn(List.of(testMigration, m2));
 
-            List<HouseholdMigrationRequest> result = householdService.getMigrationTrace(
-                    "00000000-0000-0000-0000-000000000001");
+            List<HouseholdMigrationRequest> result = householdService
+                    .getMigrationTrace("00000000-0000-0000-0000-000000000001");
 
             assertNotNull(result);
             assertEquals(2, result.size());
@@ -266,8 +261,7 @@ class HouseholdServiceImplTest {
         void shouldReturnEmptyTrace() {
             when(migrationMapper.selectList(any())).thenReturn(List.of());
 
-            List<HouseholdMigrationRequest> result = householdService.getMigrationTrace(
-                    "uuid-no-migration");
+            List<HouseholdMigrationRequest> result = householdService.getMigrationTrace("uuid-no-migration");
 
             assertNotNull(result);
             assertTrue(result.isEmpty());
@@ -359,8 +353,7 @@ class HouseholdServiceImplTest {
             city.setAreaId(440300L);
             city.setAreaName("深圳市");
 
-            when(areaMapper.selectAncestors(440305L))
-                    .thenReturn(List.of(province, city));
+            when(areaMapper.selectAncestors(440305L)).thenReturn(List.of(province, city));
 
             List<Area> result = householdService.getAreaAncestors(440305L);
 

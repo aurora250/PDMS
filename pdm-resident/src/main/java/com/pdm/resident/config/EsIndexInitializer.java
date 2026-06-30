@@ -10,8 +10,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 应用启动时自动检查并创建 Elasticsearch 索引，然后将 PostgreSQL
- * 中已有的居民数据同步到 ES。防止搜索请求因索引缺失或为空而降级到 DB。
+ * 应用启动时自动检查并创建 Elasticsearch 索引，然后将 PostgreSQL 中已有的居民数据同步到
+ * ES。防止搜索请求因索引缺失或为空而降级到 DB。
  */
 @Slf4j
 @Component

@@ -72,8 +72,7 @@ class KeypersonServiceImplTest {
             kp.setControlLevel("一级");
             kp.setControlType("刑事重点");
 
-            when(keyPersonMapper.selectByUuid("00000000-0000-0000-0000-000000000002"))
-                    .thenReturn(null);
+            when(keyPersonMapper.selectByUuid("00000000-0000-0000-0000-000000000002")).thenReturn(null);
 
             KeyPerson result = keypersonService.designateKeyPerson(kp);
 
@@ -88,11 +87,9 @@ class KeypersonServiceImplTest {
             KeyPerson kp = new KeyPerson();
             kp.setUuid("00000000-0000-0000-0000-000000000001");
 
-            when(keyPersonMapper.selectByUuid("00000000-0000-0000-0000-000000000001"))
-                    .thenReturn(testKeyPerson);
+            when(keyPersonMapper.selectByUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testKeyPerson);
 
-            BusinessException ex = assertThrows(BusinessException.class,
-                    () -> keypersonService.designateKeyPerson(kp));
+            BusinessException ex = assertThrows(BusinessException.class, () -> keypersonService.designateKeyPerson(kp));
             assertEquals(ErrorCode.KEY_PERSON_ALREADY_EXISTS.getCode(), ex.getCode());
             verify(keyPersonMapper, never()).insert(Collections.singleton(any()));
         }
@@ -105,8 +102,7 @@ class KeypersonServiceImplTest {
         @Test
         @DisplayName("正常撤销列管")
         void shouldRevokeKeyPerson() {
-            when(keyPersonMapper.selectByUuid("00000000-0000-0000-0000-000000000001"))
-                    .thenReturn(testKeyPerson);
+            when(keyPersonMapper.selectByUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testKeyPerson);
 
             keypersonService.revokeKeyPerson("00000000-0000-0000-0000-000000000001");
 
@@ -133,11 +129,9 @@ class KeypersonServiceImplTest {
         @Test
         @DisplayName("正常修改管控等级")
         void shouldUpdateControlLevel() {
-            when(keyPersonMapper.selectByUuid("00000000-0000-0000-0000-000000000001"))
-                    .thenReturn(testKeyPerson);
+            when(keyPersonMapper.selectByUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testKeyPerson);
 
-            KeyPerson result = keypersonService.updateControlLevel(
-                    "00000000-0000-0000-0000-000000000001", "二级");
+            KeyPerson result = keypersonService.updateControlLevel("00000000-0000-0000-0000-000000000001", "二级");
 
             assertEquals("二级", result.getControlLevel());
             verify(keyPersonMapper).updateById(testKeyPerson);
@@ -167,8 +161,7 @@ class KeypersonServiceImplTest {
 
             when(keyPersonMapper.selectPage(any(Page.class), any())).thenReturn(mockPage);
 
-            PageResult<KeyPerson> result = keypersonService.searchKeyPersons(
-                    "一级", "刑事重点", null, 1, 20);
+            PageResult<KeyPerson> result = keypersonService.searchKeyPersons("一级", "刑事重点", null, 1, 20);
 
             assertNotNull(result);
             assertEquals(1, result.getTotal());
@@ -183,8 +176,8 @@ class KeypersonServiceImplTest {
 
             when(keyPersonMapper.selectPage(any(Page.class), any())).thenReturn(mockPage);
 
-            PageResult<KeyPerson> result = keypersonService.searchKeyPersons(
-                    null, null, "00000000-0000-0000-0000-000000000001", 1, 20);
+            PageResult<KeyPerson> result = keypersonService.searchKeyPersons(null, null,
+                    "00000000-0000-0000-0000-000000000001", 1, 20);
 
             assertEquals(1, result.getTotal());
         }
@@ -215,8 +208,7 @@ class KeypersonServiceImplTest {
             VisitPlan plan = new VisitPlan();
             plan.setKeyPersonUuid("00000000-0000-0000-0000-000000000001");
 
-            when(keyPersonMapper.selectByUuid("00000000-0000-0000-0000-000000000001"))
-                    .thenReturn(testKeyPerson);
+            when(keyPersonMapper.selectByUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testKeyPerson);
 
             VisitPlan result = keypersonService.generateVisitPlan(plan);
 
@@ -234,8 +226,7 @@ class KeypersonServiceImplTest {
             VisitPlan plan = new VisitPlan();
             plan.setKeyPersonUuid("00000000-0000-0000-0000-000000000001");
 
-            when(keyPersonMapper.selectByUuid("00000000-0000-0000-0000-000000000001"))
-                    .thenReturn(testKeyPerson);
+            when(keyPersonMapper.selectByUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testKeyPerson);
 
             VisitPlan result = keypersonService.generateVisitPlan(plan);
 
@@ -294,8 +285,7 @@ class KeypersonServiceImplTest {
 
             when(visitPlanMapper.selectById(1L)).thenReturn(plan);
 
-            VisitPlan result = keypersonService.completeVisit(
-                    1L, LocalDate.of(2026, 7, 15), petition);
+            VisitPlan result = keypersonService.completeVisit(1L, LocalDate.of(2026, 7, 15), petition);
 
             assertEquals("已完成", result.getStatus());
             verify(petitionRecordMapper).insert(petition);

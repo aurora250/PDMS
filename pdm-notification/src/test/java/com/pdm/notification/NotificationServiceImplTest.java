@@ -99,8 +99,7 @@ class NotificationServiceImplTest {
         void shouldThrowWhenAlertNotFound() {
             when(alertMapper.selectById(999L)).thenReturn(null);
 
-            assertThrows(RuntimeException.class,
-                    () -> notificationService.markHandled(999L, "admin-uuid"));
+            assertThrows(RuntimeException.class, () -> notificationService.markHandled(999L, "admin-uuid"));
             verify(alertMapper, never()).updateById(any(Alert.class));
         }
     }

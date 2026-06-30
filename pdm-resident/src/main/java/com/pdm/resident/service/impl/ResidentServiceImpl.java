@@ -204,10 +204,9 @@ public class ResidentServiceImpl implements ResidentService {
         int page = 1;
         int total = 0;
         while (true) {
-            com.baomidou.mybatisplus.extension.plugins.pagination.Page<Resident> pg =
-                    residentMapper.selectPage(
-                            com.baomidou.mybatisplus.extension.plugins.pagination.Page.of(page, pageSize),
-                            new LambdaQueryWrapper<>());
+            com.baomidou.mybatisplus.extension.plugins.pagination.Page<Resident> pg = residentMapper.selectPage(
+                    com.baomidou.mybatisplus.extension.plugins.pagination.Page.of(page, pageSize),
+                    new LambdaQueryWrapper<>());
             if (pg.getRecords().isEmpty()) {
                 break;
             }

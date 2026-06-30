@@ -80,8 +80,7 @@ class PoliceServiceImplTest {
 
             when(policeMapper.selectByPoliceNumber("P0001")).thenReturn(testPolice);
 
-            BusinessException ex = assertThrows(BusinessException.class,
-                    () -> policeService.registerPolice(newPolice));
+            BusinessException ex = assertThrows(BusinessException.class, () -> policeService.registerPolice(newPolice));
             assertEquals(ErrorCode.DATA_DUPLICATE.getCode(), ex.getCode());
             verify(policeMapper, never()).insert(any(Police.class));
         }
@@ -286,8 +285,7 @@ class PoliceServiceImplTest {
         void shouldThrowWhenPoliceNotFound() {
             when(policeMapper.selectByPoliceNumber("P9999")).thenReturn(null);
 
-            assertThrows(BusinessException.class,
-                    () -> policeService.updatePoliceStatus("P9999", "在岗"));
+            assertThrows(BusinessException.class, () -> policeService.updatePoliceStatus("P9999", "在岗"));
         }
     }
 }

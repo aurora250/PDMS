@@ -93,8 +93,7 @@ class MissingpersonServiceImplTest {
         void shouldThrowWhenRecordNotFound() {
             when(missingPersonMapper.selectById(999L)).thenReturn(null);
 
-            BusinessException ex = assertThrows(BusinessException.class,
-                    () -> missingpersonService.cancel(999L));
+            BusinessException ex = assertThrows(BusinessException.class, () -> missingpersonService.cancel(999L));
             assertEquals(ErrorCode.MISSING_PERSON_NOT_FOUND.getCode(), ex.getCode());
             verify(missingPersonMapper, never()).deleteById(any());
         }
@@ -165,8 +164,7 @@ class MissingpersonServiceImplTest {
 
             when(missingPersonMapper.selectPage(any(Page.class), any())).thenReturn(mockPage);
 
-            var result = missingpersonService.search(
-                    "00000000-0000-0000-0000-000000000001", null, null,
+            var result = missingpersonService.search("00000000-0000-0000-0000-000000000001", null, null,
                     buildPageRequest(1, 20));
 
             assertNotNull(result);
@@ -182,8 +180,7 @@ class MissingpersonServiceImplTest {
 
             when(missingPersonMapper.selectPage(any(Page.class), any())).thenReturn(mockPage);
 
-            var result = missingpersonService.search(
-                    null, "失踪中", null, buildPageRequest(1, 20));
+            var result = missingpersonService.search(null, "失踪中", null, buildPageRequest(1, 20));
 
             assertNotNull(result);
             assertEquals(1, result.getTotal());
