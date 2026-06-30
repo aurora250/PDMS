@@ -10,9 +10,9 @@
       </el-descriptions>
       <el-divider />
       <el-form inline>
-        <el-form-item label="父亲UUID"><el-input v-model="editForm.fatherUuid" /></el-form-item>
-        <el-form-item label="母亲UUID"><el-input v-model="editForm.motherUuid" /></el-form-item>
-        <el-form-item label="配偶UUID"><el-input v-model="editForm.spouseUuid" /></el-form-item>
+        <el-form-item label="父亲UUID"><ResidentPicker v-model="editForm.fatherUuid" placeholder="搜索姓名或身份证号选择父亲" /></el-form-item>
+        <el-form-item label="母亲UUID"><ResidentPicker v-model="editForm.motherUuid" placeholder="搜索姓名或身份证号选择母亲" /></el-form-item>
+        <el-form-item label="配偶UUID"><ResidentPicker v-model="editForm.spouseUuid" placeholder="搜索姓名或身份证号选择配偶" /></el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleSave">保存关系</el-button>
         </el-form-item>
@@ -27,6 +27,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { residentApi } from '@/api/resident'
 import { showError, showSuccess } from '@/utils/auth'
+import ResidentPicker from '@/components/ResidentPicker.vue'
 import type { ResidentRelation } from '@/types/resident'
 
 const route = useRoute()

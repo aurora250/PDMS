@@ -90,6 +90,7 @@ import { useGbConstants } from '@/composables/useGbConstants'
 import { showError, showSuccess } from '@/utils/auth'
 import type { Resident } from '@/types/resident'
 import AreaCascader from '@/components/AreaCascader.vue'
+import { idCardRule, phoneRule } from '@/utils/validators'
 
 const { NATIONS, EDUCATIONS, MARITAL_STATUSES, BLOOD_TYPES, nationCode, educationCode } = useGbConstants()
 
@@ -124,12 +125,12 @@ const addressForm = reactive({
 const rules = {
   name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
   gender: [{ required: true }],
-  idCardNo: [{ required: true, message: '请输入身份证号' }, { len: 18, message: '身份证号为18位' }],
+  idCardNo: [{ required: true, message: '请输入身份证号' }, { len: 18, message: '身份证号为18位' }, idCardRule],
   nation: [{ required: true }],
   birthDate: [{ required: true }],
   educationLevel: [{ required: true }],
   maritalStatus: [{ required: true }],
-  phone: [{ required: true }],
+  phone: [{ required: true, message: '请输入电话' }, phoneRule],
   areaId: [{ required: true, message: '请选择居住地区', trigger: 'change' }],
   addressDetail: [{ required: true, message: '请填写详细地址', trigger: 'blur' }],
   householdType: [{ required: true }],

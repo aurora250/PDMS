@@ -10,9 +10,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,6 +26,7 @@ public class HouseholdController {
     private final HouseholdMigrationRequestMapper migrationMapper;
     private final ApprovalPermitMapper approvalPermitMapper;
     private final MigrationPermitMapper migrationPermitMapper;
+    private final ResidentMapper residentMapper;
 
     // ──────────── 户口簿 ────────────
     @GetMapping("/api/household/book/search")
@@ -32,9 +34,19 @@ public class HouseholdController {
             @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int size) {
         LambdaQueryWrapper<HouseholdRegister> w = new LambdaQueryWrapper<>();
         if (keyword != null && !keyword.isEmpty())
-            w.like(HouseholdRegister::getHouseholdBookNo, keyword);
+            w.and(wr -> wr.like(HouseholdRegister::getHouseholdBookNo, keyword).or()
+                    .like(HouseholdRegister::getHouseholderUuid, keyword));
         w.orderByDesc(HouseholdRegister::getCreateTime);
         Page<HouseholdRegister> r = bookMapper.selectPage(Page.of(page, size), w);
+
+        // 批量填充户主姓名
+        List<String> uuids = r.getRecords().stream().map(HouseholdRegister::getHouseholderUuid).filter(Objects::nonNull)
+                .distinct().collect(Collectors.toList());
+        if (!uuids.isEmpty()) {
+            Map<String, String> nameMap = residentMapper.batchGetNames(uuids).stream()
+                    .collect(Collectors.toMap(m -> (String) m.get("uuid"), m -> (String) m.get("name")));
+            r.getRecords().forEach(b -> b.setHouseholderName(nameMap.get(b.getHouseholderUuid())));
+        }
         return Result.success(PageResult.of(r.getRecords(), r.getTotal(), page, size));
     }
 
@@ -51,6 +63,16 @@ public class HouseholdController {
     @PostMapping("/api/household/book/renew")
     public Result<HouseholdRegister> renewBook(@RequestBody Map<String, String> body) {
         return Result.success(householdService.renewBook(body.get("bookNo")));
+    }
+
+    /** 按居民UUID查询其户口簿 */
+    @GetMapping("/api/household/book/by-resident/{residentUuid}")
+    public Result<Map<String, Object>> getBookByResident(@PathVariable String residentUuid) {
+        Map<String, Object> book = householdService.getBookByResident(residentUuid);
+        if (book == null) {
+            return Result.success(null);
+        }
+        return Result.success(book);
     }
 
     // ──────────── 户籍业务 ────────────
@@ -80,6 +102,21 @@ public class HouseholdController {
                 householdService.approveBusiness(rid, body.get("status"), handlerUuid, body.get("rejectReason")));
     }
 
+    /** 附加审核材料（街道办权限） */
+    @PostMapping("/api/household/business/{rid}/material")
+    public Result<HouseholdBusinessRequest> attachBusinessMaterial(@PathVariable Long rid,
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            @RequestParam(value = "attachmentPath", required = false) String attachmentPath,
+            @RequestParam(value = "remark", required = false) String remark) {
+        // 如果上传了文件，文件路径由前端先上传到 /api/file/upload 获得
+        // 如果直接传路径，使用传入的路径
+        String path = attachmentPath;
+        if (path == null && file != null) {
+            path = file.getOriginalFilename(); // fallback
+        }
+        return Result.success(householdService.attachBusinessMaterial(rid, path, remark));
+    }
+
     // ──────────── 户籍迁移 ────────────
     @GetMapping("/api/household/migration")
     public Result<PageResult<HouseholdMigrationRequest>> listMigrations(@RequestParam(required = false) String status,
@@ -105,6 +142,19 @@ public class HouseholdController {
             @RequestBody Map<String, String> body, @RequestHeader("X-User-Uuid") String handlerUuid) {
         return Result.success(
                 householdService.approveMigration(rid, body.get("status"), handlerUuid, body.get("rejectReason")));
+    }
+
+    /** 附加审核材料（街道办权限） */
+    @PostMapping("/api/household/migration/{rid}/material")
+    public Result<HouseholdMigrationRequest> attachMigrationMaterial(@PathVariable Long rid,
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            @RequestParam(value = "attachmentPath", required = false) String attachmentPath,
+            @RequestParam(value = "remark", required = false) String remark) {
+        String path = attachmentPath;
+        if (path == null && file != null) {
+            path = file.getOriginalFilename();
+        }
+        return Result.success(householdService.attachMigrationMaterial(rid, path, remark));
     }
 
     @GetMapping("/api/household/migration/trace/{uuid}")

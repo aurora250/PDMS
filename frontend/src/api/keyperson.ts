@@ -12,6 +12,4 @@ export const keypersonApi = {
   // 信访
   listPetition: (params?: any) => request.get('/keyperson/petition', { params }),
   createPetition: (data: any) => request.post('/keyperson/petition', data),
-  // GIS
-  getGis: () => request.get('/keyperson/gis'),
 }

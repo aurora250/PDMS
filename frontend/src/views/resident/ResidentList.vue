@@ -39,6 +39,11 @@
             <el-option label="死亡注销" value="死亡注销" /><el-option label="失踪注销" value="失踪注销" />
           </el-select>
         </el-form-item>
+        <el-form-item label="省份">
+          <el-select v-model="search.province" placeholder="全部" clearable filterable>
+            <el-option v-for="p in PROVINCES" :key="p" :label="p" :value="p" />
+          </el-select>
+        </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="doSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
@@ -78,20 +83,43 @@
 
     <!-- 新增/编辑抽屉 -->
     <ResidentDetail ref="detailRef" @saved="doSearch" />
+
+    <!-- 导入Excel对话框 -->
+    <el-dialog v-model="importVisible" title="导入Excel" width="400px">
+      <el-upload
+        ref="uploadRef"
+        :auto-upload="false"
+        :limit="1"
+        accept=".xlsx,.xls"
+        :on-change="onFileChange"
+        :file-list="fileList"
+        drag
+      >
+        <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
+        <div class="el-upload__text">拖拽Excel文件到此处或点击上传</div>
+      </el-upload>
+      <template #footer>
+        <el-button @click="importVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleImport" :loading="importing" :disabled="!uploadFile">开始导入</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { UploadFilled } from '@element-plus/icons-vue'
 import { usePermission } from '@/composables/usePermission'
 import { useGbConstants } from '@/composables/useGbConstants'
 import { residentApi } from '@/api/resident'
 import { showError, showSuccess } from '@/utils/auth'
 import type { Resident } from '@/types/resident'
 import ResidentDetail from './ResidentDetail.vue'
+import { PROVINCES } from '@/utils/constants'
 
 const router = useRouter()
+const route = useRoute()
 const { hasPermission } = usePermission()
 const { NATIONS, EDUCATIONS, MARITAL_STATUSES } = useGbConstants()
 
@@ -99,10 +127,36 @@ const list = ref<Resident[]>([])
 const loading = ref(false)
 const detailRef = ref()
 const importVisible = ref(false)
+const uploading = ref(false)
+const importing = ref(false)
+const uploadFile = ref<File | null>(null)
+const fileList = ref<any[]>([])
+
+function onFileChange(file: any) {
+  uploadFile.value = file.raw
+  fileList.value = [file]
+}
+
+async function handleImport() {
+  if (!uploadFile.value) return
+  importing.value = true
+  try {
+    const fd = new FormData()
+    fd.append('file', uploadFile.value)
+    await residentApi.import(fd)
+    showSuccess('导入成功')
+    importVisible.value = false
+    fileList.value = []
+    uploadFile.value = null
+    doSearch()
+  } catch (e: any) { showError(e.message || '导入失败') }
+  finally { importing.value = false }
+}
 
 const search = reactive<any>({
   name: '', gender: '', nation: '', nationCode: '',
-  educationLevel: '', educationCode: '', maritalStatus: '', householdStatus: '',
+  educationLevel: '', educationCode: '', maritalStatus: '',
+  householdStatus: '', province: '',
 })
 
 const pagination = reactive({ current: 1, size: 20, total: 0 })
@@ -158,11 +212,27 @@ async function handleExport() {
   } catch (e: any) { showError('导出失败') }
 }
 
-onMounted(doSearch)
+onMounted(() => {
+  if (route.query.province) search.province = route.query.province as string
+  doSearch()
+})
+watch(() => route.query.province, (val) => {
+  if (val) { search.province = val as string; doSearch() }
+})
 </script>
 
 <style scoped>
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .page-header h3 { margin: 0; }
 .actions { display: flex; gap: 8px; }
+
+/* 搜索表单下拉框最小宽度，确保选中后文字可见 */
+.el-select {
+  min-width: 120px;
+}
+/* 省份下拉框需要更宽 */
+.el-form-item:last-of-type .el-select,
+.el-form-item [class*="province"] ~ .el-select {
+  min-width: 140px;
+}
 </style>

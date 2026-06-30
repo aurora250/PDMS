@@ -24,8 +24,8 @@
         </el-table-column>
         <el-table-column label="操作" width="120">
           <template #default="{ row }">
-            <el-button v-if="hasPermission('auth:permission:write')" text size="small" type="primary" @click="openEdit(row)">编辑</el-button>
-            <el-button v-if="hasPermission('auth:permission:write')" text size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button v-if="hasPermission('auth:permission:write') && row.groupName !== '系统管理员组'" text size="small" type="primary" @click="openEdit(row)">编辑</el-button>
+            <el-button v-if="hasPermission('auth:permission:write') && row.groupName !== '系统管理员组'" text size="small" type="danger" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -100,8 +100,8 @@ const PERM_MODULES = [
     perms: ['fp:read', 'fp:write', 'fp:delete', 'fp:review', 'fp:permit:approve', 'fp:permit:issue', 'fp:residence:write'],
   },
   {
-    key: 'keyperson', label: '重点人员', desc: '列管/走访/信访/GIS',
-    perms: ['keyperson:read', 'keyperson:write', 'keyperson:delete', 'keyperson:review', 'keyperson:visit-plan:write', 'keyperson:petition:write', 'keyperson:gis:read'],
+    key: 'keyperson', label: '重点人员', desc: '列管/走访/信访',
+    perms: ['keyperson:read', 'keyperson:write', 'keyperson:delete', 'keyperson:review', 'keyperson:visit-plan:write', 'keyperson:petition:write'],
   },
   {
     key: 'missing', label: '失踪人口', desc: '登记/寻回/统计',

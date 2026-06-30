@@ -35,6 +35,7 @@ export interface ResidentSearchRequest {
   educationCode?: string
   maritalStatus?: string
   householdStatus?: string
+  province?: string
   idCardNo?: string
   minAge?: number
   maxAge?: number
@@ -46,6 +47,18 @@ export interface ResidentRelation {
   fatherUuid?: string
   motherUuid?: string
   spouseUuid?: string
+}
+
+/** 家庭关系（含姓名+子女） */
+export interface ResidentRelationVO {
+  relationPersonUuid: string
+  fatherUuid?: string
+  fatherName?: string
+  motherUuid?: string
+  motherName?: string
+  spouseUuid?: string
+  spouseName?: string
+  children?: Array<{ uuid: string; name: string; gender?: string }>
 }
 
 /** 变更请求 */

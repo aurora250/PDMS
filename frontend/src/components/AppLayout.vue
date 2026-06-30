@@ -66,7 +66,7 @@ interface MenuItem {
   title: string
   icon: string
   perm?: string
-  children?: { path: string; title: string }[]
+  children?: { path: string; title: string; perm?: string }[]
 }
 
 const MENU_ITEMS: MenuItem[] = [
@@ -102,7 +102,6 @@ const MENU_ITEMS: MenuItem[] = [
       { path: '/keyperson/list', title: '人员列表' },
       { path: '/keyperson/visit', title: '走访计划' },
       { path: '/keyperson/petition', title: '信访记录' },
-      { path: '/keyperson/gis', title: 'GIS地图' },
     ],
   },
   {
@@ -120,20 +119,34 @@ const MENU_ITEMS: MenuItem[] = [
       { path: '/log/login', title: '登录日志' },
     ],
   },
-  { path: '/system', title: '系统管理', icon: 'Setting',
+  { path: '/system', title: '系统管理', icon: 'Setting', perm: 'auth:user:read',
     children: [
-      { path: '/system/users', title: '用户管理' },
-      { path: '/system/police', title: '民警管理' },
-      { path: '/system/permissions', title: '权限组' },
+      { path: '/system/users', title: '用户管理', perm: 'auth:user:read' },
+      { path: '/system/police', title: '民警管理', perm: 'police:read' },
+      { path: '/system/permissions', title: '权限组', perm: 'auth:user:write' },
     ],
   },
 ]
 
 const visibleMenus = computed(() => {
-  return MENU_ITEMS.filter(item => {
-    if (!item.perm) return true
-    return hasPermission(item.perm)
-  })
+  return MENU_ITEMS
+    .filter(item => {
+      if (!item.perm) return true
+      return hasPermission(item.perm)
+    })
+    .map(item => {
+      if (item.children) {
+        return {
+          ...item,
+          children: item.children.filter(child => {
+            if (!child.perm) return true
+            return hasPermission(child.perm)
+          }),
+        }
+      }
+      return item
+    })
+    .filter(item => !item.children || item.children.length > 0)
 })
 
 const changePwdDialogRef = ref()

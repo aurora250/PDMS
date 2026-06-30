@@ -31,7 +31,7 @@
     <el-dialog v-model="showApply" title="申领居住证" width="450px" @close="resetApplyForm">
       <el-form ref="applyFormRef" :model="applyForm" :rules="applyRules" label-width="100px">
         <el-form-item label="居民UUID" prop="uuid">
-          <el-input v-model="applyForm.uuid" placeholder="请输入居民UUID" />
+          <ResidentPicker v-model="applyForm.uuid" placeholder="搜索姓名或身份证号选择居民" />
         </el-form-item>
         <el-form-item label="有效期至" prop="expiryDate">
           <el-date-picker v-model="applyForm.expiryDate" type="date" value-format="YYYY-MM-DD" style="width:100%" />
@@ -76,6 +76,7 @@ import { floatingApi } from '@/api/floating'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
 import ApprovalBadge from '@/components/ApprovalBadge.vue'
+import ResidentPicker from '@/components/ResidentPicker.vue'
 
 const { hasPermission } = usePermission()
 const list = ref<any[]>([])

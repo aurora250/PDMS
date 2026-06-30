@@ -3,6 +3,7 @@ package com.pdm.household.service;
 import com.pdm.household.entity.*;
 
 import java.util.List;
+import java.util.Map;
 
 public interface HouseholdService {
     // Household book
@@ -12,15 +13,24 @@ public interface HouseholdService {
 
     HouseholdRegister renewBook(String bookNo);
 
+    /** 按居民UUID查询户口簿信息（含成员列表） */
+    Map<String, Object> getBookByResident(String residentUuid);
+
     // Business request (registration/cancellation/householder change)
     HouseholdBusinessRequest submitBusiness(HouseholdBusinessRequest request);
 
     HouseholdBusinessRequest approveBusiness(Long rid, String status, String handlerUuid, String rejectReason);
 
+    /** 附加审核材料（街道办权限） */
+    HouseholdBusinessRequest attachBusinessMaterial(Long rid, String attachmentPath, String remark);
+
     // Migration
     HouseholdMigrationRequest submitMigration(HouseholdMigrationRequest request);
 
     HouseholdMigrationRequest approveMigration(Long rid, String status, String handlerUuid, String rejectReason);
+
+    /** 附加审核材料（街道办权限） */
+    HouseholdMigrationRequest attachMigrationMaterial(Long rid, String attachmentPath, String remark);
 
     List<HouseholdMigrationRequest> getMigrationTrace(String residentUuid);
 

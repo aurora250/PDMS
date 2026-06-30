@@ -2,6 +2,7 @@
 export interface MissingPerson {
   id?: number
   uuid: string
+  residentUuid?: string
   name: string
   gender: string
   idCardNo?: string

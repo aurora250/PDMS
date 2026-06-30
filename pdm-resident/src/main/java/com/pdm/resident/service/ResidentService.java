@@ -2,6 +2,7 @@ package com.pdm.resident.service;
 
 import com.pdm.common.dto.PageResult;
 import com.pdm.resident.dto.ResidentImportResult;
+import com.pdm.resident.dto.ResidentRelationVO;
 import com.pdm.resident.dto.ResidentSearchRequest;
 import com.pdm.resident.entity.Resident;
 import com.pdm.resident.entity.ResidentChangeRequest;
@@ -9,6 +10,7 @@ import com.pdm.resident.entity.ResidentRelation;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 
 public interface ResidentService {
@@ -24,6 +26,12 @@ public interface ResidentService {
     PageResult<Resident> search(ResidentSearchRequest request);
 
     ResidentRelation getRelations(String uuid);
+
+    /** 获取关系（含姓名） */
+    ResidentRelationVO getRelationsWithNames(String uuid);
+
+    /** 获取子女列表 */
+    List<Map<String, Object>> getChildren(String uuid);
 
     ResidentRelation setRelations(ResidentRelation relation);
 

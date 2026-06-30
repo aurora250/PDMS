@@ -13,7 +13,9 @@
       </el-form>
       <el-table :data="list" v-loading="loading" stripe>
         <el-table-column prop="policeNumber" label="警号" width="140" />
-        <el-table-column prop="name" label="姓名" width="100" />
+        <el-table-column label="姓名" width="100">
+          <template #default="{ row }">{{ row.name || row.policeNumber }}</template>
+        </el-table-column>
         <el-table-column prop="policeRank" label="警衔" width="80" />
         <el-table-column prop="policeStation" label="派出所" min-width="150" />
         <el-table-column prop="department" label="部门" width="120" />
@@ -22,7 +24,7 @@
           <template #default="{ row }">
             <el-button v-if="hasPermission('auth:police:write')" text size="small" type="primary" @click="openEdit(row)">编辑</el-button>
             <el-button v-if="hasPermission('auth:police:write')" text size="small" @click="toggleStatus(row)">
-              {{ row.dutyStatus === '在岗' ? '离岗' : '在岗' }}
+              {{ row.dutyStatus === '在岗' ? '离职' : '在岗' }}
             </el-button>
           </template>
         </el-table-column>
@@ -39,7 +41,7 @@
           <el-input v-model="form.policeNumber" placeholder="如: P20260001" />
         </el-form-item>
         <el-form-item label="居民UUID">
-          <el-input v-model="form.residentUuid" placeholder="关联居民UUID" />
+          <ResidentPicker v-model="form.residentUuid" placeholder="搜索姓名或身份证号选择关联居民" />
         </el-form-item>
         <el-form-item label="警衔">
           <el-select v-model="form.policeRank" style="width:100%">
@@ -69,6 +71,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { policeApi } from '@/api/auth'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
+import ResidentPicker from '@/components/ResidentPicker.vue'
 
 const { hasPermission } = usePermission()
 const list = ref<any[]>([])
@@ -115,7 +118,7 @@ async function handleSave() {
 }
 
 async function toggleStatus(row: any) {
-  const s = row.dutyStatus === '在岗' ? '离岗' : '在岗'
+  const s = row.dutyStatus === '在岗' ? '离职' : '在岗'
   try { await policeApi.updateStatus(row.policeNumber, s); showSuccess('状态已更新'); load() }
   catch (e: any) { showError(e.message || '操作失败') }
 }

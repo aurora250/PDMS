@@ -14,6 +14,11 @@
         <el-form-item label="姓名">
           <el-input v-model="nameFilter" placeholder="姓名" clearable @keyup.enter="load" />
         </el-form-item>
+        <el-form-item label="省份">
+          <el-select v-model="provinceFilter" placeholder="全部" clearable filterable style="width:130px">
+            <el-option v-for="p in PROVINCES" :key="p" :label="p" :value="p" />
+          </el-select>
+        </el-form-item>
         <el-form-item><el-button @click="load">刷新</el-button></el-form-item>
       </el-form>
       <el-table :data="list" v-loading="loading" stripe>
@@ -28,6 +33,7 @@
           <template #default="{ row }">
             <el-button v-if="hasPermission('missing:recovery:write') && row.status !== '已寻回'" text size="small" type="success" @click="openRecover(row)">寻回</el-button>
             <el-button v-if="hasPermission('missing:delete')" text size="small" type="danger" @click="del(row)">撤销</el-button>
+            <el-button text size="small" @click="goDetail(row)">详情</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -41,7 +47,7 @@
     <el-dialog v-model="dialogVisible" title="登记失踪" width="550px" @close="resetForm">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="居民UUID" prop="residentUuid">
-          <el-input v-model="form.residentUuid" placeholder="请输入失踪人员UUID" />
+          <ResidentPicker v-model="form.residentUuid" placeholder="搜索姓名或身份证号选择失踪人员" />
         </el-form-item>
         <el-form-item label="身份证号">
           <IdCardInput v-model="form.idCardNo" @parsed="onIdParsed" />
@@ -86,22 +92,33 @@
         <el-button type="primary" @click="handleRecover" :loading="recovering">确认寻回</el-button>
       </template>
     </el-dialog>
+
+    <!-- 居民详情对话框 -->
+    <ResidentDetail ref="detailRef" @saved="load" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { missingApi } from '@/api/missing'
+import ResidentDetail from '@/views/resident/ResidentDetail.vue'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
+import { phoneRule } from '@/utils/validators'
 import IdCardInput from '@/components/IdCardInput.vue'
 import ApprovalBadge from '@/components/ApprovalBadge.vue'
+import ResidentPicker from '@/components/ResidentPicker.vue'
+import { PROVINCES } from '@/utils/constants'
 
+const detailRef = ref()
 const { hasPermission } = usePermission()
+const route = useRoute()
 const list = ref<any[]>([])
 const loading = ref(false)
 const statusFilter = ref('')
 const nameFilter = ref('')
+const provinceFilter = ref('')
 const page = reactive({ current: 1, size: 20, total: 0 })
 
 // Create dialog
@@ -117,6 +134,7 @@ const rules = {
   name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
   missingDate: [{ required: true, message: '请选择失踪日期', trigger: 'change' }],
   missingPlace: [{ required: true, message: '请输入失踪地点', trigger: 'blur' }],
+  contactPhone: [phoneRule],
 }
 
 // Recover dialog
@@ -128,6 +146,15 @@ const recoverForm = reactive({ recoveryDate: new Date().toISOString().slice(0, 1
 const recoverRules = {
   recoveryDate: [{ required: true, message: '请选择寻回日期', trigger: 'change' }],
   summary: [{ required: true, message: '请输入寻回说明', trigger: 'blur' }],
+}
+
+async function goDetail(row: any) {
+  if (!row.residentUuid) return
+  try {
+    const { residentApi } = await import('@/api/resident')
+    const resident = await residentApi.getByUuid(row.residentUuid)
+    detailRef.value?.open(resident)
+  } catch { /* ignore */ }
 }
 
 function onIdParsed(data: { birthDate: string; gender: string }) {
@@ -201,7 +228,13 @@ async function handleRecover() {
   finally { recovering.value = false }
 }
 
-onMounted(load)
+onMounted(() => {
+  if (route.query.province) provinceFilter.value = route.query.province as string
+  load()
+})
+watch(() => route.query.province, (val) => {
+  if (val) { provinceFilter.value = val as string; load() }
+})
 </script>
 
 <style scoped>
