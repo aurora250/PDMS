@@ -34,18 +34,17 @@ public class HouseholdController {
             @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int size) {
         LambdaQueryWrapper<HouseholdRegister> w = new LambdaQueryWrapper<>();
         if (keyword != null && !keyword.isEmpty())
-            w.and(wr -> wr.like(HouseholdRegister::getHouseholdBookNo, keyword)
-                .or().like(HouseholdRegister::getHouseholderUuid, keyword));
+            w.and(wr -> wr.like(HouseholdRegister::getHouseholdBookNo, keyword).or()
+                    .like(HouseholdRegister::getHouseholderUuid, keyword));
         w.orderByDesc(HouseholdRegister::getCreateTime);
         Page<HouseholdRegister> r = bookMapper.selectPage(Page.of(page, size), w);
 
         // 批量填充户主姓名
-        List<String> uuids = r.getRecords().stream()
-            .map(HouseholdRegister::getHouseholderUuid)
-            .filter(Objects::nonNull).distinct().collect(Collectors.toList());
+        List<String> uuids = r.getRecords().stream().map(HouseholdRegister::getHouseholderUuid).filter(Objects::nonNull)
+                .distinct().collect(Collectors.toList());
         if (!uuids.isEmpty()) {
             Map<String, String> nameMap = residentMapper.batchGetNames(uuids).stream()
-                .collect(Collectors.toMap(m -> (String) m.get("uuid"), m -> (String) m.get("name")));
+                    .collect(Collectors.toMap(m -> (String) m.get("uuid"), m -> (String) m.get("name")));
             r.getRecords().forEach(b -> b.setHouseholderName(nameMap.get(b.getHouseholderUuid())));
         }
         return Result.success(PageResult.of(r.getRecords(), r.getTotal(), page, size));

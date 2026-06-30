@@ -2,8 +2,8 @@ package com.pdm.resident.service;
 
 import com.pdm.common.dto.PageResult;
 import com.pdm.resident.dto.ResidentImportResult;
-import com.pdm.resident.dto.ResidentSearchRequest;
 import com.pdm.resident.dto.ResidentRelationVO;
+import com.pdm.resident.dto.ResidentSearchRequest;
 import com.pdm.resident.entity.Resident;
 import com.pdm.resident.entity.ResidentChangeRequest;
 import com.pdm.resident.entity.ResidentRelation;

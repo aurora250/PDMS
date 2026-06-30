@@ -1,6 +1,5 @@
 package com.pdm.resident.storage;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -17,9 +16,11 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
- * 本地文件存储实现。按日期分层存储，文件名使用UUID避免冲突。
- * 后续切换到飞书云存储时，实现 FileStorageService 接口并替换此 @Component 即可。
+ * 本地文件存储实现。按日期分层存储，文件名使用UUID避免冲突。 后续切换到飞书云存储时，实现 FileStorageService
+ * 接口并替换此 @Component 即可。
  */
 @Slf4j
 @Component

@@ -1,9 +1,5 @@
 package com.pdm.resident.service.impl;
 
-import com.alibaba.excel.EasyExcel;
-import com.alibaba.excel.context.AnalysisContext;
-import com.alibaba.excel.read.listener.ReadListener;
-
 import com.pdm.common.core.exception.BusinessException;
 import com.pdm.common.core.result.ErrorCode;
 import com.pdm.common.core.validator.IdCardValidator;
@@ -20,6 +16,9 @@ import com.pdm.resident.mapper.ResidentMapper;
 import com.pdm.resident.mapper.ResidentRelationMapper;
 import com.pdm.resident.service.ResidentService;
 
+import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.context.AnalysisContext;
+import com.alibaba.excel.read.listener.ReadListener;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -268,9 +267,12 @@ public class ResidentServiceImpl implements ResidentService {
 
         // 批量查询相关人员的姓名
         List<String> relatedUuids = new ArrayList<>();
-        if (relation.getFatherUuid() != null) relatedUuids.add(relation.getFatherUuid());
-        if (relation.getMotherUuid() != null) relatedUuids.add(relation.getMotherUuid());
-        if (relation.getSpouseUuid() != null) relatedUuids.add(relation.getSpouseUuid());
+        if (relation.getFatherUuid() != null)
+            relatedUuids.add(relation.getFatherUuid());
+        if (relation.getMotherUuid() != null)
+            relatedUuids.add(relation.getMotherUuid());
+        if (relation.getSpouseUuid() != null)
+            relatedUuids.add(relation.getSpouseUuid());
 
         Map<String, String> nameMap = new java.util.HashMap<>();
         if (!relatedUuids.isEmpty()) {
@@ -362,7 +364,7 @@ public class ResidentServiceImpl implements ResidentService {
     @Override
     public ResidentImportResult importExcel(MultipartFile file) {
         List<String> errors = new ArrayList<>();
-        int[] counters = {0, 0}; // [success, fail]
+        int[] counters = { 0, 0 }; // [success, fail]
 
         try {
             EasyExcel.read(file.getInputStream(), Resident.class, new ReadListener<Resident>() {
@@ -393,12 +395,8 @@ public class ResidentServiceImpl implements ResidentService {
             counters[1]++;
         }
 
-        return ResidentImportResult.builder()
-            .totalCount(counters[0] + counters[1])
-            .successCount(counters[0])
-            .failCount(counters[1])
-            .errorMessages(errors)
-            .build();
+        return ResidentImportResult.builder().totalCount(counters[0] + counters[1]).successCount(counters[0])
+                .failCount(counters[1]).errorMessages(errors).build();
     }
 
     @Override

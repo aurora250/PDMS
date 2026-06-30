@@ -1,9 +1,9 @@
 package com.pdm.resident.dto;
 
-import lombok.Data;
-
 import java.util.List;
 import java.util.Map;
+
+import lombok.Data;
 
 /**
  * 居民关系视图对象 — 含UUID对应的姓名。

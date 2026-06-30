@@ -10,9 +10,8 @@ import java.util.Map;
 @Mapper
 public interface ResidentMapper {
     /** 批量查询居民姓名（UUID → name） */
-    @Select("<script>"
-        + "SELECT uuid, name FROM resident WHERE uuid IN "
-        + "<foreach collection='uuids' item='uuid' open='(' separator=',' close=')'>#{uuid}</foreach>"
-        + "</script>")
+    @Select("<script>" + "SELECT uuid, name FROM resident WHERE uuid IN "
+            + "<foreach collection='uuids' item='uuid' open='(' separator=',' close=')'>#{uuid}</foreach>"
+            + "</script>")
     List<Map<String, Object>> batchGetNames(@Param("uuids") List<String> uuids);
 }

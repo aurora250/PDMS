@@ -18,9 +18,8 @@ public interface ResidentRelationMapper extends BaseMapper<ResidentRelation> {
     ResidentRelation selectByPersonUuid(@Param("uuid") String uuid);
 
     /** 反向查询子女：谁以此UUID为父亲或母亲 */
-    @Select("SELECT rr.relation_person_uuid AS uuid, r.name, r.gender "
-          + "FROM resident_relation rr "
-          + "LEFT JOIN resident r ON rr.relation_person_uuid = r.uuid "
-          + "WHERE (rr.father_uuid = #{uuid} OR rr.mother_uuid = #{uuid}) AND rr.is_deleted = 0")
+    @Select("SELECT rr.relation_person_uuid AS uuid, r.name, r.gender " + "FROM resident_relation rr "
+            + "LEFT JOIN resident r ON rr.relation_person_uuid = r.uuid "
+            + "WHERE (rr.father_uuid = #{uuid} OR rr.mother_uuid = #{uuid}) AND rr.is_deleted = 0")
     List<Map<String, Object>> selectChildren(@Param("uuid") String uuid);
 }

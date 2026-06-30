@@ -75,8 +75,8 @@ public class HouseholdServiceImpl implements HouseholdService {
 
         // 批量填充户主姓名
         if (book.getHouseholderUuid() != null) {
-            List<Map<String, Object>> names = residentMapper.batchGetNames(
-                Collections.singletonList(book.getHouseholderUuid()));
+            List<Map<String, Object>> names = residentMapper
+                    .batchGetNames(Collections.singletonList(book.getHouseholderUuid()));
             if (!names.isEmpty()) {
                 result.put("householderName", names.get(0).get("name"));
             }
@@ -85,8 +85,8 @@ public class HouseholdServiceImpl implements HouseholdService {
         // 解析成员UUID列表并批量填充姓名
         if (book.getMemberUuidList() != null && !book.getMemberUuidList().isEmpty()) {
             List<String> memberUuids = Arrays.asList(book.getMemberUuidList().split(","));
-            List<String> cleanUuids = memberUuids.stream()
-                .map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toList());
+            List<String> cleanUuids = memberUuids.stream().map(String::trim).filter(s -> !s.isEmpty())
+                    .collect(Collectors.toList());
             if (!cleanUuids.isEmpty()) {
                 List<Map<String, Object>> memberNames = residentMapper.batchGetNames(cleanUuids);
                 result.put("members", memberNames);

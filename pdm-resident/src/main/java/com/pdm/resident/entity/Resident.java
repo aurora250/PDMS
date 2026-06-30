@@ -1,11 +1,10 @@
 package com.pdm.resident.entity;
 
+import com.pdm.common.mybatis.BaseEntity;
+
 import com.alibaba.excel.annotation.ExcelIgnore;
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.alibaba.excel.annotation.format.DateTimeFormat;
-
-import com.pdm.common.mybatis.BaseEntity;
-
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 

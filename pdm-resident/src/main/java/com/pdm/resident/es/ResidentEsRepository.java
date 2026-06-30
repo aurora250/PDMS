@@ -4,6 +4,7 @@ import com.pdm.common.es.EsBaseRepository;
 import com.pdm.resident.entity.Resident;
 
 import org.springframework.stereotype.Repository;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.List;
@@ -11,8 +12,6 @@ import java.util.List;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-
-import org.springframework.util.StringUtils;
 
 @Repository
 public class ResidentEsRepository extends EsBaseRepository<Resident> {
@@ -34,8 +33,8 @@ public class ResidentEsRepository extends EsBaseRepository<Resident> {
     }
 
     public List<Resident> multiConditionSearch(String name, String gender, String nation, String nationCode,
-            String educationLevel, String educationCode, String maritalStatus, String householdStatus,
-            String province, int from, int size) throws IOException {
+            String educationLevel, String educationCode, String maritalStatus, String householdStatus, String province,
+            int from, int size) throws IOException {
         BoolQuery.Builder boolBuilder = new BoolQuery.Builder();
         if (StringUtils.hasText(name)) {
             boolBuilder.must(Query.of(q -> q.match(m -> m.field("name").query(name))));

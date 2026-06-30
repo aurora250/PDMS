@@ -26,8 +26,8 @@ public class ResidentSearchRequest extends PageRequest {
      * 生成缓存键，包含所有搜索条件和分页参数.
      */
     public String cacheKey() {
-        return String.format("rs:%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%d|%d|%d", name, gender, nation, nationCode, educationLevel,
-                educationCode, maritalStatus, householdStatus, province, idCardNo, minAge, maxAge,
+        return String.format("rs:%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%d|%d|%d", name, gender, nation, nationCode,
+                educationLevel, educationCode, maritalStatus, householdStatus, province, idCardNo, minAge, maxAge,
                 getPage() * 1000 + getSize());
     }
 }
