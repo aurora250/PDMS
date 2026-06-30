@@ -131,7 +131,7 @@ class KeypersonServiceImplTest {
         void shouldUpdateControlLevel() {
             when(keyPersonMapper.selectByUuid("00000000-0000-0000-0000-000000000001")).thenReturn(testKeyPerson);
 
-            KeyPerson result = keypersonService.updateControlLevel("00000000-0000-0000-0000-000000000001", "二级");
+            KeyPerson result = keypersonService.updateControlLevel("00000000-0000-0000-0000-000000000001", "二级", null);
 
             assertEquals("二级", result.getControlLevel());
             verify(keyPersonMapper).updateById(testKeyPerson);
@@ -143,7 +143,7 @@ class KeypersonServiceImplTest {
             when(keyPersonMapper.selectByUuid("non-existent")).thenReturn(null);
 
             BusinessException ex = assertThrows(BusinessException.class,
-                    () -> keypersonService.updateControlLevel("non-existent", "二级"));
+                    () -> keypersonService.updateControlLevel("non-existent", "二级", null));
             assertEquals(ErrorCode.KEY_PERSON_NOT_FOUND.getCode(), ex.getCode());
         }
     }

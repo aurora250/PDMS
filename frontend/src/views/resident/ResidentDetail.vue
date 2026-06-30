@@ -60,6 +60,7 @@
           <el-option label="死亡注销" value="死亡注销" />
           <el-option label="失踪注销" value="失踪注销" />
           <el-option label="迁出注销" value="迁出注销" />
+          <el-option label="恢复" value="恢复" />
         </el-select>
       </el-form-item>
 

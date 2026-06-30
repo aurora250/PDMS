@@ -88,7 +88,10 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="预计时长">
-              <el-input v-model="form.expectedDuration" placeholder="如: 长租" />
+              <el-select v-model="form.expectedDuration" style="width:100%">
+                <el-option label="短租" value="短租" /><el-option label="中租" value="中租" />
+                <el-option label="长租" value="长租" />
+              </el-select>
             </el-form-item>
           </el-col>
         </el-row>

@@ -164,7 +164,7 @@ class MissingpersonServiceImplTest {
 
             when(missingPersonMapper.selectPage(any(Page.class), any())).thenReturn(mockPage);
 
-            var result = missingpersonService.search("00000000-0000-0000-0000-000000000001", null, null,
+            var result = missingpersonService.search("00000000-0000-0000-0000-000000000001", null, null, null,
                     buildPageRequest(1, 20));
 
             assertNotNull(result);
@@ -180,7 +180,7 @@ class MissingpersonServiceImplTest {
 
             when(missingPersonMapper.selectPage(any(Page.class), any())).thenReturn(mockPage);
 
-            var result = missingpersonService.search(null, "失踪中", null, buildPageRequest(1, 20));
+            var result = missingpersonService.search(null, "失踪中", null, null, buildPageRequest(1, 20));
 
             assertNotNull(result);
             assertEquals(1, result.getTotal());
@@ -195,7 +195,7 @@ class MissingpersonServiceImplTest {
 
             when(missingPersonMapper.selectPage(any(Page.class), any())).thenReturn(mockPage);
 
-            var result = missingpersonService.search("nonexistent", null, null, buildPageRequest(1, 20));
+            var result = missingpersonService.search("nonexistent", null, null, null, buildPageRequest(1, 20));
 
             assertEquals(0, result.getTotal());
             assertTrue(result.getRecords().isEmpty());

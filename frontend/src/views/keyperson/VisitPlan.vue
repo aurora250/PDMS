@@ -8,7 +8,8 @@
       <el-form inline>
         <el-form-item label="状态">
           <el-select v-model="statusFilter" placeholder="全部" clearable @change="load">
-            <el-option label="待走访" value="待走访" /><el-option label="已走访" value="已走访" />
+            <el-option label="待走访" value="待走访" /><el-option label="已完成" value="已完成" />
+            <el-option label="已逾期" value="已逾期" /><el-option label="已取消" value="已取消" />
           </el-select>
         </el-form-item>
         <el-form-item><el-button @click="load">刷新</el-button></el-form-item>
@@ -45,8 +46,8 @@
         </el-form-item>
         <el-form-item label="走访类型" prop="visitType">
           <el-select v-model="form.visitType" style="width:100%">
-            <el-option label="入户走访" value="入户走访" /><el-option label="电话走访" value="电话走访" />
-            <el-option label="社区约谈" value="社区约谈" />
+            <el-option label="入户走访" value="入户走访" /><el-option label="电话" value="电话" />
+            <el-option label="视频" value="视频" />
           </el-select>
         </el-form-item>
         <el-form-item label="责任民警" prop="assignedPoliceNo">

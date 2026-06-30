@@ -39,6 +39,10 @@ public interface HouseholdService {
 
     MigrationPermit issueMigrationPermit(MigrationPermit permit);
 
+    ApprovalPermit voidApprovalPermit(Long id);
+
+    MigrationPermit voidMigrationPermit(Long id);
+
     // Area
     List<Area> getAreaTree();
 

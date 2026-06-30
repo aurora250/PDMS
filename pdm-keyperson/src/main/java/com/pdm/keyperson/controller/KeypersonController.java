@@ -36,7 +36,8 @@ public class KeypersonController {
 
     @PutMapping("/{uuid}")
     public Result<KeyPerson> updateControlLevel(@PathVariable String uuid, @RequestBody Map<String, String> body) {
-        return Result.success(keypersonService.updateControlLevel(uuid, body.get("controlLevel")));
+        return Result
+                .success(keypersonService.updateControlLevel(uuid, body.get("controlLevel"), body.get("controlType")));
     }
 
     @DeleteMapping("/{uuid}")
@@ -82,7 +83,11 @@ public class KeypersonController {
         LocalDate actualDate = LocalDate.parse((String) body.get("actualDate"));
         PetitionRecord petitionRecord = null;
         if (body.get("petitionRecord") != null) {
-            petitionRecord = new PetitionRecord();
+            String recordText = body.get("petitionRecord").toString();
+            if (!recordText.isEmpty()) {
+                petitionRecord = new PetitionRecord();
+                petitionRecord.setRemark(recordText);
+            }
         }
         return Result.success(keypersonService.completeVisit(id, actualDate, petitionRecord));
     }

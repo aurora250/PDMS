@@ -9,9 +9,12 @@
         <el-form-item label="状态">
           <el-select v-model="statusFilter" placeholder="全部" clearable @change="load">
             <el-option label="准迁证审批中" value="准迁证审批中" />
+            <el-option label="准迁证审批驳回" value="准迁证审批驳回" />
+            <el-option label="迁移证审批中" value="迁移证审批中" />
+            <el-option label="迁移证审批驳回" value="迁移证审批驳回" />
             <el-option label="迁移审批中" value="迁移审批中" />
+            <el-option label="迁移审批驳回" value="迁移审批驳回" />
             <el-option label="迁移审批通过" value="迁移审批通过" />
-            <el-option label="已驳回" value="已驳回" />
           </el-select>
         </el-form-item>
         <el-form-item label="迁出省">
@@ -72,7 +75,7 @@
         <el-form-item label="迁移类型" prop="businessType">
           <el-select v-model="form.businessType" style="width:100%">
             <el-option label="市内" value="市内" /><el-option label="省内" value="省内" />
-            <el-option label="省外" value="省外" />
+            <el-option label="跨省" value="跨省" />
           </el-select>
         </el-form-item>
         <el-form-item label="办理日期" prop="handleDate">
@@ -128,6 +131,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { ElMessageBox } from 'element-plus'
 import { householdApi } from '@/api/household'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
@@ -219,9 +223,13 @@ function showApprove(row: any, action: string) {
 }
 
 async function handleApprove() {
+  try {
+    const actionText = approveAction.value === '驳回' ? '确认驳回该迁移申请？' : '确认通过该迁移申请？'
+    await ElMessageBox.confirm(actionText, '确认操作', { type: 'warning' })
+  } catch { showApproveDialog.value = false; return }
   approving.value = true
   try {
-    const status = approveAction.value === '通过' ? '迁移审批通过' : approveAction.value === '二审通过' ? '迁移审批通过' : '已驳回'
+    const status = approveAction.value === '通过' ? '迁移审批通过' : approveAction.value === '二审通过' ? '迁移审批通过' : '迁移审批驳回'
     await householdApi.approveMigration(approveRid, status, rejectReason.value || undefined)
     showSuccess(approveAction.value === '驳回' ? '已驳回' : '已通过')
     showApproveDialog.value = false

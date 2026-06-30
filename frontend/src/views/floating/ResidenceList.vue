@@ -68,7 +68,10 @@
           <el-input v-model="form.workUnit" placeholder="可选" />
         </el-form-item>
         <el-form-item label="预计时长">
-          <el-input v-model="form.expectedDuration" placeholder="如: 长租" />
+          <el-select v-model="form.expectedDuration" style="width:100%">
+            <el-option label="短租" value="短租" /><el-option label="中租" value="中租" />
+            <el-option label="长租" value="长租" />
+          </el-select>
         </el-form-item>
         <el-form-item label="登记日期" prop="registerDate">
           <el-date-picker v-model="form.registerDate" type="date" value-format="YYYY-MM-DD" style="width:100%" />
@@ -144,7 +147,15 @@ function openCreate() {
 
 function openEdit(row: any) {
   Object.assign(form, defaultForm())
-  Object.assign(form, row)
+  form.uuid = row.uuid || ''
+  form.originalAddress = row.originalAddress || ''
+  form.currentAddress = row.currentAddress || ''
+  form.areaId = row.areaId
+  form.addressType = row.addressType || '租赁房屋'
+  form.purpose = row.purpose || '务工'
+  form.workUnit = row.workUnit || ''
+  form.expectedDuration = row.expectedDuration || ''
+  form.registerDate = row.registerDate || new Date().toISOString().slice(0, 10)
   isEdit.value = true
   editRid = row.rid
   dialogVisible.value = true

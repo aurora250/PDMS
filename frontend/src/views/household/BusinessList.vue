@@ -107,6 +107,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { ElMessageBox } from 'element-plus'
 import { householdApi } from '@/api/household'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
@@ -191,6 +192,10 @@ function showApprove(row: any, action: string) {
 }
 
 async function handleApprove() {
+  try {
+    const actionText = approveAction.value === '驳回' ? '确认驳回该业务申请？' : '确认通过该业务申请？'
+    await ElMessageBox.confirm(actionText, '确认操作', { type: 'warning' })
+  } catch { showApproveDialog.value = false; return }
   approving.value = true
   try {
     const status = approveAction.value === '通过' ? '已批准' : approveAction.value === '二审通过' ? '已批准' : '已驳回'

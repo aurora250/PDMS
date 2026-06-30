@@ -14,4 +14,8 @@ public interface ResidentMapper {
             + "<foreach collection='uuids' item='uuid' open='(' separator=',' close=')'>#{uuid}</foreach>"
             + "</script>")
     List<Map<String, Object>> batchGetNames(@Param("uuids") List<String> uuids);
+
+    /** 按姓名关键词搜索居民UUID列表 */
+    @Select("SELECT uuid FROM resident WHERE name LIKE CONCAT('%', #{keyword}, '%') AND is_deleted = 0 LIMIT 200")
+    List<String> selectUuidsByName(@Param("keyword") String keyword);
 }

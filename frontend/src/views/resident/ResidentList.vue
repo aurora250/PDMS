@@ -37,10 +37,11 @@
           <el-select v-model="search.householdStatus" placeholder="全部" clearable>
             <el-option label="正常" value="正常" /><el-option label="迁出注销" value="迁出注销" />
             <el-option label="死亡注销" value="死亡注销" /><el-option label="失踪注销" value="失踪注销" />
+            <el-option label="恢复" value="恢复" />
           </el-select>
         </el-form-item>
         <el-form-item label="省份">
-          <el-select v-model="search.province" placeholder="全部" clearable filterable>
+          <el-select v-model="search.province" placeholder="全部" clearable filterable @change="doSearch">
             <el-option v-for="p in PROVINCES" :key="p" :label="p" :value="p" />
           </el-select>
         </el-form-item>
@@ -113,6 +114,7 @@ import { UploadFilled } from '@element-plus/icons-vue'
 import { usePermission } from '@/composables/usePermission'
 import { useGbConstants } from '@/composables/useGbConstants'
 import { residentApi } from '@/api/resident'
+import { ElMessageBox } from 'element-plus'
 import { showError, showSuccess } from '@/utils/auth'
 import type { Resident } from '@/types/resident'
 import ResidentDetail from './ResidentDetail.vue'
@@ -196,10 +198,11 @@ function openEdit(row: Resident) { detailRef.value?.open(row) }
 
 async function handleDelete(row: Resident) {
   try {
+    await ElMessageBox.confirm('确认删除该常住人口记录？此操作不可恢复。', '确认删除', { type: 'warning' })
     await residentApi.delete(row.uuid!)
     showSuccess('删除成功')
     doSearch()
-  } catch (e: any) { showError(e.message || '删除失败') }
+  } catch (e: any) { if (e !== 'cancel') showError(e.message || '删除失败') }
 }
 
 async function handleExport() {

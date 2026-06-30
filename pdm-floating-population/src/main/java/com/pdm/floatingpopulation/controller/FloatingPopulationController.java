@@ -62,10 +62,13 @@ public class FloatingPopulationController {
     // ──────────── 居住证 ────────────
     @GetMapping("/permit")
     public Result<PageResult<ResidentPermit>> listPermits(@RequestParam(required = false) String status,
-            @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(required = false) String keyword, @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
         LambdaQueryWrapper<ResidentPermit> w = new LambdaQueryWrapper<>();
         if (status != null && !status.isEmpty())
             w.eq(ResidentPermit::getStatus, status);
+        if (keyword != null && !keyword.isEmpty())
+            w.like(ResidentPermit::getPermitNo, keyword);
         w.orderByDesc(ResidentPermit::getCreateTime);
         Page<ResidentPermit> r = permitMapper.selectPage(Page.of(page, size), w);
         return Result.success(PageResult.of(r.getRecords(), r.getTotal(), page, size));
@@ -88,8 +91,7 @@ public class FloatingPopulationController {
     }
 
     @PostMapping("/permit/{id}/renew")
-    public Result<ResidentPermitRenewal> renewPermit(@PathVariable Long id,
-            @RequestBody ResidentPermitRenewal renewal,
+    public Result<ResidentPermitRenewal> renewPermit(@PathVariable Long id, @RequestBody ResidentPermitRenewal renewal,
             @RequestHeader(value = "X-User-Uuid", required = false) String operatorUuid) {
         return Result.success(floatingPopulationService.renewPermit(id, renewal, operatorUuid));
     }

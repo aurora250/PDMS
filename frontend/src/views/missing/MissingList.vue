@@ -15,7 +15,7 @@
           <el-input v-model="nameFilter" placeholder="姓名" clearable @keyup.enter="load" />
         </el-form-item>
         <el-form-item label="省份">
-          <el-select v-model="provinceFilter" placeholder="全部" clearable filterable style="width:130px">
+          <el-select v-model="provinceFilter" placeholder="全部" clearable filterable style="width:130px" @change="load">
             <el-option v-for="p in PROVINCES" :key="p" :label="p" :value="p" />
           </el-select>
         </el-form-item>
@@ -208,10 +208,12 @@ async function handleCreate() {
 }
 
 function openRecover(row: any) {
-  recoverRid = row.rid ?? row.id
-  recoverForm.recoveryDate = new Date().toISOString().slice(0, 10)
-  recoverForm.summary = ''
-  showRecover.value = true
+  ElMessageBox.confirm('确认该失踪人员已被寻回？', '确认寻回', { type: 'warning' }).then(() => {
+    recoverRid = row.rid ?? row.id
+    recoverForm.recoveryDate = new Date().toISOString().slice(0, 10)
+    recoverForm.summary = ''
+    showRecover.value = true
+  }).catch(() => {})
 }
 
 function resetRecoverForm() { recoverFormRef.value?.resetFields() }

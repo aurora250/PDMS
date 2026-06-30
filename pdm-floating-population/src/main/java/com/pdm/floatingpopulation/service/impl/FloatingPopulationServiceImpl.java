@@ -70,7 +70,7 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
     public ResidentPermit applyPermit(ResidentPermit permit) {
         permit.setPermitNo(
                 PermitNumberGenerator.residentPermit(null, LocalDate.now(), System.currentTimeMillis() % 1_000_000));
-        permit.setStatus("有效");
+        permit.setStatus("申领");
         if (permit.getIssueDate() == null) {
             permit.setIssueDate(LocalDate.now());
         }
@@ -88,7 +88,7 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
         if (permit == null) {
             throw new BusinessException(ErrorCode.RESIDENT_PERMIT_NOT_FOUND);
         }
-        permit.setStatus("有效");
+        permit.setStatus("已批准");
         residentPermitMapper.updateById(permit);
         return permit;
     }

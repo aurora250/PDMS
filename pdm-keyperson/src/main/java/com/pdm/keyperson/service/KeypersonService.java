@@ -15,7 +15,7 @@ public interface KeypersonService {
 
     void revokeKeyPerson(String uuid);
 
-    KeyPerson updateControlLevel(String uuid, String controlLevel);
+    KeyPerson updateControlLevel(String uuid, String controlLevel, String controlType);
 
     PageResult<KeyPerson> searchKeyPersons(String controlLevel, String controlType, String keyword, int page, int size);
 
