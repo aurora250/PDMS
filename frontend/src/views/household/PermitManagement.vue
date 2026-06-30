@@ -21,7 +21,7 @@
         </el-form-item>
         <el-form-item><el-button @click="load">搜索</el-button></el-form-item>
       </el-form>
-      <el-table :data="list" v-loading="loading" stripe>
+      <el-table :data="list" v-loading="loading" stripe border>
         <el-table-column prop="permitNo" label="证件编号" width="200" />
         <el-table-column prop="issueDate" label="签发日期" width="120" />
         <el-table-column v-if="tab === 'approval'" prop="expiryDate" label="有效期至" width="120" />
@@ -30,7 +30,7 @@
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }"><ApprovalBadge :status="row.status" /></template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" width="120">
           <template #default="{ row }">
             <el-button v-if="row.status === '有效'" text size="small" type="danger" @click="handleVoid(row)">作废</el-button>
           </template>
@@ -38,7 +38,7 @@
       </el-table>
       <div style="margin-top:16px;text-align:right">
         <el-pagination v-model:current-page="page.current" v-model:page-size="page.size" :total="page.total"
-          layout="total,prev,pager,next" @current-change="load" @size-change="load" />
+          layout="total,sizes,prev,pager,next" :page-sizes="[10,20,50,100]" @current-change="load" @size-change="load" />
       </div>
     </el-card>
 
@@ -95,6 +95,9 @@ const form = reactive({
 
 const rules = {
   issueDate: [{ required: true, message: '请选择签发日期', trigger: 'change' }],
+  expiryDate: [{ required: true, message: '请选择有效期', trigger: 'change' }],
+  issuingAuthority: [{ required: true, message: '请输入签发机关', trigger: 'blur' }],
+  outgoingPoliceStation: [{ required: true, message: '请输入迁出派出所', trigger: 'blur' }],
 }
 
 async function load() {

@@ -5,7 +5,7 @@
       <el-button v-if="hasPermission('auth:permission:write')" type="primary" @click="openCreate">新建权限组</el-button>
     </div>
     <el-card>
-      <el-table :data="pageList" v-loading="loading" stripe>
+      <el-table :data="pageList" v-loading="loading" stripe border>
         <el-table-column prop="groupId" label="ID" width="60" />
         <el-table-column prop="groupName" label="名称" width="150" />
         <el-table-column prop="description" label="描述" min-width="200" />
@@ -31,15 +31,15 @@
       </el-table>
       <div style="margin-top:16px;text-align:right">
         <el-pagination v-model:current-page="page.current" v-model:page-size="page.size" :total="list.length"
-          layout="total,prev,pager,next" background small />
+          layout="total,sizes,prev,pager,next" :page-sizes="[10,20,50,100]" background small />
       </div>
     </el-card>
 
     <!-- 编辑对话框 -->
     <el-dialog v-model="dialogVisible" :title="editing ? '编辑权限组' : '新建权限组'" width="750px" top="5vh">
-      <el-form :model="form" label-width="80px">
-        <el-form-item label="名称"><el-input v-model="form.groupName" placeholder="权限组名称" /></el-form-item>
-        <el-form-item label="描述"><el-input v-model="form.description" placeholder="权限组描述" /></el-form-item>
+      <el-form ref="permFormRef" :model="form" :rules="permRules" label-width="80px">
+        <el-form-item label="名称" prop="groupName"><el-input v-model="form.groupName" placeholder="权限组名称" maxlength="50" /></el-form-item>
+        <el-form-item label="描述" prop="description"><el-input v-model="form.description" placeholder="权限组描述" maxlength="200" /></el-form-item>
         <el-form-item label="权限">
           <div class="perm-panel">
             <div class="perm-toolbar">
@@ -145,6 +145,11 @@ const pageList = computed(() => {
 
 const form = reactive({ groupName: '', description: '', permissions: '[]' })
 const checkedPerms = ref<string[]>([])
+const permFormRef = ref()
+const permRules = {
+  groupName: [{ required: true, message: '请输入权限组名称', trigger: 'blur' }, { max: 50, message: '名称不超过50字', trigger: 'blur' }],
+  description: [{ max: 200, message: '描述不超过200字', trigger: 'blur' }],
+}
 
 const checkAll = computed(() => checkedPerms.value.length === ALL_PERMS.length)
 const isIndeterminate = computed(() => checkedPerms.value.length > 0 && checkedPerms.value.length < ALL_PERMS.length)
@@ -208,6 +213,9 @@ function openEdit(row: any) {
 }
 
 async function handleSave() {
+  const valid = await permFormRef.value?.validate().catch(() => false)
+  if (valid === false) return
+  if (checkedPerms.value.length === 0) { showError('请至少选择一个权限'); return }
   saving.value = true
   try {
     const data = {

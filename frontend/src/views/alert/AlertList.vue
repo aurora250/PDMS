@@ -24,7 +24,7 @@
         </el-form-item>
         <el-form-item><el-button type="primary" @click="load">搜索</el-button></el-form-item>
       </el-form>
-      <el-table :data="list" v-loading="loading" stripe>
+      <el-table :data="list" v-loading="loading" stripe border>
         <el-table-column prop="alertType" label="预警类型" width="120" />
         <el-table-column prop="alertContent" label="内容" min-width="200" show-overflow-tooltip />
         <el-table-column prop="severity" label="严重程度" width="80">
@@ -50,13 +50,13 @@
       </el-table>
       <div style="margin-top:16px;text-align:right">
         <el-pagination v-model:current-page="page.current" v-model:page-size="page.size" :total="page.total"
-          layout="total,prev,pager,next" @current-change="load" @size-change="load" />
+          layout="total,sizes,prev,pager,next" :page-sizes="[10,20,50,100]" @current-change="load" @size-change="load" />
       </div>
     </el-card>
 
     <!-- 处理预警对话框 -->
     <el-dialog v-model="showHandle" title="处理预警" width="450px" @close="resetHandleForm">
-      <el-form ref="handleFormRef" :model="handleForm" label-width="80px">
+      <el-form ref="handleFormRef" :model="handleForm" :rules="handleRules" label-width="80px">
         <el-form-item label="预警类型">
           <el-input :model-value="currentAlert?.alertType" disabled />
         </el-form-item>
@@ -67,7 +67,7 @@
           <el-input :model-value="auth.username" disabled />
         </el-form-item>
         <el-form-item label="备注" prop="remark">
-          <el-input v-model="handleForm.remark" type="textarea" placeholder="处理备注（可选）" />
+          <el-input v-model="handleForm.remark" type="textarea" placeholder="处理备注（可选）" maxlength="200" show-word-limit />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -103,6 +103,7 @@ const handling = ref(false)
 const handleFormRef = ref()
 const currentAlert = ref<any>(null)
 const handleForm = reactive({ remark: '' })
+const handleRules = { remark: [{ max: 200, message: '备注不能超过200字', trigger: 'blur' }] }
 
 async function load() {
   loading.value = true
@@ -128,6 +129,8 @@ function openHandle(row: any) {
 function resetHandleForm() { handleFormRef.value?.resetFields() }
 
 async function handleSubmit() {
+  const valid = await handleFormRef.value?.validate().catch(() => false)
+  if (valid === false) return
   handling.value = true
   try {
     await alertApi.handle(currentAlert.value.alertId || currentAlert.value.id, auth.username)
@@ -142,6 +145,6 @@ onMounted(load)
 </script>
 
 <style scoped>
-.page-header { margin-bottom: 16px; }
+.page-header { margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
 .page-header h3 { margin: 0; }
 </style>

@@ -35,9 +35,9 @@ function handleLogout() {
 </script>
 
 <style scoped>
-.portal-layout { min-height: 100vh; }
-.portal-topbar { display: flex; align-items: center; background: #1a365d; color: #fff; padding: 0 24px; }
-.portal-topbar h3 { margin: 0; }
+.portal-layout { min-height: 100vh; background: var(--pdm-bg); }
+.portal-topbar { display: flex; align-items: center; background: var(--pdm-primary-dark); color: #fff; padding: 0 24px; height: 56px; }
+.portal-topbar h3 { margin: 0; font-size: 17px; letter-spacing: 2px; }
 .flex-1 { flex: 1; }
 .portal-content { padding: 24px; }
 </style>

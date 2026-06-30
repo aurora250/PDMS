@@ -11,7 +11,7 @@
         </el-form-item>
         <el-form-item><el-button type="primary" @click="load">搜索</el-button></el-form-item>
       </el-form>
-      <el-table :data="list" v-loading="loading" stripe>
+      <el-table :data="list" v-loading="loading" stripe border>
         <el-table-column prop="policeNumber" label="警号" width="140" />
         <el-table-column label="姓名" width="100">
           <template #default="{ row }">{{ row.name || row.policeNumber }}</template>
@@ -32,32 +32,32 @@
       </el-table>
       <div style="margin-top:16px;text-align:right">
         <el-pagination v-model:current-page="page.current" v-model:page-size="page.size" :total="page.total"
-          layout="total,prev,pager,next" @current-change="load" @size-change="load" />
+          layout="total,sizes,prev,pager,next" :page-sizes="[10,20,50,100]" @current-change="load" @size-change="load" />
       </div>
     </el-card>
 
     <el-dialog v-model="dialogVisible" :title="editing ? '编辑民警' : '新增民警'" width="500px">
-      <el-form :model="form" label-width="100px">
-        <el-form-item v-if="!editing" label="警号" required>
-          <el-input v-model="form.policeNumber" placeholder="如: P20260001" />
+      <el-form ref="policeFormRef" :model="form" :rules="policeRules" label-width="100px">
+        <el-form-item v-if="!editing" label="警号" prop="policeNumber">
+          <el-input v-model="form.policeNumber" placeholder="如: P20260001" maxlength="9" />
         </el-form-item>
-        <el-form-item label="居民UUID">
+        <el-form-item label="居民UUID" prop="residentUuid">
           <ResidentPicker v-model="form.residentUuid" placeholder="搜索姓名或身份证号选择关联居民" />
         </el-form-item>
-        <el-form-item label="警衔">
+        <el-form-item label="警衔" prop="policeRank">
           <el-select v-model="form.policeRank" style="width:100%">
             <el-option v-for="r in ['警员','警司','警督','警监']" :key="r" :label="r" :value="r" />
           </el-select>
         </el-form-item>
-        <el-form-item label="派出所">
-          <el-input v-model="form.policeStation" />
+        <el-form-item label="派出所" prop="policeStation">
+          <el-input v-model="form.policeStation" maxlength="100" />
         </el-form-item>
-        <el-form-item label="部门">
-          <el-input v-model="form.department" placeholder="如: 治安大队" />
+        <el-form-item label="部门" prop="department">
+          <el-input v-model="form.department" placeholder="如: 治安大队" maxlength="100" />
         </el-form-item>
         <el-form-item label="辖区">
           <AreaCascader v-model="form.areaId" />
-          <el-input v-model="form.jurisdiction" placeholder="详细地址，如: 某某社区" style="margin-top:8px" />
+          <el-input v-model="form.jurisdiction" placeholder="详细地址，如: 某某社区" style="margin-top:8px" maxlength="200" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -74,6 +74,7 @@ import { ElMessageBox } from 'element-plus'
 import { policeApi } from '@/api/auth'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
+import { policeNoRule, uuidRule } from '@/utils/validators'
 import ResidentPicker from '@/components/ResidentPicker.vue'
 import AreaCascader from '@/components/AreaCascader.vue'
 
@@ -90,6 +91,14 @@ const form = reactive({
   policeNumber: '', residentUuid: '', policeRank: '警员',
   policeStation: '', department: '', jurisdiction: '', areaId: undefined as number | undefined,
 })
+const policeFormRef = ref()
+const policeRules = {
+  policeNumber: [{ required: true, message: '请输入警号', trigger: 'blur' }, policeNoRule],
+  residentUuid: [uuidRule],
+  policeRank: [{ required: true, message: '请选择警衔', trigger: 'change' }],
+  policeStation: [{ required: true, message: '请输入派出所', trigger: 'blur' }, { max: 100, message: '不超过100字', trigger: 'blur' }],
+  department: [{ required: true, message: '请输入部门', trigger: 'blur' }, { max: 100, message: '不超过100字', trigger: 'blur' }],
+}
 
 async function load() {
   loading.value = true
@@ -119,6 +128,8 @@ function showDetail(row: any) {
 }
 
 async function handleSave() {
+  const valid = await policeFormRef.value?.validate().catch(() => false)
+  if (valid === false) return
   try {
     if (editing.value) await policeApi.update(editNo, { ...form })
     else await policeApi.create({ ...form })

@@ -9,10 +9,10 @@
         <el-descriptions-item label="配偶">{{ relation.spouseUuid || '未登记' }}</el-descriptions-item>
       </el-descriptions>
       <el-divider />
-      <el-form inline>
-        <el-form-item label="父亲UUID"><ResidentPicker v-model="editForm.fatherUuid" placeholder="搜索姓名或身份证号选择父亲" /></el-form-item>
-        <el-form-item label="母亲UUID"><ResidentPicker v-model="editForm.motherUuid" placeholder="搜索姓名或身份证号选择母亲" /></el-form-item>
-        <el-form-item label="配偶UUID"><ResidentPicker v-model="editForm.spouseUuid" placeholder="搜索姓名或身份证号选择配偶" /></el-form-item>
+      <el-form ref="relationsFormRef" :model="editForm" inline>
+        <el-form-item label="父亲UUID" prop="fatherUuid"><ResidentPicker v-model="editForm.fatherUuid" placeholder="搜索姓名或身份证号选择父亲" /></el-form-item>
+        <el-form-item label="母亲UUID" prop="motherUuid"><ResidentPicker v-model="editForm.motherUuid" placeholder="搜索姓名或身份证号选择母亲" /></el-form-item>
+        <el-form-item label="配偶UUID" prop="spouseUuid"><ResidentPicker v-model="editForm.spouseUuid" placeholder="搜索姓名或身份证号选择配偶" /></el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleSave">保存关系</el-button>
         </el-form-item>
@@ -27,6 +27,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { residentApi } from '@/api/resident'
 import { showError, showSuccess } from '@/utils/auth'
+import { uuidRule } from '@/utils/validators'
 import ResidentPicker from '@/components/ResidentPicker.vue'
 import type { ResidentRelation } from '@/types/resident'
 
@@ -34,12 +35,21 @@ const route = useRoute()
 const uuid = route.params.uuid as string
 const relation = ref<ResidentRelation | null>(null)
 const editForm = reactive<ResidentRelation>({ relationPersonUuid: uuid })
+const relationsFormRef = ref()
+
+const relationsRules = {
+  fatherUuid: [uuidRule],
+  motherUuid: [uuidRule],
+  spouseUuid: [uuidRule],
+}
 
 async function load() {
   try { relation.value = await residentApi.getRelations(uuid) }
   catch { /* empty */ }
 }
 async function handleSave() {
+  const valid = await relationsFormRef.value?.validate().catch(() => false)
+  if (valid === false) return
   try {
     await residentApi.setRelations(uuid, { ...editForm })
     showSuccess('保存成功')

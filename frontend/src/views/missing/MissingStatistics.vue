@@ -54,7 +54,7 @@
     <el-row :gutter="16">
       <el-col :span="12">
         <el-card header="失踪人员 — 最近登记">
-          <el-table :data="recentMissing" v-loading="loading" stripe size="small" max-height="300">
+          <el-table :data="recentMissing" v-loading="loading" stripe border size="small" max-height="300">
             <el-table-column prop="missingDate" label="失踪日期" width="110" />
             <el-table-column prop="missingPlace" label="失踪地点" min-width="180" show-overflow-tooltip />
             <el-table-column prop="status" label="状态" width="80">
@@ -65,7 +65,7 @@
       </el-col>
       <el-col :span="12">
         <el-card header="重点人员 — 按类型统计">
-          <el-table :data="kpTypeData" v-loading="loading" stripe size="small" max-height="300">
+          <el-table :data="kpTypeData" v-loading="loading" stripe border size="small" max-height="300">
             <el-table-column prop="name" label="管控类型" min-width="150" />
             <el-table-column prop="value" label="人数" width="80" align="right" sortable />
             <el-table-column label="占比" width="80" align="right">

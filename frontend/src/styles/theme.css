@@ -1,0 +1,169 @@
+/* ============================================================
+   人口数据库管理系统 — 公安主题
+   People Database Management — Police Theme
+   ============================================================ */
+
+/* ── CSS 自定义属性 ── */
+:root {
+  /* 主色调 — 藏蓝系 */
+  --pdm-primary: #1e3a5f;
+  --pdm-primary-light: #2c5aa0;
+  --pdm-primary-lighter: #3a6fc5;
+  --pdm-primary-dark: #152a45;
+  --pdm-primary-bg: #e8eef5;
+
+  /* 侧栏 */
+  --pdm-sidebar: #0f1f38;
+  --pdm-sidebar-hover: #162d4f;
+  --pdm-sidebar-active: #1a3a5f;
+  --pdm-sidebar-text: #b0c4da;
+  --pdm-sidebar-text-active: #ffffff;
+
+  /* 强调色 — 金色 */
+  --pdm-accent: #c9a84c;
+  --pdm-accent-light: #e0c97a;
+
+  /* 警示色 — 公安红 */
+  --pdm-danger: #d42020;
+  --pdm-danger-light: #fef0f0;
+
+  /* 背景 */
+  --pdm-bg: #f0f2f5;
+  --pdm-card-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+
+  /* 顶栏 */
+  --pdm-header-bg: #ffffff;
+  --pdm-header-border: #dce1e8;
+}
+
+/* ── 覆盖 Element Plus CSS 变量 ── */
+:root {
+  --el-color-primary: #1e3a5f;
+  --el-color-primary-light-3: #345980;
+  --el-color-primary-light-5: #4a78a0;
+  --el-color-primary-light-7: #7a9fc0;
+  --el-color-primary-light-8: #a0bdd5;
+  --el-color-primary-light-9: #cfdde8;
+  --el-color-primary-dark-2: #182e4c;
+
+  --el-color-danger: #d42020;
+  --el-color-danger-light-3: #dc4c4c;
+  --el-color-danger-light-5: #e57878;
+  --el-color-danger-light-7: #f1a3a3;
+  --el-color-danger-light-9: #fef0f0;
+
+  --el-color-warning: #d48806;
+  --el-color-success: #1b7a3d;
+
+  --el-bg-color-page: #f0f2f5;
+  --el-border-color-light: #e4e7ed;
+}
+
+/* ── 全局基础样式 ── */
+html, body {
+  background: var(--pdm-bg);
+  color: #303133;
+  font-family: -apple-system, BlinkMacSystemFont, "Microsoft YaHei", "PingFang SC", "Helvetica Neue", sans-serif;
+}
+
+/* ── Element Plus 组件覆盖 ── */
+
+/* 菜单 — 侧栏专用 */
+.el-menu {
+  border-right: none !important;
+}
+
+/* 顶栏菜单背景覆盖 */
+.el-menu--horizontal {
+  background: var(--pdm-primary) !important;
+}
+
+/* 表格表头 */
+.el-table th.el-table__cell {
+  background-color: var(--pdm-primary-bg) !important;
+  color: var(--pdm-primary-dark);
+  font-weight: 600;
+}
+
+/* 卡片 */
+.el-card {
+  border-radius: 6px;
+  border: 1px solid var(--el-border-color-light);
+}
+
+/* 按钮主色覆盖 — 统一使用藏蓝 */
+.el-button--primary {
+  --el-button-bg-color: var(--pdm-primary);
+  --el-button-border-color: var(--pdm-primary);
+  --el-button-hover-bg-color: var(--pdm-primary-light);
+  --el-button-hover-border-color: var(--pdm-primary-light);
+  --el-button-active-bg-color: var(--pdm-primary-dark);
+  --el-button-active-border-color: var(--pdm-primary-dark);
+}
+
+/* 标签 (Tag) */
+.el-tag--danger {
+  --el-tag-bg-color: var(--pdm-danger-light);
+  --el-tag-border-color: var(--pdm-danger-light);
+  --el-tag-text-color: var(--pdm-danger);
+}
+
+/* 分页激活色 */
+.el-pagination .el-pager li.is-active {
+  background-color: var(--pdm-primary);
+}
+
+/* 输入框聚焦 */
+.el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px var(--pdm-primary) inset !important;
+}
+.el-select .el-input.is-focus .el-input__wrapper {
+  box-shadow: 0 0 0 1px var(--pdm-primary) inset !important;
+}
+
+/* 对话框标题 */
+.el-dialog__header {
+  border-bottom: 2px solid var(--pdm-primary);
+  padding-bottom: 12px;
+}
+
+/* 面包屑（如有） */
+.el-breadcrumb__inner.is-link {
+  color: var(--pdm-primary-light);
+}
+
+/* 开关激活 */
+.el-switch.is-checked .el-switch__core {
+  background-color: var(--pdm-primary);
+  border-color: var(--pdm-primary);
+}
+
+/* 复选框 */
+.el-checkbox__input.is-checked .el-checkbox__inner {
+  background-color: var(--pdm-primary);
+  border-color: var(--pdm-primary);
+}
+
+/* 单选框 */
+.el-radio__input.is-checked .el-radio__inner {
+  background-color: var(--pdm-primary);
+  border-color: var(--pdm-primary);
+}
+.el-radio__input.is-checked + .el-radio__label {
+  color: var(--pdm-primary);
+}
+
+/* ── 表格统一间距与固定列 ── */
+.el-card .el-table {
+  margin: 0;
+}
+
+/* 固定列右侧留出呼吸空间 */
+.el-table__fixed-right {
+  box-shadow: -2px 0 8px rgba(0,0,0,.08);
+}
+
+/* el-card 内容区内边距统一 */
+.el-card__body {
+  padding: 20px;
+}

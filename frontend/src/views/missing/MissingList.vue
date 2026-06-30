@@ -21,7 +21,7 @@
         </el-form-item>
         <el-form-item><el-button @click="load">刷新</el-button></el-form-item>
       </el-form>
-      <el-table :data="list" v-loading="loading" stripe>
+      <el-table :data="list" v-loading="loading" stripe border>
         <el-table-column prop="name" label="姓名" width="100" />
         <el-table-column prop="gender" label="性别" width="60" />
         <el-table-column prop="missingDate" label="失踪日期" width="120" />
@@ -39,7 +39,7 @@
       </el-table>
       <div style="margin-top:16px;text-align:right">
         <el-pagination v-model:current-page="page.current" v-model:page-size="page.size" :total="page.total"
-          layout="total,prev,pager,next" @current-change="load" @size-change="load" />
+          layout="total,sizes,prev,pager,next" :page-sizes="[10,20,50,100]" @current-change="load" @size-change="load" />
       </div>
     </el-card>
 
@@ -49,7 +49,7 @@
         <el-form-item label="居民UUID" prop="residentUuid">
           <ResidentPicker v-model="form.residentUuid" placeholder="搜索姓名或身份证号选择失踪人员" />
         </el-form-item>
-        <el-form-item label="身份证号">
+        <el-form-item label="身份证号" prop="idCardNo">
           <IdCardInput v-model="form.idCardNo" @parsed="onIdParsed" />
         </el-form-item>
         <el-form-item label="姓名" prop="name">
@@ -67,8 +67,8 @@
         <el-form-item label="可能去向">
           <el-input v-model="form.possibleWay" placeholder="如: 疑似被拐卖" />
         </el-form-item>
-        <el-form-item label="联系电话">
-          <el-input v-model="form.contactPhone" placeholder="家属联系电话" />
+        <el-form-item label="联系电话" prop="contactPhone">
+          <el-input v-model="form.contactPhone" placeholder="家属联系电话" maxlength="11" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -106,7 +106,7 @@ import { missingApi } from '@/api/missing'
 import ResidentDetail from '@/views/resident/ResidentDetail.vue'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
-import { phoneRule } from '@/utils/validators'
+import { phoneRule, idCardRule } from '@/utils/validators'
 import IdCardInput from '@/components/IdCardInput.vue'
 import ApprovalBadge from '@/components/ApprovalBadge.vue'
 import ResidentPicker from '@/components/ResidentPicker.vue'
@@ -133,6 +133,7 @@ const form = reactive({
 const rules = {
   residentUuid: [{ required: true, message: '请输入居民UUID', trigger: 'blur' }],
   name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
+  idCardNo: [idCardRule],
   missingDate: [{ required: true, message: '请选择失踪日期', trigger: 'change' }],
   missingPlace: [{ required: true, message: '请输入失踪地点', trigger: 'blur' }],
   contactPhone: [phoneRule],

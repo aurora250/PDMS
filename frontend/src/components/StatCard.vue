@@ -37,10 +37,10 @@ withDefaults(defineProps<{
 .stat-card.mini .stat-label {
   font-size: 12px;
 }
-.stat-card.primary { border-left: 4px solid #409eff; }
-.stat-card.success { border-left: 4px solid #67c23a; }
-.stat-card.warning { border-left: 4px solid #e6a23c; }
-.stat-card.danger  { border-left: 4px solid #f56c6c; }
+.stat-card.primary { border-left: 4px solid var(--pdm-primary-light); }
+.stat-card.success { border-left: 4px solid #1b7a3d; }
+.stat-card.warning { border-left: 4px solid #d48806; }
+.stat-card.danger  { border-left: 4px solid var(--pdm-danger); }
 .stat-content {
   display: flex;
   justify-content: space-between;

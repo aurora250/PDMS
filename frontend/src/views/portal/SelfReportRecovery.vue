@@ -8,7 +8,7 @@
         <el-form-item label="失踪人员姓名" prop="name">
           <el-input v-model="form.name" placeholder="请输入失踪人员姓名" />
         </el-form-item>
-        <el-form-item label="身份证号">
+        <el-form-item label="身份证号" prop="idCardNo">
           <IdCardInput v-model="form.idCardNo" @parsed="onIdParsed" />
         </el-form-item>
         <el-row :gutter="16">
@@ -48,7 +48,7 @@
 import { ref, reactive } from 'vue'
 import { missingApi } from '@/api/missing'
 import { showError, showSuccess } from '@/utils/auth'
-import { phoneRule } from '@/utils/validators'
+import { phoneRule, idCardRule } from '@/utils/validators'
 import IdCardInput from '@/components/IdCardInput.vue'
 import AttachmentUploader from '@/components/AttachmentUploader.vue'
 
@@ -63,7 +63,9 @@ const form = reactive({
 
 const rules = {
   name: [{ required: true, message: '请输入失踪人员姓名', trigger: 'blur' }],
+  idCardNo: [idCardRule],
   recoveryDate: [{ required: true, message: '请选择寻回日期', trigger: 'change' }],
+  recoveryPlace: [{ required: true, message: '请输入寻回地点', trigger: 'blur' }],
   description: [{ required: true, message: '请描述线索信息', trigger: 'blur' }],
   contactPhone: [{ required: true, message: '请输入联系电话', trigger: 'blur' }, phoneRule],
 }

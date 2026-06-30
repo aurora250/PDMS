@@ -16,7 +16,7 @@
         </el-form-item>
         <el-form-item><el-button type="primary" @click="load">搜索</el-button></el-form-item>
       </el-form>
-      <el-table :data="list" v-loading="loading" stripe>
+      <el-table :data="list" v-loading="loading" stripe border>
         <el-table-column prop="username" label="用户名" width="120" />
         <el-table-column prop="userRole" label="角色" width="100" />
         <el-table-column prop="phone" label="电话" width="130" />
@@ -40,25 +40,25 @@
       </el-table>
       <div style="margin-top:16px;text-align:right">
         <el-pagination v-model:current-page="page.current" v-model:page-size="page.size" :total="page.total"
-          layout="total,prev,pager,next" @current-change="load" @size-change="load" />
+          layout="total,sizes,prev,pager,next" :page-sizes="[10,20,50,100]" @current-change="load" @size-change="load" />
       </div>
     </el-card>
 
     <el-dialog v-model="dialogVisible" :title="editing ? '编辑用户' : '创建用户'" width="500px">
       <el-form ref="formRef" :model="form" :rules="uRules" label-width="100px">
-        <el-form-item v-if="!editing" label="用户名" prop="username"><el-input v-model="form.username" /></el-form-item>
-        <el-form-item v-if="!editing" label="密码" prop="password"><el-input v-model="form.password" type="password" /></el-form-item>
-        <el-form-item label="角色">
+        <el-form-item v-if="!editing" label="用户名" prop="username"><el-input v-model="form.username" placeholder="请输入用户名" maxlength="50" /></el-form-item>
+        <el-form-item v-if="!editing" label="密码" prop="password"><el-input v-model="form.password" type="password" placeholder="6-20位密码" maxlength="20" show-password /></el-form-item>
+        <el-form-item label="角色" prop="userRole">
           <el-select v-model="form.userRole">
             <el-option v-for="r in ROLES" :key="r" :label="r" :value="r" />
           </el-select>
         </el-form-item>
-        <el-form-item label="权限组">
+        <el-form-item label="权限组" prop="permissionGroupId">
           <el-select v-model="form.permissionGroupId">
             <el-option v-for="g in groups" :key="g.groupId" :label="g.groupName" :value="g.groupId" />
           </el-select>
         </el-form-item>
-        <el-form-item label="电话"><el-input v-model="form.phone" /></el-form-item>
+        <el-form-item label="电话" prop="phone"><el-input v-model="form.phone" placeholder="请输入手机号" maxlength="11" /></el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -96,7 +96,7 @@ const defaultForm = () => ({
 const form = reactive(defaultForm())
 const uRules = computed(() => ({
   username: [{ required: true, message: '请输入用户名' }],
-  password: editing.value ? [] : [{ required: true, message: '请输入密码' }, { min: 6, message: '至少6位' }],
+  password: editing.value ? [] : [{ required: true, message: '请输入密码' }, { min: 6, max: 20, message: '密码长度需在6-20位之间' }],
   phone: [phoneRule],
 }))
 
@@ -120,6 +120,8 @@ function openEdit(row: any) {
   Object.assign(form, row); editing.value = true; dialogVisible.value = true
 }
 async function handleSave() {
+  const valid = await formRef.value?.validate().catch(() => false)
+  if (valid === false) return
   try {
     if (editing.value) {
       await userApi.update(editUuid, { userRole: form.userRole, permissionGroupId: form.permissionGroupId, phone: form.phone })
