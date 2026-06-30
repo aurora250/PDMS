@@ -7,7 +7,13 @@
     <el-card>
       <el-form inline>
         <el-form-item label="搜索">
-          <el-input v-model="kw" placeholder="户口簿号/户主" clearable @keyup.enter="load" />
+          <el-input v-model="kw" placeholder="户口簿号/户主/地址" clearable @keyup.enter="load" style="width:200px" />
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="bookStatus" placeholder="全部" clearable @change="load">
+            <el-option label="有效" value="有效" /><el-option label="冻结" value="冻结" />
+            <el-option label="无效" value="无效" /><el-option label="审批中" value="审批中" />
+          </el-select>
         </el-form-item>
         <el-form-item><el-button type="primary" @click="load">搜索</el-button></el-form-item>
       </el-form>
@@ -64,6 +70,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { householdApi } from '@/api/household'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
@@ -72,9 +79,11 @@ import ApprovalBadge from '@/components/ApprovalBadge.vue'
 import ResidentPicker from '@/components/ResidentPicker.vue'
 
 const { hasPermission } = usePermission()
+const route = useRoute()
 const list = ref<any[]>([])
 const loading = ref(false)
 const kw = ref('')
+const bookStatus = ref('')
 const page = reactive({ current: 1, size: 20, total: 0 })
 
 const showApply = ref(false)
@@ -95,7 +104,7 @@ const applyRules = {
 async function load() {
   loading.value = true
   try {
-    const res = await householdApi.searchBook({ keyword: kw.value, page: page.current, size: page.size })
+    const res = await householdApi.searchBook({ keyword: kw.value || undefined, status: bookStatus.value || undefined, page: page.current, size: page.size })
     list.value = Array.isArray(res) ? res : (res.records || [])
     page.total = res.total || 0
   } catch { /* ignore */ }
@@ -133,7 +142,10 @@ async function handleApply() {
   finally { applying.value = false }
 }
 
-onMounted(load)
+onMounted(() => {
+  if (route.query.province) kw.value = route.query.province as string
+  load()
+})
 </script>
 
 <style scoped>

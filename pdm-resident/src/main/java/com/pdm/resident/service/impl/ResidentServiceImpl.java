@@ -184,8 +184,23 @@ public class ResidentServiceImpl implements ResidentService {
         if (StringUtils.hasText(request.getNation())) {
             wrapper.eq(Resident::getNation, request.getNation());
         }
+        if (StringUtils.hasText(request.getNationCode())) {
+            wrapper.eq(Resident::getNationCode, request.getNationCode());
+        }
+        if (StringUtils.hasText(request.getEducationLevel())) {
+            wrapper.eq(Resident::getEducationLevel, request.getEducationLevel());
+        }
+        if (StringUtils.hasText(request.getEducationCode())) {
+            wrapper.eq(Resident::getEducationCode, request.getEducationCode());
+        }
         if (StringUtils.hasText(request.getMaritalStatus())) {
             wrapper.eq(Resident::getMaritalStatus, request.getMaritalStatus());
+        }
+        if (StringUtils.hasText(request.getHouseholdStatus())) {
+            wrapper.eq(Resident::getHouseholdStatus, request.getHouseholdStatus());
+        }
+        if (StringUtils.hasText(request.getProvince())) {
+            wrapper.like(Resident::getHouseholdAddress, request.getProvince());
         }
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<Resident> pageResult = residentMapper.selectPage(
                 com.baomidou.mybatisplus.extension.plugins.pagination.Page.of(request.getPage(), request.getSize()),
@@ -220,28 +235,7 @@ public class ResidentServiceImpl implements ResidentService {
             } catch (Exception e) {
                 log.error("Failed to bulk-save resident batch to ES at page {}: {}", page, e.getMessage());
             }
-            if (StringUtils.hasText(request.getNationCode())) {
-                wrapper.eq(Resident::getNationCode, request.getNationCode());
-            }
-            if (StringUtils.hasText(request.getEducationLevel())) {
-                wrapper.eq(Resident::getEducationLevel, request.getEducationLevel());
-            }
-            if (StringUtils.hasText(request.getEducationCode())) {
-                wrapper.eq(Resident::getEducationCode, request.getEducationCode());
-            }
-            if (StringUtils.hasText(request.getMaritalStatus())) {
-                wrapper.eq(Resident::getMaritalStatus, request.getMaritalStatus());
-            }
-            if (StringUtils.hasText(request.getHouseholdStatus())) {
-                wrapper.eq(Resident::getHouseholdStatus, request.getHouseholdStatus());
-            }
-            if (StringUtils.hasText(request.getProvince())) {
-                wrapper.like(Resident::getHouseholdAddress, request.getProvince());
-            }
-            com.baomidou.mybatisplus.extension.plugins.pagination.Page<Resident> pageResult = residentMapper.selectPage(
-                    com.baomidou.mybatisplus.extension.plugins.pagination.Page.of(request.getPage(), request.getSize()),
-                    wrapper);
-            return PageResult.of(pageResult.getRecords(), pageResult.getTotal(), request.getPage(), request.getSize());
+            page++;
         }
         log.info("Reindex complete: {} residents synced to ES", total);
         return total;

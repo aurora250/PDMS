@@ -5,6 +5,17 @@
       <el-button v-if="hasPermission('auth:user:write')" type="primary" @click="openCreate">创建用户</el-button>
     </div>
     <el-card>
+      <el-form inline style="margin-bottom:12px">
+        <el-form-item>
+          <el-input v-model="userKeyword" placeholder="搜索用户名" clearable @keyup.enter="load" style="width:200px" />
+        </el-form-item>
+        <el-form-item label="角色">
+          <el-select v-model="userRoleFilter" placeholder="全部" clearable @change="load">
+            <el-option v-for="r in ROLES" :key="r" :label="r" :value="r" />
+          </el-select>
+        </el-form-item>
+        <el-form-item><el-button type="primary" @click="load">搜索</el-button></el-form-item>
+      </el-form>
       <el-table :data="list" v-loading="loading" stripe>
         <el-table-column prop="username" label="用户名" width="120" />
         <el-table-column prop="userRole" label="角色" width="100" />
@@ -58,7 +69,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { ElMessageBox } from 'element-plus'
 import { userApi, permissionGroupApi } from '@/api/auth'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
@@ -74,22 +86,24 @@ const dialogVisible = ref(false)
 const editing = ref(false)
 const formRef = ref()
 const page = reactive({ current: 1, size: 20, total: 0 })
+const userKeyword = ref('')
+const userRoleFilter = ref('')
 let editUuid = ''
 
 const defaultForm = () => ({
   username: '', password: '', userRole: '普通用户', permissionGroupId: 8, phone: '',
 })
 const form = reactive(defaultForm())
-const uRules = {
+const uRules = computed(() => ({
   username: [{ required: true, message: '请输入用户名' }],
-  password: [{ required: true, message: '请输入密码' }, { min: 6, message: '至少6位' }],
+  password: editing.value ? [] : [{ required: true, message: '请输入密码' }, { min: 6, message: '至少6位' }],
   phone: [phoneRule],
-}
+}))
 
 async function load() {
   loading.value = true
   try {
-    const res = await userApi.list({ page: page.current, size: page.size })
+    const res = await userApi.list({ keyword: userKeyword.value || undefined, userRole: userRoleFilter.value || undefined, page: page.current, size: page.size })
     list.value = res.records || []
     page.total = res.total || 0
   } catch { /* */ } finally { loading.value = false }
@@ -110,7 +124,6 @@ async function handleSave() {
     if (editing.value) {
       await userApi.update(editUuid, { userRole: form.userRole, permissionGroupId: form.permissionGroupId, phone: form.phone })
     } else {
-      // The /api/auth/users POST endpoint takes JSON body with username/password/phone/role/permissionGroupId
       await userApi.create({
         username: form.username, password: form.password,
         userRole: form.userRole, permissionGroupId: form.permissionGroupId, phone: form.phone,
@@ -121,19 +134,23 @@ async function handleSave() {
   } catch (e: any) { showError(e.message || '操作失败') }
 }
 async function toggleStatus(row: any) {
-  const newStatus = row.accountStatus === '有效' ? '禁用' : '有效'
+  // 后端 CHECK 约束: '审批中','有效','冻结','注销','锁定'
+  const newStatus = row.accountStatus === '有效' ? '冻结' : '有效'
+  const actionText = newStatus === '冻结' ? '禁用' : '启用'
   try {
+    await ElMessageBox.confirm(`确认${actionText}该用户？`, '确认操作', { type: 'warning' })
     await userApi.updateStatus(row.userUuid, newStatus)
     showSuccess('状态已更新')
     load()
-  } catch (e: any) { showError(e.message || '操作失败') }
+  } catch (e: any) { if (e !== 'cancel') showError(e.message || '操作失败') }
 }
 async function handleDelete(row: any) {
   try {
+    await ElMessageBox.confirm('确认删除该用户？此操作不可恢复。', '确认删除', { type: 'warning' })
     await userApi.delete(row.userUuid)
     showSuccess('删除成功')
     load()
-  } catch (e: any) { showError(e.message || '删除失败') }
+  } catch (e: any) { if (e !== 'cancel') showError(e.message || '删除失败') }
 }
 
 onMounted(() => { load(); loadGroups() })

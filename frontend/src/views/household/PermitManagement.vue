@@ -9,6 +9,18 @@
       <el-tab-pane label="迁移证" name="migration" />
     </el-tabs>
     <el-card>
+      <el-form inline style="margin-bottom:12px">
+        <el-form-item>
+          <el-input v-model="permitKeyword" placeholder="搜索证件编号" clearable @keyup.enter="load" style="width:220px" />
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="permitStatusFilter" placeholder="全部" clearable @change="load">
+            <el-option label="有效" value="有效" /><el-option label="作废" value="作废" />
+            <el-option label="审批中" value="审批中" />
+          </el-select>
+        </el-form-item>
+        <el-form-item><el-button @click="load">搜索</el-button></el-form-item>
+      </el-form>
       <el-table :data="list" v-loading="loading" stripe>
         <el-table-column prop="permitNo" label="证件编号" width="200" />
         <el-table-column prop="issueDate" label="签发日期" width="120" />
@@ -17,6 +29,11 @@
         <el-table-column v-if="tab === 'migration'" prop="outgoingPoliceStation" label="迁出派出所" min-width="180" />
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }"><ApprovalBadge :status="row.status" /></template>
+        </el-table-column>
+        <el-table-column label="操作" width="120" fixed="right">
+          <template #default="{ row }">
+            <el-button v-if="row.status === '有效'" text size="small" type="danger" @click="handleVoid(row)">作废</el-button>
+          </template>
         </el-table-column>
       </el-table>
       <div style="margin-top:16px;text-align:right">
@@ -54,6 +71,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch, onMounted } from 'vue'
+import { ElMessageBox } from 'element-plus'
 import { householdApi } from '@/api/household'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
@@ -64,6 +82,8 @@ const tab = ref('approval')
 const list = ref<any[]>([])
 const loading = ref(false)
 const page = reactive({ current: 1, size: 20, total: 0 })
+const permitKeyword = ref('')
+const permitStatusFilter = ref('')
 
 const dialogVisible = ref(false)
 const issuing = ref(false)
@@ -80,16 +100,31 @@ const rules = {
 async function load() {
   loading.value = true
   try {
+    const params: any = { page: page.current, size: page.size }
+    if (permitKeyword.value) params.keyword = permitKeyword.value
+    if (permitStatusFilter.value) params.status = permitStatusFilter.value
     let res
     if (tab.value === 'approval') {
-      res = await householdApi.listApprovalPermit({ page: page.current, size: page.size })
+      res = await householdApi.listApprovalPermit(params)
     } else {
-      res = await householdApi.listMigrationPermit({ page: page.current, size: page.size })
+      res = await householdApi.listMigrationPermit(params)
     }
     list.value = Array.isArray(res) ? res : (res.records || [])
     page.total = res.total || 0
   } catch { /* ignore */ }
   finally { loading.value = false }
+}
+
+async function handleVoid(row: any) {
+  try {
+    await ElMessageBox.confirm('确认作废该证件？', '确认作废', { type: 'warning' })
+    // Update status to 作废
+    if (tab.value === 'approval') {
+      await householdApi.approveBusiness(row.rid, '已驳回')
+    }
+    showSuccess('已作废')
+    load()
+  } catch { /* ignore */ }
 }
 
 function openIssue() {

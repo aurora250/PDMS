@@ -15,10 +15,14 @@
           </el-select>
         </el-form-item>
         <el-form-item label="迁出省">
-          <el-input v-model="fromFilter" placeholder="省份" clearable style="width:120px" @keyup.enter="load" />
+          <el-select v-model="fromFilter" placeholder="全部" clearable filterable style="width:140px" @change="load">
+            <el-option v-for="p in PROVINCES" :key="p" :label="p" :value="p" />
+          </el-select>
         </el-form-item>
         <el-form-item label="迁入省">
-          <el-input v-model="toFilter" placeholder="省份" clearable style="width:120px" @keyup.enter="load" />
+          <el-select v-model="toFilter" placeholder="全部" clearable filterable style="width:140px" @change="load">
+            <el-option v-for="p in PROVINCES" :key="p" :label="p" :value="p" />
+          </el-select>
         </el-form-item>
         <el-form-item><el-button @click="load">刷新</el-button></el-form-item>
       </el-form>
@@ -131,6 +135,7 @@ import AreaCascader from '@/components/AreaCascader.vue'
 import ApprovalBadge from '@/components/ApprovalBadge.vue'
 import AttachmentUploader from '@/components/AttachmentUploader.vue'
 import ResidentPicker from '@/components/ResidentPicker.vue'
+import { PROVINCES } from '@/utils/constants'
 
 const { hasPermission } = usePermission()
 const route = useRoute()

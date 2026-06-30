@@ -240,7 +240,7 @@ class FloatingPopulationServiceImplTest {
 
             when(residentPermitMapper.selectById(1L)).thenReturn(testPermit);
 
-            ResidentPermitRenewal result = fpService.renewPermit(1L, renewal);
+            ResidentPermitRenewal result = fpService.renewPermit(1L, renewal, null);
 
             assertNotNull(result);
             verify(residentPermitRenewalMapper).insert(renewal);
@@ -255,7 +255,7 @@ class FloatingPopulationServiceImplTest {
 
             when(residentPermitMapper.selectById(999L)).thenReturn(null);
 
-            BusinessException ex = assertThrows(BusinessException.class, () -> fpService.renewPermit(999L, renewal));
+            BusinessException ex = assertThrows(BusinessException.class, () -> fpService.renewPermit(999L, renewal, null));
             assertEquals(ErrorCode.RESIDENT_PERMIT_NOT_FOUND.getCode(), ex.getCode());
         }
 
@@ -267,7 +267,7 @@ class FloatingPopulationServiceImplTest {
 
             when(residentPermitMapper.selectById(1L)).thenReturn(testPermit);
 
-            BusinessException ex = assertThrows(BusinessException.class, () -> fpService.renewPermit(1L, renewal));
+            BusinessException ex = assertThrows(BusinessException.class, () -> fpService.renewPermit(1L, renewal, null));
             assertEquals(ErrorCode.RESIDENT_PERMIT_EXPIRED.getCode(), ex.getCode());
             verify(residentPermitRenewalMapper, never()).insert(any(ResidentPermitRenewal.class));
         }

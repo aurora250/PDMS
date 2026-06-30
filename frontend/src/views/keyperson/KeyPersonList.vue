@@ -18,7 +18,7 @@
             <el-option label="涉毒人员" value="涉毒人员" />
             <el-option label="信访重点人员" value="信访重点人员" />
             <el-option label="涉稳人员" value="涉稳人员" />
-            <el-option label="精神障碍患者" value="精神障碍患者(肇事肇祸风险)" />
+            <el-option label="精神障碍患者(肇事肇祸风险)" value="精神障碍患者(肇事肇祸风险)" />
             <el-option label="其他重点人员" value="其他重点人员" />
           </el-select>
         </el-form-item>
@@ -61,12 +61,12 @@
             <el-option label="涉毒人员" value="涉毒人员" />
             <el-option label="信访重点人员" value="信访重点人员" />
             <el-option label="涉稳人员" value="涉稳人员" />
-            <el-option label="精神障碍患者" value="精神障碍患者(肇事肇祸风险)" />
+            <el-option label="精神障碍患者(肇事肇祸风险)" value="精神障碍患者(肇事肇祸风险)" />
             <el-option label="其他重点人员" value="其他重点人员" />
           </el-select>
         </el-form-item>
         <el-form-item label="责任民警" prop="responsiblePoliceNo">
-          <el-input v-model="form.responsiblePoliceNo" placeholder="民警编号" />
+          <el-input v-model="form.responsiblePoliceNo" placeholder="输入民警编号，如 P20260001" />
         </el-form-item>
         <el-form-item label="列管日期" prop="designatedAt">
           <el-date-picker v-model="form.designatedAt" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" style="width:100%" />
@@ -83,6 +83,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { ElMessageBox } from 'element-plus'
 import { keypersonApi } from '@/api/keyperson'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
@@ -129,7 +130,10 @@ async function load() {
 }
 
 async function del(row: any) {
-  try { await keypersonApi.delete(row.uuid); showSuccess('已撤销'); load() } catch { /* ignore */ }
+  try {
+    await ElMessageBox.confirm('确认撤销该重点人员列管记录？', '确认撤销', { type: 'warning' })
+    await keypersonApi.delete(row.uuid); showSuccess('已撤销'); load()
+  } catch { /* ignore */ }
 }
 
 function openCreate() {

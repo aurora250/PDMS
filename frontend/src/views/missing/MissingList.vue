@@ -8,7 +8,7 @@
       <el-form inline>
         <el-form-item label="状态">
           <el-select v-model="statusFilter" placeholder="全部" clearable @change="load">
-            <el-option label="失踪中" value="失踪中" /><el-option label="已寻回" value="已寻回" />
+            <el-option label="失踪中" value="失踪中" /><el-option label="已经寻回" value="已经寻回" />
           </el-select>
         </el-form-item>
         <el-form-item label="姓名">
@@ -31,7 +31,7 @@
         </el-table-column>
         <el-table-column label="操作" width="200">
           <template #default="{ row }">
-            <el-button v-if="hasPermission('missing:recovery:write') && row.status !== '已寻回'" text size="small" type="success" @click="openRecover(row)">寻回</el-button>
+            <el-button v-if="hasPermission('missing:recovery:write') && row.status !== '已经寻回'" text size="small" type="success" @click="openRecover(row)">寻回</el-button>
             <el-button v-if="hasPermission('missing:delete')" text size="small" type="danger" @click="del(row)">撤销</el-button>
             <el-button text size="small" @click="goDetail(row)">详情</el-button>
           </template>
@@ -101,6 +101,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { ElMessageBox } from 'element-plus'
 import { missingApi } from '@/api/missing'
 import ResidentDetail from '@/views/resident/ResidentDetail.vue'
 import { usePermission } from '@/composables/usePermission'
@@ -167,6 +168,7 @@ async function load() {
     const res = await missingApi.search({
       status: statusFilter.value || undefined,
       name: nameFilter.value || undefined,
+      province: provinceFilter.value || undefined,
       page: page.current, size: page.size,
     })
     list.value = Array.isArray(res) ? res : (res.records || [])
@@ -176,7 +178,10 @@ async function load() {
 }
 
 async function del(row: any) {
-  try { await missingApi.delete(row.rid ?? row.id); showSuccess('已撤销'); load() } catch { /* ignore */ }
+  try {
+    await ElMessageBox.confirm('确认撤销该失踪记录？', '确认撤销', { type: 'warning' })
+    await missingApi.delete(row.rid ?? row.id); showSuccess('已撤销'); load()
+  } catch { /* ignore */ }
 }
 
 function openCreate() {

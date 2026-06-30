@@ -5,6 +5,12 @@
       <el-button v-if="hasPermission('fp:residence:write')" type="primary" @click="openCreate">新增登记</el-button>
     </div>
     <el-card>
+      <el-form inline style="margin-bottom:12px">
+        <el-form-item>
+          <el-input v-model="keyword" placeholder="搜索UUID/地址" clearable @keyup.enter="load" style="width:260px" />
+        </el-form-item>
+        <el-form-item><el-button @click="load">搜索</el-button></el-form-item>
+      </el-form>
       <el-table :data="list" v-loading="loading" stripe>
         <el-table-column prop="uuid" label="UUID" width="200" show-overflow-tooltip />
         <el-table-column prop="currentAddress" label="现地址" min-width="200" />
@@ -78,6 +84,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { ElMessageBox } from 'element-plus'
 import { floatingApi } from '@/api/floating'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
@@ -110,10 +117,12 @@ const rules = {
   registerDate: [{ required: true, message: '请选择登记日期', trigger: 'change' }],
 }
 
+const keyword = ref('')
+
 async function load() {
   loading.value = true
   try {
-    const res = await floatingApi.listResidence({ page: page.current, size: page.size })
+    const res = await floatingApi.listResidence({ keyword: keyword.value || undefined, page: page.current, size: page.size })
     list.value = Array.isArray(res) ? res : (res.records || [])
     page.total = res.total || 0
   } catch { /* ignore */ }
@@ -121,7 +130,10 @@ async function load() {
 }
 
 async function del(row: any) {
-  try { await floatingApi.deleteResidence(row.rid); showSuccess('已注销'); load() } catch { /* ignore */ }
+  try {
+    await ElMessageBox.confirm('确认注销该居住地登记？', '确认注销', { type: 'warning' })
+    await floatingApi.deleteResidence(row.rid); showSuccess('已注销'); load()
+  } catch { /* ignore */ }
 }
 
 function openCreate() {

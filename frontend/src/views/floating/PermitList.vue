@@ -5,6 +5,19 @@
       <el-button v-if="hasPermission('fp:write')" type="primary" @click="openApply">申领</el-button>
     </div>
     <el-card>
+      <el-form inline style="margin-bottom:12px">
+        <el-form-item label="状态">
+          <el-select v-model="permitStatus" placeholder="全部" clearable @change="load">
+            <el-option label="申领" value="申领" /><el-option label="已批准" value="已批准" />
+            <el-option label="有效" value="有效" /><el-option label="过期" value="过期" />
+            <el-option label="注销" value="注销" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-input v-model="permitKeyword" placeholder="搜索居住证号/UUID" clearable @keyup.enter="load" style="width:240px" />
+        </el-form-item>
+        <el-form-item><el-button @click="load">搜索</el-button></el-form-item>
+      </el-form>
       <el-table :data="list" v-loading="loading" stripe>
         <el-table-column prop="permitNo" label="居住证号" width="180" />
         <el-table-column prop="uuid" label="UUID" width="200" show-overflow-tooltip />
@@ -17,7 +30,7 @@
           <template #default="{ row }">
             <el-button v-if="hasPermission('fp:permit:approve') && row.status === '申领'" text size="small" type="success" @click="approve(row)">审批通过</el-button>
             <el-button v-if="hasPermission('fp:permit:issue') && row.status === '已批准'" text size="small" @click="issue(row)">制发</el-button>
-            <el-button v-if="hasPermission('fp:write')" text size="small" type="primary" @click="openRenew(row)">续期</el-button>
+            <el-button v-if="hasPermission('fp:write') && row.status === '有效'" text size="small" type="primary" @click="openRenew(row)">续期</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -82,6 +95,8 @@ const { hasPermission } = usePermission()
 const list = ref<any[]>([])
 const loading = ref(false)
 const page = reactive({ current: 1, size: 20, total: 0 })
+const permitStatus = ref('')
+const permitKeyword = ref('')
 
 // Apply dialog
 const showApply = ref(false)
@@ -107,7 +122,7 @@ const renewRules = {
 async function load() {
   loading.value = true
   try {
-    const res = await floatingApi.listPermit({ page: page.current, size: page.size })
+    const res = await floatingApi.listPermit({ status: permitStatus.value || undefined, keyword: permitKeyword.value || undefined, page: page.current, size: page.size })
     list.value = Array.isArray(res) ? res : (res.records || [])
     page.total = res.total || 0
   } catch { /* ignore */ }

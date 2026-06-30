@@ -24,6 +24,12 @@ public class MissingPerson extends BaseNamedEntity {
     @TableField("resident_uuid")
     private String residentUuid;
 
+    @TableField("name")
+    private String name;
+
+    @TableField("gender")
+    private String gender;
+
     @TableField("missing_date")
     private LocalDate missingDate;
 

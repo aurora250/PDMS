@@ -5,6 +5,12 @@
       <el-button v-if="hasPermission('fp:write')" type="primary" @click="openCreate">新增登记</el-button>
     </div>
     <el-card>
+      <el-form inline style="margin-bottom:12px">
+        <el-form-item>
+          <el-input v-model="keyword" placeholder="搜索UUID/居住证号" clearable @keyup.enter="load" style="width:260px" />
+        </el-form-item>
+        <el-form-item><el-button @click="load">搜索</el-button></el-form-item>
+      </el-form>
       <el-table :data="list" v-loading="loading" stripe>
         <el-table-column prop="rid" label="ID" width="60" />
         <el-table-column prop="uuid" label="UUID" width="200" show-overflow-tooltip />
@@ -49,10 +55,10 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { ElMessageBox } from 'element-plus'
 import { floatingApi } from '@/api/floating'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
-import { phoneRule } from '@/utils/validators'
 import AttachmentUploader from '@/components/AttachmentUploader.vue'
 import ResidentPicker from '@/components/ResidentPicker.vue'
 
@@ -60,6 +66,8 @@ const { hasPermission } = usePermission()
 const list = ref<any[]>([])
 const loading = ref(false)
 const page = reactive({ current: 1, size: 20, total: 0 })
+
+const keyword = ref('')
 
 const dialogVisible = ref(false)
 const isEdit = ref(false)
@@ -80,7 +88,7 @@ const rules = {
 async function load() {
   loading.value = true
   try {
-    const res = await floatingApi.listRegister({ page: page.current, size: page.size })
+    const res = await floatingApi.listRegister({ keyword: keyword.value || undefined, page: page.current, size: page.size })
     list.value = Array.isArray(res) ? res : (res.records || [])
     page.total = res.total || 0
   } catch { /* ignore */ }
@@ -88,7 +96,10 @@ async function load() {
 }
 
 async function del(row: any) {
-  try { await floatingApi.deleteRegister(row.rid); showSuccess('已注销'); load() } catch { /* ignore */ }
+  try {
+    await ElMessageBox.confirm('确认注销该流动人口登记？', '确认注销', { type: 'warning' })
+    await floatingApi.deleteRegister(row.rid); showSuccess('已注销'); load()
+  } catch { /* ignore */ }
 }
 
 function openCreate() {
@@ -99,7 +110,11 @@ function openCreate() {
 
 function openEdit(row: any) {
   Object.assign(form, defaultForm())
-  Object.assign(form, row)
+  // Only copy relevant editable fields
+  form.uuid = row.uuid || ''
+  form.registerDate = row.registerDate || new Date().toISOString().slice(0, 10)
+  form.residencePermitNo = row.residencePermitNo || ''
+  form.attachment = typeof row.attachment === 'string' ? (row.attachment ? [row.attachment] : []) : (Array.isArray(row.attachment) ? row.attachment : [])
   isEdit.value = true
   editRid = row.rid
   dialogVisible.value = true
@@ -112,11 +127,17 @@ async function handleSave() {
   if (!valid) return
   saving.value = true
   try {
+    const payload = {
+      uuid: form.uuid,
+      registerDate: form.registerDate,
+      residencePermitNo: form.residencePermitNo,
+      attachment: Array.isArray(form.attachment) ? form.attachment.join(',') : '',
+    }
     if (isEdit.value) {
-      await floatingApi.updateRegister(editRid, { ...form })
+      await floatingApi.updateRegister(editRid, payload)
       showSuccess('更新成功')
     } else {
-      await floatingApi.createRegister({ ...form })
+      await floatingApi.createRegister(payload)
       showSuccess('登记成功')
     }
     dialogVisible.value = false

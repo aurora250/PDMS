@@ -23,6 +23,7 @@
         <el-table-column label="操作" width="160">
           <template #default="{ row }">
             <el-button v-if="hasPermission('auth:police:write')" text size="small" type="primary" @click="openEdit(row)">编辑</el-button>
+            <el-button text size="small" @click="showDetail(row)">详情</el-button>
             <el-button v-if="hasPermission('auth:police:write')" text size="small" @click="toggleStatus(row)">
               {{ row.dutyStatus === '在岗' ? '离职' : '在岗' }}
             </el-button>
@@ -55,7 +56,8 @@
           <el-input v-model="form.department" placeholder="如: 治安大队" />
         </el-form-item>
         <el-form-item label="辖区">
-          <el-input v-model="form.jurisdiction" placeholder="如: 某某社区" />
+          <AreaCascader v-model="form.areaId" />
+          <el-input v-model="form.jurisdiction" placeholder="详细地址，如: 某某社区" style="margin-top:8px" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -68,10 +70,12 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { ElMessageBox } from 'element-plus'
 import { policeApi } from '@/api/auth'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
 import ResidentPicker from '@/components/ResidentPicker.vue'
+import AreaCascader from '@/components/AreaCascader.vue'
 
 const { hasPermission } = usePermission()
 const list = ref<any[]>([])
@@ -84,7 +88,7 @@ let editNo = ''
 
 const form = reactive({
   policeNumber: '', residentUuid: '', policeRank: '警员',
-  policeStation: '', department: '', jurisdiction: '',
+  policeStation: '', department: '', jurisdiction: '', areaId: undefined as number | undefined,
 })
 
 async function load() {
@@ -98,11 +102,17 @@ async function load() {
 }
 
 function openCreate() {
-  Object.assign(form, { policeNumber: '', residentUuid: '', policeRank: '警员', policeStation: '', department: '', jurisdiction: '' })
+  Object.assign(form, { policeNumber: '', residentUuid: '', policeRank: '警员', policeStation: '', department: '', jurisdiction: '', areaId: undefined })
   editing.value = false; dialogVisible.value = true
 }
 
 function openEdit(row: any) {
+  editNo = row.policeNumber
+  Object.assign(form, row)
+  editing.value = true; dialogVisible.value = true
+}
+
+function showDetail(row: any) {
   editNo = row.policeNumber
   Object.assign(form, row)
   editing.value = true; dialogVisible.value = true
@@ -119,8 +129,11 @@ async function handleSave() {
 
 async function toggleStatus(row: any) {
   const s = row.dutyStatus === '在岗' ? '离职' : '在岗'
-  try { await policeApi.updateStatus(row.policeNumber, s); showSuccess('状态已更新'); load() }
-  catch (e: any) { showError(e.message || '操作失败') }
+  const actionText = s === '离职' ? '确认将该民警标记为离职？' : '确认将该民警恢复为在岗？'
+  try {
+    await ElMessageBox.confirm(actionText, '确认操作', { type: 'warning' })
+    await policeApi.updateStatus(row.policeNumber, s); showSuccess('状态已更新'); load()
+  } catch (e: any) { if (e !== 'cancel') showError(e.message || '操作失败') }
 }
 
 onMounted(load)

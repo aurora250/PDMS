@@ -89,8 +89,9 @@ public class FloatingPopulationController {
 
     @PostMapping("/permit/{id}/renew")
     public Result<ResidentPermitRenewal> renewPermit(@PathVariable Long id,
-            @RequestBody ResidentPermitRenewal renewal) {
-        return Result.success(floatingPopulationService.renewPermit(id, renewal));
+            @RequestBody ResidentPermitRenewal renewal,
+            @RequestHeader(value = "X-User-Uuid", required = false) String operatorUuid) {
+        return Result.success(floatingPopulationService.renewPermit(id, renewal, operatorUuid));
     }
 
     // ──────────── 居住地登记 ────────────

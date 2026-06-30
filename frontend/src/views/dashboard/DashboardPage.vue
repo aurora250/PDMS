@@ -462,9 +462,9 @@ function goToResidentList() {
   router.push({ path: '/resident', query: { province: selectedProvince.value } })
 }
 
-function goToMigrationList() { router.push('/household/migration') }
+function goToMigrationList() { router.push({ path: '/household/migration', query: { from: selectedProvince.value } }) }
 
-function goToBookList() { router.push('/household/book') }
+function goToBookList() { router.push({ path: '/household/book', query: { province: selectedProvince.value } }) }
 
 function resetFilters() {
   dataDimension.value = 'resident'

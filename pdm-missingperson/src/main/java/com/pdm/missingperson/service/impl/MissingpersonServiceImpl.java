@@ -81,6 +81,9 @@ public class MissingpersonServiceImpl implements MissingpersonService {
         if (StringUtils.hasText(status)) {
             wrapper.eq(MissingPerson::getStatus, status);
         }
+        if (StringUtils.hasText(name)) {
+            wrapper.like(MissingPerson::getName, name);
+        }
         wrapper.orderByDesc(MissingPerson::getCreateTime);
 
         IPage<MissingPerson> page = new Page<>(pageRequest.getPage(), pageRequest.getSize());

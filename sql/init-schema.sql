@@ -299,6 +299,8 @@ COMMENT ON TABLE visit_plan IS '走访计划表';
 CREATE TABLE IF NOT EXISTS missing_person (
     rid BIGSERIAL PRIMARY KEY,
     resident_uuid VARCHAR(36) NOT NULL,
+    name VARCHAR(50) NOT NULL DEFAULT '',
+    gender VARCHAR(4) NOT NULL DEFAULT '',
     missing_date DATE NOT NULL,
     missing_place VARCHAR(200) NOT NULL,
     photo VARCHAR(500) NOT NULL,

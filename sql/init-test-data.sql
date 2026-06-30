@@ -648,7 +648,7 @@ DO $$
 BEGIN
     -- 所有 resident UUIDs（含性别，用于关系表）
     DROP TABLE IF EXISTS _res_pool;
-    CREATE TEMP TABLE _res_pool AS SELECT uuid, gender FROM resident;
+    CREATE TEMP TABLE _res_pool AS SELECT uuid, name, gender FROM resident;
 
     -- 所有 sys_user UUIDs（按角色分类，用于 handler/agent 引用）
     DROP TABLE IF EXISTS _user_pool;
@@ -953,16 +953,17 @@ BEGIN
     SELECT array_agg(uuid) INTO pool FROM _res_pool; pc := array_length(pool,1);
     SELECT ids INTO area_ids FROM _area_districts; ac := array_length(area_ids,1);
     FOR i IN 1..200 LOOP
-        INSERT INTO missing_person (resident_uuid, missing_date, missing_place, photo, appearance,
+        INSERT INTO missing_person (resident_uuid, name, gender, missing_date, missing_place, photo, appearance,
             medical_history, possible_way, contact_phone, status, is_deleted)
-        VALUES (pool[floor(random()*pc)::INT+1],
+        SELECT r.uuid, r.name, r.gender,
             CURRENT_DATE - (floor(random()*730)::INT || ' days')::INTERVAL,
             gen_area_path(area_ids[floor(random()*ac)::INT+1]), 'http://photo.pdm.test/missing_'||i||'.jpg',
             arr_rand(ARRAY['身高约170cm，体型中等','身高约165cm，偏瘦','身高约175cm，偏胖','身高约160cm','身高约180cm','身高约155cm，微胖']),
             CASE WHEN random()<0.15 THEN arr_rand(ARRAY['高血压','糖尿病','心脏病','抑郁症史']) ELSE NULL END,
             CASE WHEN random()<0.30 THEN arr_rand(ARRAY['可能去往外省','可能去往邻市','可能投靠亲属']) ELSE NULL END,
             '138'||LPAD(floor(random()*100000000)::TEXT,8,'0'),
-            CASE WHEN random()<0.75 THEN '失踪中' ELSE '已经寻回' END, 0);
+            CASE WHEN random()<0.75 THEN '失踪中' ELSE '已经寻回' END, 0
+        FROM _res_pool r WHERE r.uuid = pool[floor(random()*pc)::INT+1];
     END LOOP;
     -- 刷新失踪池
     DROP TABLE IF EXISTS _missing_pool;

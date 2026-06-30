@@ -22,7 +22,7 @@ public interface FloatingPopulationService {
 
     ResidentPermit issuePermit(Long id);
 
-    ResidentPermitRenewal renewPermit(Long id, ResidentPermitRenewal renewal);
+    ResidentPermitRenewal renewPermit(Long id, ResidentPermitRenewal renewal, String operatorUuid);
 
     ResidentRegistration registerResidence(ResidentRegistration registration);
 

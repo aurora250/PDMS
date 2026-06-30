@@ -119,7 +119,7 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
 
     @Override
     @Transactional
-    public ResidentPermitRenewal renewPermit(Long id, ResidentPermitRenewal renewal) {
+    public ResidentPermitRenewal renewPermit(Long id, ResidentPermitRenewal renewal, String operatorUuid) {
         ResidentPermit permit = residentPermitMapper.selectById(id);
         if (permit == null) {
             throw new BusinessException(ErrorCode.RESIDENT_PERMIT_NOT_FOUND);
@@ -129,8 +129,17 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
         }
         renewal.setPermitNo(permit.getPermitNo());
         renewal.setOldExpiryDate(permit.getExpiryDate());
-        renewal.setNewExpiryDate(permit.getExpiryDate().plusYears(1));
-        renewal.setRenewalDate(LocalDate.now());
+        // Respect user-provided dates, fallback to defaults
+        if (renewal.getNewExpiryDate() == null) {
+            renewal.setNewExpiryDate(permit.getExpiryDate().plusYears(1));
+        }
+        if (renewal.getRenewalDate() == null) {
+            renewal.setRenewalDate(LocalDate.now());
+        }
+        // Set operator UUID from authenticated user context
+        if (operatorUuid != null && !operatorUuid.isEmpty()) {
+            renewal.setOperatorUuid(operatorUuid);
+        }
         residentPermitRenewalMapper.insert(renewal);
 
         permit.setExpiryDate(renewal.getNewExpiryDate());
