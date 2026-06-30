@@ -12,7 +12,7 @@
         <el-form-item><el-button type="primary" @click="load">搜索</el-button></el-form-item>
       </el-form>
       <el-table :data="list" v-loading="loading" stripe>
-        <el-table-column prop="bookNo" label="户口簿号" width="200" />
+        <el-table-column prop="householdBookNo" label="户口簿号" width="200" />
         <el-table-column prop="householderName" label="户主" width="120" />
         <el-table-column prop="hukouAddress" label="户籍地址" min-width="200" />
         <el-table-column prop="establishDate" label="成立日期" width="120" />
@@ -38,8 +38,8 @@
         <el-form-item label="户口簿号">
           <el-input v-model="applyForm.householdBookNo" placeholder="自动生成或手动输入" />
         </el-form-item>
-        <el-form-item label="户主UUID" prop="householderUuid">
-          <el-input v-model="applyForm.householderUuid" placeholder="请输入户主居民UUID" />
+        <el-form-item label="户主" prop="householderUuid">
+          <ResidentPicker v-model="applyForm.householderUuid" placeholder="搜索姓名或身份证号选择户主" />
         </el-form-item>
         <el-form-item label="户籍地址" prop="hukouAddress">
           <el-input v-model="applyForm.hukouAddress" placeholder="详细户籍地址" />
@@ -69,6 +69,7 @@ import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
 import AreaCascader from '@/components/AreaCascader.vue'
 import ApprovalBadge from '@/components/ApprovalBadge.vue'
+import ResidentPicker from '@/components/ResidentPicker.vue'
 
 const { hasPermission } = usePermission()
 const list = ref<any[]>([])
@@ -102,11 +103,11 @@ async function load() {
 }
 
 async function handleReissue(row: any) {
-  try { await householdApi.reissueBook({ bookNo: row.bookNo }); showSuccess('补办申请已提交'); load() } catch { /* ignore */ }
+  try { await householdApi.reissueBook({ bookNo: row.householdBookNo }); showSuccess('补办申请已提交'); load() } catch { /* ignore */ }
 }
 
 async function handleRenew(row: any) {
-  try { await householdApi.renewBook({ bookNo: row.bookNo }); showSuccess('换发申请已提交'); load() } catch { /* ignore */ }
+  try { await householdApi.renewBook({ bookNo: row.householdBookNo }); showSuccess('换发申请已提交'); load() } catch { /* ignore */ }
 }
 
 function openApply() {

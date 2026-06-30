@@ -17,6 +17,7 @@ public class ResidentSearchRequest extends PageRequest {
     private String educationCode; // 学历代码 - GB/T 4658-2006
     private String maritalStatus;
     private String householdStatus;
+    private String province;
     private String idCardNo;
     private Integer minAge;
     private Integer maxAge;
@@ -25,7 +26,8 @@ public class ResidentSearchRequest extends PageRequest {
      * 生成缓存键，包含所有搜索条件和分页参数.
      */
     public String cacheKey() {
-        return String.format("rs:%s|%s|%s|%s|%s|%s|%s|%s|%s|%d|%d|%d", name, gender, nation, nationCode, educationLevel,
-                educationCode, maritalStatus, householdStatus, idCardNo, minAge, maxAge, getPage() * 1000 + getSize());
+        return String.format("rs:%s|%s|%s|%s|%s|%s|%s|%s|%s|%s|%d|%d|%d", name, gender, nation, nationCode, educationLevel,
+                educationCode, maritalStatus, householdStatus, province, idCardNo, minAge, maxAge,
+                getPage() * 1000 + getSize());
     }
 }

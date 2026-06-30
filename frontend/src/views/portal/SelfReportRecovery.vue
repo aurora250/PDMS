@@ -48,6 +48,7 @@
 import { ref, reactive } from 'vue'
 import { missingApi } from '@/api/missing'
 import { showError, showSuccess } from '@/utils/auth'
+import { phoneRule } from '@/utils/validators'
 import IdCardInput from '@/components/IdCardInput.vue'
 import AttachmentUploader from '@/components/AttachmentUploader.vue'
 
@@ -64,7 +65,7 @@ const rules = {
   name: [{ required: true, message: '请输入失踪人员姓名', trigger: 'blur' }],
   recoveryDate: [{ required: true, message: '请选择寻回日期', trigger: 'change' }],
   description: [{ required: true, message: '请描述线索信息', trigger: 'blur' }],
-  contactPhone: [{ required: true, message: '请输入联系电话', trigger: 'blur' }],
+  contactPhone: [{ required: true, message: '请输入联系电话', trigger: 'blur' }, phoneRule],
 }
 
 function onIdParsed(_data: { birthDate: string; gender: string }) {

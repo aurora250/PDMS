@@ -1,10 +1,15 @@
 package com.pdm.resident.service.impl;
 
+import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.context.AnalysisContext;
+import com.alibaba.excel.read.listener.ReadListener;
+
 import com.pdm.common.core.exception.BusinessException;
 import com.pdm.common.core.result.ErrorCode;
 import com.pdm.common.core.validator.IdCardValidator;
 import com.pdm.common.dto.PageResult;
 import com.pdm.resident.dto.ResidentImportResult;
+import com.pdm.resident.dto.ResidentRelationVO;
 import com.pdm.resident.dto.ResidentSearchRequest;
 import com.pdm.resident.entity.Resident;
 import com.pdm.resident.entity.ResidentChangeRequest;
@@ -154,10 +159,11 @@ public class ResidentServiceImpl implements ResidentService {
             List<Resident> residents = residentEsRepository.multiConditionSearch(request.getName(), request.getGender(),
                     request.getNation(), request.getNationCode(), request.getEducationLevel(),
                     request.getEducationCode(), request.getMaritalStatus(), request.getHouseholdStatus(),
-                    request.getOffset(), request.getSize());
+                    request.getProvince(), request.getOffset(), request.getSize());
             long total = residentEsRepository.multiConditionCount(request.getName(), request.getGender(),
                     request.getNation(), request.getNationCode(), request.getEducationLevel(),
-                    request.getEducationCode(), request.getMaritalStatus(), request.getHouseholdStatus());
+                    request.getEducationCode(), request.getMaritalStatus(), request.getHouseholdStatus(),
+                    request.getProvince());
             return PageResult.of(residents, total, request.getPage(), request.getSize());
         } catch (Exception e) {
             log.warn("ES search failed, fallback to DB", e);
@@ -172,8 +178,23 @@ public class ResidentServiceImpl implements ResidentService {
             if (StringUtils.hasText(request.getNation())) {
                 wrapper.eq(Resident::getNation, request.getNation());
             }
+            if (StringUtils.hasText(request.getNationCode())) {
+                wrapper.eq(Resident::getNationCode, request.getNationCode());
+            }
+            if (StringUtils.hasText(request.getEducationLevel())) {
+                wrapper.eq(Resident::getEducationLevel, request.getEducationLevel());
+            }
+            if (StringUtils.hasText(request.getEducationCode())) {
+                wrapper.eq(Resident::getEducationCode, request.getEducationCode());
+            }
             if (StringUtils.hasText(request.getMaritalStatus())) {
                 wrapper.eq(Resident::getMaritalStatus, request.getMaritalStatus());
+            }
+            if (StringUtils.hasText(request.getHouseholdStatus())) {
+                wrapper.eq(Resident::getHouseholdStatus, request.getHouseholdStatus());
+            }
+            if (StringUtils.hasText(request.getProvince())) {
+                wrapper.like(Resident::getHouseholdAddress, request.getProvince());
             }
             com.baomidou.mybatisplus.extension.plugins.pagination.Page<Resident> pageResult = residentMapper.selectPage(
                     com.baomidou.mybatisplus.extension.plugins.pagination.Page.of(request.getPage(), request.getSize()),
@@ -233,6 +254,48 @@ public class ResidentServiceImpl implements ResidentService {
         }
 
         return relationMapper.selectByPersonUuid(uuid);
+    }
+
+    @Override
+    public ResidentRelationVO getRelationsWithNames(String uuid) {
+        ResidentRelation relation = relationMapper.selectByPersonUuid(uuid);
+        if (relation == null) {
+            throw new BusinessException(ErrorCode.DATA_NOT_FOUND, "未找到人员关系");
+        }
+
+        ResidentRelationVO vo = new ResidentRelationVO();
+        vo.setRelationPersonUuid(uuid);
+
+        // 批量查询相关人员的姓名
+        List<String> relatedUuids = new ArrayList<>();
+        if (relation.getFatherUuid() != null) relatedUuids.add(relation.getFatherUuid());
+        if (relation.getMotherUuid() != null) relatedUuids.add(relation.getMotherUuid());
+        if (relation.getSpouseUuid() != null) relatedUuids.add(relation.getSpouseUuid());
+
+        Map<String, String> nameMap = new java.util.HashMap<>();
+        if (!relatedUuids.isEmpty()) {
+            List<Map<String, Object>> names = residentMapper.batchGetNames(relatedUuids);
+            for (Map<String, Object> row : names) {
+                nameMap.put((String) row.get("uuid"), (String) row.get("name"));
+            }
+        }
+
+        vo.setFatherUuid(relation.getFatherUuid());
+        vo.setFatherName(nameMap.get(relation.getFatherUuid()));
+        vo.setMotherUuid(relation.getMotherUuid());
+        vo.setMotherName(nameMap.get(relation.getMotherUuid()));
+        vo.setSpouseUuid(relation.getSpouseUuid());
+        vo.setSpouseName(nameMap.get(relation.getSpouseUuid()));
+
+        // 查询子女
+        vo.setChildren(relationMapper.selectChildren(uuid));
+
+        return vo;
+    }
+
+    @Override
+    public List<Map<String, Object>> getChildren(String uuid) {
+        return relationMapper.selectChildren(uuid);
     }
 
     @Override
@@ -298,31 +361,61 @@ public class ResidentServiceImpl implements ResidentService {
 
     @Override
     public ResidentImportResult importExcel(MultipartFile file) {
-        // Simplified import: in production use EasyExcel listener
         List<String> errors = new ArrayList<>();
-        int success = 0;
-        int fail = 0;
-        int total = 0;
+        int[] counters = {0, 0}; // [success, fail]
 
         try {
-            // Use EasyExcel for parsing
-            // EasyExcel.read(file.getInputStream(), Resident.class, new
-            // ReadListener<Resident>()
-            // {...}).sheet().doRead();
-            total = 1; // placeholder
-            success = 1;
+            EasyExcel.read(file.getInputStream(), Resident.class, new ReadListener<Resident>() {
+                @Override
+                public void invoke(Resident resident, AnalysisContext context) {
+                    try {
+                        counters[0]++;
+                        residentMapper.insert(resident);
+                    } catch (Exception e) {
+                        counters[1]++;
+                        counters[0]--;
+                        errors.add("行" + context.readRowHolder().getRowIndex() + ": " + e.getMessage());
+                    }
+                }
+
+                @Override
+                public void doAfterAllAnalysed(AnalysisContext context) {
+                }
+
+                @Override
+                public void onException(Exception exception, AnalysisContext context) {
+                    counters[1]++;
+                    errors.add("解析错误: " + exception.getMessage());
+                }
+            }).sheet().doRead();
         } catch (Exception e) {
-            errors.add(e.getMessage());
-            fail++;
+            errors.add("文件读取失败: " + e.getMessage());
+            counters[1]++;
         }
 
-        return ResidentImportResult.builder().totalCount(total).successCount(success).failCount(fail)
-                .errorMessages(errors).build();
+        return ResidentImportResult.builder()
+            .totalCount(counters[0] + counters[1])
+            .successCount(counters[0])
+            .failCount(counters[1])
+            .errorMessages(errors)
+            .build();
     }
 
     @Override
     public void exportExcel(Map<String, Object> conditions, OutputStream outputStream) {
-        // Simplified export: in production use EasyExcel write
-        throw new UnsupportedOperationException("Export not yet implemented");
+        LambdaQueryWrapper<Resident> wrapper = new LambdaQueryWrapper<>();
+        if (conditions != null) {
+            if (StringUtils.hasText((CharSequence) conditions.get("name")))
+                wrapper.like(Resident::getName, (String) conditions.get("name"));
+            if (StringUtils.hasText((CharSequence) conditions.get("gender")))
+                wrapper.eq(Resident::getGender, (String) conditions.get("gender"));
+            if (StringUtils.hasText((CharSequence) conditions.get("nation")))
+                wrapper.eq(Resident::getNation, (String) conditions.get("nation"));
+            if (StringUtils.hasText((CharSequence) conditions.get("idCardNo")))
+                wrapper.eq(Resident::getIdCardNo, (String) conditions.get("idCardNo"));
+        }
+        wrapper.eq(Resident::getIsDeleted, 0);
+        List<Resident> residents = residentMapper.selectList(wrapper);
+        EasyExcel.write(outputStream, Resident.class).sheet("常住人口").doWrite(residents);
     }
 }

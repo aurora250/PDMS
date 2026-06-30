@@ -34,4 +34,7 @@ public class HouseholdRegister extends BaseEntity {
 
     @TableField("member_uuid_list")
     private String memberUuidList;
+
+    @TableField(exist = false)
+    private String householderName;
 }

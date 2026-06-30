@@ -43,7 +43,7 @@
     <el-dialog v-model="dialogVisible" title="提交变更申请" width="500px" @close="resetForm">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="申请人UUID" prop="applicantUuid">
-          <el-input v-model="form.applicantUuid" placeholder="请输入申请人UUID" />
+          <ResidentPicker v-model="form.applicantUuid" placeholder="搜索姓名或身份证号选择申请人" />
         </el-form-item>
         <el-form-item label="变更字段" prop="changeField">
           <el-select v-model="form.changeField" placeholder="选择要变更的字段" style="width:100%">
@@ -80,6 +80,7 @@ import { residentApi } from '@/api/resident'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
 import ApprovalBadge from '@/components/ApprovalBadge.vue'
+import ResidentPicker from '@/components/ResidentPicker.vue'
 
 const { hasPermission } = usePermission()
 const list = ref<any[]>([])

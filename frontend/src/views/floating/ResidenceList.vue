@@ -28,7 +28,7 @@
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑居住地' : '登记居住地'" width="550px" @close="resetForm">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
         <el-form-item label="居民UUID" prop="uuid">
-          <el-input v-model="form.uuid" placeholder="请输入居民UUID" :disabled="isEdit" />
+          <ResidentPicker v-model="form.uuid" placeholder="搜索姓名或身份证号选择居民" />
         </el-form-item>
         <el-form-item label="原始地址" prop="originalAddress">
           <el-input v-model="form.originalAddress" placeholder="户籍地址" />
@@ -82,6 +82,7 @@ import { floatingApi } from '@/api/floating'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
 import AreaCascader from '@/components/AreaCascader.vue'
+import ResidentPicker from '@/components/ResidentPicker.vue'
 
 const { hasPermission } = usePermission()
 const list = ref<any[]>([])

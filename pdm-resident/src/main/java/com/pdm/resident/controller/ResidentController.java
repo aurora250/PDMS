@@ -3,6 +3,7 @@ package com.pdm.resident.controller;
 import com.pdm.common.core.result.Result;
 import com.pdm.common.dto.PageResult;
 import com.pdm.resident.dto.ResidentImportResult;
+import com.pdm.resident.dto.ResidentRelationVO;
 import com.pdm.resident.dto.ResidentSearchRequest;
 import com.pdm.resident.entity.Resident;
 import com.pdm.resident.entity.ResidentChangeRequest;
@@ -12,6 +13,7 @@ import com.pdm.resident.service.ResidentService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 
 import jakarta.validation.Valid;
@@ -59,6 +61,18 @@ public class ResidentController {
     public Result<ResidentRelation> setRelations(@PathVariable String uuid, @RequestBody ResidentRelation relation) {
         relation.setRelationPersonUuid(uuid);
         return Result.success(residentService.setRelations(relation));
+    }
+
+    /** 获取居民关系（含姓名 + 子女） */
+    @GetMapping("/{uuid}/relations-detail")
+    public Result<ResidentRelationVO> getRelationsDetail(@PathVariable String uuid) {
+        return Result.success(residentService.getRelationsWithNames(uuid));
+    }
+
+    /** 获取子女列表 */
+    @GetMapping("/{uuid}/children")
+    public Result<List<Map<String, Object>>> getChildren(@PathVariable String uuid) {
+        return Result.success(residentService.getChildren(uuid));
     }
 
     @GetMapping("/change-request")

@@ -48,7 +48,7 @@
     <el-dialog v-model="dialogVisible" title="新增户籍业务" width="550px" @close="resetForm">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
         <el-form-item label="申请人UUID" prop="applicantUuid">
-          <el-input v-model="form.applicantUuid" placeholder="请输入申请人居民UUID" />
+          <ResidentPicker v-model="form.applicantUuid" placeholder="搜索姓名或身份证号选择申请人" />
         </el-form-item>
         <el-form-item label="业务类型" prop="businessType">
           <el-select v-model="form.businessType" style="width:100%">
@@ -112,6 +112,7 @@ import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
 import ApprovalBadge from '@/components/ApprovalBadge.vue'
 import AttachmentUploader from '@/components/AttachmentUploader.vue'
+import ResidentPicker from '@/components/ResidentPicker.vue'
 
 const { hasPermission } = usePermission()
 const list = ref<any[]>([])

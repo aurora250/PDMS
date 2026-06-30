@@ -47,7 +47,7 @@
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑重点人员' : '新增列管'" width="500px" @close="resetForm">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
         <el-form-item label="居民UUID" prop="uuid">
-          <el-input v-model="form.uuid" placeholder="请输入居民UUID" :disabled="isEdit" />
+          <ResidentPicker v-model="form.uuid" placeholder="搜索姓名或身份证号选择居民" />
         </el-form-item>
         <el-form-item label="管控级别" prop="controlLevel">
           <el-select v-model="form.controlLevel" style="width:100%">
@@ -82,11 +82,14 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { keypersonApi } from '@/api/keyperson'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
+import ResidentPicker from '@/components/ResidentPicker.vue'
 
 const { hasPermission } = usePermission()
+const route = useRoute()
 const list = ref<any[]>([])
 const loading = ref(false)
 const filter = reactive({ level: '', type: '' })
@@ -163,7 +166,11 @@ async function handleSave() {
   finally { saving.value = false }
 }
 
-onMounted(load)
+onMounted(() => {
+  if (route.query.level) filter.level = route.query.level as string
+  if (route.query.type) filter.type = route.query.type as string
+  load()
+})
 </script>
 
 <style scoped>

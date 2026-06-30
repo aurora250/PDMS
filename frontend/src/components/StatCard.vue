@@ -1,5 +1,5 @@
 <template>
-  <el-card shadow="hover" :class="['stat-card', color]">
+  <el-card shadow="hover" :class="['stat-card', color, { mini }]">
     <div class="stat-content">
       <div class="stat-label">{{ title }}</div>
       <div class="stat-value">
@@ -7,25 +7,35 @@
         <el-skeleton v-else :rows="1" animated />
       </div>
       <div v-if="icon" class="stat-icon">
-        <el-icon :size="32"><component :is="icon" /></el-icon>
+        <el-icon :size="mini ? 20 : 32"><component :is="icon" /></el-icon>
       </div>
     </div>
   </el-card>
 </template>
 
 <script setup lang="ts">
-defineProps<{
+withDefaults(defineProps<{
   title: string
   value: number
   icon?: string
   color?: string
   loading?: boolean
-}>()
+  mini?: boolean
+}>(), { mini: false })
 </script>
 
 <style scoped>
 .stat-card {
   min-width: 200px;
+}
+.stat-card.mini {
+  min-width: 0;
+}
+.stat-card.mini .stat-value {
+  font-size: 22px;
+}
+.stat-card.mini .stat-label {
+  font-size: 12px;
 }
 .stat-card.primary { border-left: 4px solid #409eff; }
 .stat-card.success { border-left: 4px solid #67c23a; }

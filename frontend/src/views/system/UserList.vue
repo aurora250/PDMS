@@ -62,6 +62,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { userApi, permissionGroupApi } from '@/api/auth'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
+import { phoneRule } from '@/utils/validators'
 
 const { hasPermission } = usePermission()
 const ROLES = ['系统管理员','市局负责人','数据审查员','采集员','街道办','民警','用户管理员','普通用户']
@@ -82,6 +83,7 @@ const form = reactive(defaultForm())
 const uRules = {
   username: [{ required: true, message: '请输入用户名' }],
   password: [{ required: true, message: '请输入密码' }, { min: 6, message: '至少6位' }],
+  phone: [phoneRule],
 }
 
 async function load() {

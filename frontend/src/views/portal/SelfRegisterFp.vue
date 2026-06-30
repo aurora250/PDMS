@@ -115,6 +115,7 @@ import { ref, reactive } from 'vue'
 import { floatingApi } from '@/api/floating'
 import { useGbConstants } from '@/composables/useGbConstants'
 import { showError, showSuccess } from '@/utils/auth'
+import { idCardRule, phoneRule } from '@/utils/validators'
 import IdCardInput from '@/components/IdCardInput.vue'
 import GbSelect from '@/components/GbSelect.vue'
 import AttachmentUploader from '@/components/AttachmentUploader.vue'
@@ -135,11 +136,11 @@ const form = reactive({
 
 const rules = {
   name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
-  idCardNo: [{ required: true, message: '请输入身份证号', trigger: 'blur' }],
+  idCardNo: [{ required: true, message: '请输入身份证号', trigger: 'blur' }, idCardRule],
   nation: [{ required: true, message: '请选择民族', trigger: 'change' }],
   birthDate: [{ required: true, message: '请选择出生日期', trigger: 'change' }],
   educationLevel: [{ required: true, message: '请选择学历', trigger: 'change' }],
-  phone: [{ required: true, message: '请输入电话号码', trigger: 'blur' }],
+  phone: [{ required: true, message: '请输入电话号码', trigger: 'blur' }, phoneRule],
   currentAddress: [{ required: true, message: '请输入现居住地址', trigger: 'blur' }],
   addressType: [{ required: true, message: '请选择居住类型', trigger: 'change' }],
   purpose: [{ required: true, message: '请选择居住目的', trigger: 'change' }],

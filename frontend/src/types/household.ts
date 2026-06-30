@@ -23,7 +23,7 @@ export interface HouseholdMigration {
 
 /** 户口簿 */
 export interface HouseholdBook {
-  bookNo: string
+  householdBookNo: string
   householderUuid: string
   address: string
   memberCount?: number

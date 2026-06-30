@@ -14,6 +14,12 @@
             <el-option label="已驳回" value="已驳回" />
           </el-select>
         </el-form-item>
+        <el-form-item label="迁出省">
+          <el-input v-model="fromFilter" placeholder="省份" clearable style="width:120px" @keyup.enter="load" />
+        </el-form-item>
+        <el-form-item label="迁入省">
+          <el-input v-model="toFilter" placeholder="省份" clearable style="width:120px" @keyup.enter="load" />
+        </el-form-item>
         <el-form-item><el-button @click="load">刷新</el-button></el-form-item>
       </el-form>
       <el-table :data="list" v-loading="loading" stripe>
@@ -31,6 +37,7 @@
             <el-button v-if="hasPermission('household:approve') && !row.status?.includes('通过')" text size="small" type="success" @click="showApprove(row, '通过')">通过</el-button>
             <el-button v-if="hasPermission('household:approve') && !row.status?.includes('驳回')" text size="small" type="danger" @click="showApprove(row, '驳回')">驳回</el-button>
             <el-button v-if="hasPermission('household:second-approve') && row.status === '一审'" text size="small" type="primary" @click="showApprove(row, '二审通过')">二审通过</el-button>
+            <el-button v-if="hasPermission('household:material:attach')" text size="small" @click="openAttach(row)">附加材料</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -44,7 +51,7 @@
     <el-dialog v-model="dialogVisible" title="新增迁移申请" width="600px" @close="resetForm">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
         <el-form-item label="申请人UUID" prop="applicantUuid">
-          <el-input v-model="form.applicantUuid" placeholder="请输入申请人居民UUID" />
+          <ResidentPicker v-model="form.applicantUuid" placeholder="搜索姓名或身份证号选择申请人" />
         </el-form-item>
         <el-form-item label="迁出地址" prop="outgoingAddress">
           <el-input v-model="form.outgoingAddress" placeholder="原户籍地址" />
@@ -95,22 +102,43 @@
         <el-button :type="approveAction === '通过' ? 'success' : 'danger'" @click="handleApprove" :loading="approving">确认</el-button>
       </template>
     </el-dialog>
+
+    <!-- 附加材料对话框 (街道办) -->
+    <el-dialog v-model="showAttachDialog" title="附加审核材料" width="450px">
+      <el-form label-width="80px">
+        <el-form-item label="上传文件">
+          <AttachmentUploader v-model="attachFile" />
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="attachRemark" type="textarea" placeholder="审核材料说明" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showAttachDialog = false">取消</el-button>
+        <el-button type="primary" @click="handleAttach" :loading="attaching">确认附加</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { householdApi } from '@/api/household'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
 import AreaCascader from '@/components/AreaCascader.vue'
 import ApprovalBadge from '@/components/ApprovalBadge.vue'
 import AttachmentUploader from '@/components/AttachmentUploader.vue'
+import ResidentPicker from '@/components/ResidentPicker.vue'
 
 const { hasPermission } = usePermission()
+const route = useRoute()
 const list = ref<any[]>([])
 const loading = ref(false)
 const statusFilter = ref('')
+const fromFilter = ref('')
+const toFilter = ref('')
 const page = reactive({ current: 1, size: 20, total: 0 })
 
 // Create dialog
@@ -143,6 +171,8 @@ async function load() {
   try {
     const res = await householdApi.listMigration({
       status: statusFilter.value || undefined,
+      fromAddress: fromFilter.value || undefined,
+      toAddress: toFilter.value || undefined,
       page: page.current, size: page.size,
     })
     list.value = Array.isArray(res) ? res : (res.records || [])
@@ -195,7 +225,46 @@ async function handleApprove() {
   finally { approving.value = false }
 }
 
-onMounted(load)
+// Attach material
+const showAttachDialog = ref(false)
+const attaching = ref(false)
+const attachFile = ref<string[]>([])
+const attachRemark = ref('')
+let attachRid = 0
+
+function openAttach(row: any) {
+  attachRid = row.rid
+  attachFile.value = []
+  attachRemark.value = ''
+  showAttachDialog.value = true
+}
+
+async function handleAttach() {
+  attaching.value = true
+  try {
+    const fd = new FormData()
+    if (attachFile.value.length > 0) {
+      fd.append('attachmentPath', attachFile.value.join(','))
+    }
+    if (attachRemark.value) {
+      fd.append('remark', attachRemark.value)
+    }
+    await householdApi.attachMigrationMaterial(attachRid, fd)
+    showSuccess('材料已附加')
+    showAttachDialog.value = false
+    load()
+  } catch (e: any) { showError(e.message || '附加失败') }
+  finally { attaching.value = false }
+}
+
+onMounted(() => {
+  if (route.query.from) fromFilter.value = route.query.from as string
+  if (route.query.to) toFilter.value = route.query.to as string
+  load()
+})
+watch(() => route.query.from, (val) => {
+  if (val) { fromFilter.value = val as string; load() }
+})
 </script>
 
 <style scoped>

@@ -58,6 +58,7 @@ public interface StatisticsMapper {
             + "LEFT JOIN area c_to ON a_to.parent_id = c_to.area_code::BIGINT "
             + "LEFT JOIN area p_to ON c_to.parent_id = p_to.area_code::BIGINT "
             + "WHERE m.is_deleted = 0 AND m.outgoing_area_id IS NOT NULL AND m.incoming_area_id IS NOT NULL "
+          + "AND m.business_type = '跨省' "
             + "GROUP BY COALESCE(p_from.area_name, c_from.area_name, '未知'), COALESCE(p_to.area_name, c_to.area_name, '未知') "
             + "ORDER BY value DESC " + "LIMIT 100")
     List<Map<String, Object>> getMigrationFlows();

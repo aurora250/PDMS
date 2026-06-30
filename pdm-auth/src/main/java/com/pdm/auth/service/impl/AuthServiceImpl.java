@@ -139,11 +139,11 @@ public class AuthServiceImpl implements AuthService {
         validatePasswordStrength(rawPassword);
 
         User user = new User();
-        user.setUserUuid(userUuid != null ? userUuid : "test-uuid");
+        user.setUserUuid(userUuid != null ? userUuid : java.util.UUID.randomUUID().toString());
         user.setUsername(username);
         user.setPassword(passwordEncoder.encode(rawPassword));
         user.setPhone(phone);
-        user.setResidentUuid(residentUuid);
+        user.setResidentUuid(residentUuid != null ? residentUuid : user.getUserUuid());
         user.setUserRole("普通用户");
         user.setAccountStatus("审批中");
         user.setMustChangePassword(true);

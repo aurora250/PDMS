@@ -27,7 +27,7 @@
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑登记' : '新增登记'" width="500px" @close="resetForm">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="居民UUID" prop="uuid">
-          <el-input v-model="form.uuid" placeholder="请输入居民UUID" :disabled="isEdit" />
+          <ResidentPicker v-model="form.uuid" placeholder="搜索姓名或身份证号选择居民" />
         </el-form-item>
         <el-form-item label="登记日期" prop="registerDate">
           <el-date-picker v-model="form.registerDate" type="date" value-format="YYYY-MM-DD" style="width:100%" />
@@ -52,7 +52,9 @@ import { ref, reactive, onMounted } from 'vue'
 import { floatingApi } from '@/api/floating'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
+import { phoneRule } from '@/utils/validators'
 import AttachmentUploader from '@/components/AttachmentUploader.vue'
+import ResidentPicker from '@/components/ResidentPicker.vue'
 
 const { hasPermission } = usePermission()
 const list = ref<any[]>([])

@@ -216,6 +216,18 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql VOLATILE;
 
+-- 户口簿号生成 (GB标准: 区划6位 + 年4位 + 流水8位 = 18位)
+CREATE OR REPLACE FUNCTION gen_household_book_no(p_area_id BIGINT, p_seq BIGINT, p_date DATE)
+RETURNS TEXT AS $$
+DECLARE
+    v_area_code CHAR(6);
+BEGIN
+    SELECT area_code INTO v_area_code FROM area WHERE area_id = p_area_id;
+    IF v_area_code IS NULL THEN v_area_code := '000000'; END IF;
+    RETURN v_area_code || TO_CHAR(p_date, 'YYYY') || LPAD((p_seq % 100000000)::TEXT, 8, '0');
+END;
+$$ LANGUAGE plpgsql VOLATILE;
+
 -- ============================================================
 -- 初始化: 缓存 area_id 到数组
 -- ============================================================
@@ -605,18 +617,21 @@ DO $$
 DECLARE
     area_ids BIGINT[];
     res_uuids VARCHAR(36)[];
+    est_d DATE; hukou_aid BIGINT;
 BEGIN
     SELECT ids INTO area_ids FROM _area_districts;
     SELECT array_agg(uuid) INTO res_uuids FROM resident ORDER BY RANDOM() LIMIT 5000;
 
     FOR i IN 1..5000 LOOP
+        est_d := CURRENT_DATE - (floor(random() * 3650)::INT || ' days')::INTERVAL;
+        hukou_aid := arr_rand(area_ids);
         INSERT INTO household_register (household_book_no, householder_uuid, establish_date,
                                         hukou_address, hukou_area_id, status, member_uuid_list, is_deleted)
-        VALUES ('HB' || LPAD(i::TEXT, 10, '0') || '-' || TO_CHAR(CURRENT_DATE, 'YYYY'),
+        VALUES (gen_household_book_no(hukou_aid, i, est_d),
                 res_uuids[i],
-                CURRENT_DATE - (floor(random() * 3650)::INT || ' days')::INTERVAL,
-                gen_address(arr_rand(area_ids), i),
-                arr_rand(area_ids),
+                est_d,
+                gen_address(hukou_aid, i),
+                hukou_aid,
                 CASE WHEN random() < 0.90 THEN '有效'
                      WHEN random() < 0.55 THEN '审批中'
                      WHEN random() < 0.50 THEN '冻结'
@@ -658,6 +673,15 @@ BEGIN
     CREATE INDEX IF NOT EXISTS _res_pool_idx ON _res_pool(uuid);
     CREATE INDEX IF NOT EXISTS _user_pool_idx ON _user_pool(user_uuid);
 END $$;
+
+-- 修复 sys_user.resident_uuid 和 police.resident_uuid: 关联到真实 resident UUID
+UPDATE sys_user
+SET resident_uuid = (SELECT uuid FROM _res_pool ORDER BY random() LIMIT 1)
+WHERE resident_uuid = user_uuid;
+
+UPDATE police
+SET resident_uuid = (SELECT uuid FROM _res_pool ORDER BY random() LIMIT 1)
+WHERE resident_uuid NOT IN (SELECT uuid FROM _res_pool);
 
 -- 快速随机取一行（利用 OFFSET + 主键扫描，比 ORDER BY RANDOM() 快很多）
 CREATE OR REPLACE FUNCTION rand_row(tbl TEXT)
@@ -977,50 +1001,77 @@ BEGIN
             business_type, handle_date, handle_basis, fee, status, reject_reason, remark, is_deleted)
         VALUES (CASE WHEN random()<0.70 AND handlers IS NOT NULL THEN handlers[floor(random()*array_length(handlers,1))::INT+1] ELSE NULL END,
             pool[floor(random()*pc)::INT+1], 'attachment_biz_'||i||'.pdf',
-            CASE WHEN random()<0.50 THEN '登记' WHEN random()<0.75 THEN '注销' ELSE '户主变更' END,
+            CASE WHEN random()<0.20 THEN '出生登记' WHEN random()<0.40 THEN '死亡注销' WHEN random()<0.60 THEN '户口迁移' WHEN random()<0.80 THEN '登记项目变更' ELSE '分户立户' END,
             CURRENT_DATE - (floor(random()*180)::INT || ' days')::INTERVAL,
             CASE WHEN random()<0.50 THEN '户籍管理条例第'||floor(random()*10+1)::TEXT||'条' ELSE NULL END,
             CASE WHEN random()<0.30 THEN (floor(random()*100)::INT)::NUMERIC(10,2) ELSE NULL END,
-            CASE WHEN random()<0.55 THEN '批准' WHEN random()<0.35 THEN '审批中' ELSE '驳回' END,
+            CASE WHEN random()<0.40 THEN '已批准' WHEN random()<0.55 THEN '审批中' WHEN random()<0.70 THEN '已驳回' ELSE '待受理' END,
             CASE WHEN random()<0.10 THEN '材料不全' ELSE NULL END,
             CASE WHEN random()<0.20 THEN '备注信息'||i ELSE NULL END, 0);
     END LOOP;
 END $$;
 
 -- ============================================================
--- 17. 户籍迁移业务请求 (400)
+-- 17. 户籍迁移业务请求 (每人2-5次连续迁移，~600条)
 -- ============================================================
 DO $$
 DECLARE
-    pool VARCHAR(36)[]; pc INT; i INT;
+    pool VARCHAR(36)[]; pc INT;
     area_ids BIGINT[]; ac INT;
     handlers VARCHAR(36)[];
+    v_person_uuid TEXT;
+    v_chain_len INT;
+    v_prev_area BIGINT;
+    v_curr_area BIGINT;
+    v_bt TEXT;
+    v_base_date DATE;
+    i INT; j INT;
 BEGIN
     SELECT array_agg(uuid) INTO pool FROM _res_pool; pc := array_length(pool,1);
     SELECT ids INTO area_ids FROM _area_districts; ac := array_length(area_ids,1);
     SELECT array_agg(user_uuid) INTO handlers FROM _user_pool WHERE user_role='民警';
-    FOR i IN 1..400 LOOP
-        INSERT INTO household_migration_request (handler_uuid, applicant_uuid, incoming_address,
-            incoming_area_id, outgoing_address, outgoing_area_id, attachment, business_type,
-            handle_date, handle_basis, fee, status, reject_reason, approval_permit_no,
-            migration_permit_no, remark, is_deleted)
-        VALUES (CASE WHEN random()<0.70 AND handlers IS NOT NULL THEN handlers[floor(random()*array_length(handlers,1))::INT+1] ELSE NULL END,
-            pool[floor(random()*pc)::INT+1],
-            gen_address(area_ids[floor(random()*ac)::INT+1], i + 400000), area_ids[floor(random()*ac)::INT+1],
-            gen_address(area_ids[floor(random()*ac)::INT+1], i + 500000), area_ids[floor(random()*ac)::INT+1],
-            'attachment_migration_'||i||'.pdf',
-            CASE WHEN random()<0.60 THEN '市内' WHEN random()<0.88 THEN '省内' ELSE '跨省' END,
-            CURRENT_DATE - (floor(random()*180)::INT || ' days')::INTERVAL,
-            CASE WHEN random()<0.50 THEN '迁移管理条例第'||floor(random()*8+1)::TEXT||'条' ELSE NULL END,
-            CASE WHEN random()<0.25 THEN (floor(random()*200)::INT)::NUMERIC(10,2) ELSE NULL END,
-            CASE WHEN random()<0.30 THEN '迁移审批通过' WHEN random()<0.50 THEN '迁移审批中'
-                 WHEN random()<0.65 THEN '准迁证审批中' WHEN random()<0.80 THEN '迁移证审批中'
-                 WHEN random()<0.90 THEN '迁移审批驳回' WHEN random()<0.95 THEN '准迁证审批驳回'
-                 ELSE '迁移证审批驳回' END,
-            CASE WHEN random()<0.10 THEN '材料不全' ELSE NULL END,
-            CASE WHEN random()<0.30 THEN 'AP'||LPAD(floor(random()*9999)::TEXT,8,'0') ELSE NULL END,
-            CASE WHEN random()<0.25 THEN 'MP'||LPAD(floor(random()*9999)::TEXT,8,'0') ELSE NULL END,
-            CASE WHEN random()<0.15 THEN '备注迁移'||i ELSE NULL END, 0);
+
+    FOR i IN 1..200 LOOP
+        v_person_uuid := pool[1 + (i % pc)];
+        v_chain_len := 2 + (i % 4);  -- 确定性链长2-5
+        v_base_date := CURRENT_DATE - ((i * 7 % 1095) || ' days')::INTERVAL;
+        v_prev_area := area_ids[1 + (i % ac)];
+
+        FOR j IN 1..v_chain_len LOOP
+            v_curr_area := area_ids[1 + ((i + j) % ac)];
+            v_bt := CASE WHEN j % 3 = 0 THEN '跨省' WHEN j % 3 = 1 THEN '省内' ELSE '市内' END;
+
+            INSERT INTO household_migration_request (
+                handler_uuid, applicant_uuid, incoming_address,
+                incoming_area_id, outgoing_address, outgoing_area_id,
+                attachment, business_type, handle_date, handle_basis,
+                fee, status, reject_reason, approval_permit_no,
+                migration_permit_no, remark, is_deleted
+            ) VALUES (
+                CASE WHEN array_length(handlers,1) > 0
+                    THEN handlers[1 + ((i+j) % array_length(handlers,1))] ELSE NULL END,
+                v_person_uuid,
+                gen_address(v_curr_area, i*1000 + j*100 + 400000),
+                v_curr_area,
+                gen_address(v_prev_area, i*1000 + j*100 + 500000),
+                v_prev_area,
+                'mig_'||i||'_'||j||'.pdf',
+                v_bt,
+                v_base_date + ((j * 37) || ' days')::INTERVAL,
+                CASE WHEN j%2=0 THEN '迁移管理条例第'||(1+i%8)::TEXT||'条' ELSE NULL END,
+                CASE WHEN j%4=0 THEN ((i*j*10)%200)::NUMERIC(10,2) ELSE NULL END,
+                CASE WHEN i%5=0 THEN '迁移审批通过' WHEN i%5=1 THEN '准迁证审批中'
+                     WHEN i%5=2 THEN '迁移审批中' WHEN i%5=3 THEN '迁移证审批中'
+                     ELSE '准迁证审批驳回' END,
+                CASE WHEN i%10=0 THEN '材料不全' ELSE NULL END,
+                CASE WHEN i%3=0 THEN 'AP'||LPAD(i::TEXT,8,'0') ELSE NULL END,
+                CASE WHEN i%4=0 THEN 'MP'||LPAD(i::TEXT,8,'0') ELSE NULL END,
+                CASE WHEN i%7=0 THEN '连续迁移第'||j::TEXT||'步' ELSE NULL END,
+                0
+            );
+
+            v_prev_area := v_curr_area;
+        END LOOP;
     END LOOP;
 END $$;
 
