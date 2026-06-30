@@ -8,8 +8,11 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.*;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.indices.ExistsRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RequiredArgsConstructor
 public abstract class EsBaseRepository<T> {
 
@@ -18,6 +21,31 @@ public abstract class EsBaseRepository<T> {
     public abstract String getIndexName();
 
     public abstract Class<T> getDocumentClass();
+
+    /**
+     * 检查索引是否存在。
+     */
+    public boolean indexExists() {
+        try {
+            return esClient.indices().exists(ExistsRequest.of(e -> e.index(getIndexName()))).value();
+        } catch (IOException e) {
+            log.warn("Failed to check index existence for [{}]: {}", getIndexName(), e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 创建索引（使用动态映射，ES 自动推断字段类型）。 子类可覆盖 {@link #getIndexSettings()} 和
+     * {@link #getIndexMappings()} 提供自定义配置。
+     */
+    public void createIndex() throws IOException {
+        if (indexExists()) {
+            log.info("Index [{}] already exists, skipping creation", getIndexName());
+            return;
+        }
+        esClient.indices().create(c -> c.index(getIndexName()));
+        log.info("Index [{}] created successfully", getIndexName());
+    }
 
     public void save(String id, T document) throws IOException {
         esClient.index(IndexRequest.of(i -> i.index(getIndexName()).id(id).document(document)));

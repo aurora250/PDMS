@@ -44,4 +44,11 @@ public interface ResidentService {
     ResidentImportResult importExcel(MultipartFile file);
 
     void exportExcel(Map<String, Object> conditions, java.io.OutputStream outputStream);
+
+    /**
+     * 将 PostgreSQL 中全部居民数据重新同步到 Elasticsearch。
+     *
+     * @return 成功索引的文档数
+     */
+    int reindexAllResidents();
 }

@@ -163,19 +163,62 @@ public class ResidentServiceImpl implements ResidentService {
                     request.getNation(), request.getNationCode(), request.getEducationLevel(),
                     request.getEducationCode(), request.getMaritalStatus(), request.getHouseholdStatus(),
                     request.getProvince());
+            if (total == 0) {
+                return searchFromDb(request);
+            }
             return PageResult.of(residents, total, request.getPage(), request.getSize());
         } catch (Exception e) {
-            log.warn("ES search failed, fallback to DB", e);
-            // Fallback: query local shard via MyBatis-Plus with proper pagination
-            LambdaQueryWrapper<Resident> wrapper = new LambdaQueryWrapper<>();
-            if (StringUtils.hasText(request.getName())) {
-                wrapper.like(Resident::getName, request.getName());
+            log.warn("ES search failed, fallback to DB: {}", e.getMessage());
+            return searchFromDb(request);
+        }
+    }
+
+    private PageResult<Resident> searchFromDb(ResidentSearchRequest request) {
+        LambdaQueryWrapper<Resident> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(request.getName())) {
+            wrapper.like(Resident::getName, request.getName());
+        }
+        if (StringUtils.hasText(request.getGender())) {
+            wrapper.eq(Resident::getGender, request.getGender());
+        }
+        if (StringUtils.hasText(request.getNation())) {
+            wrapper.eq(Resident::getNation, request.getNation());
+        }
+        if (StringUtils.hasText(request.getMaritalStatus())) {
+            wrapper.eq(Resident::getMaritalStatus, request.getMaritalStatus());
+        }
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<Resident> pageResult = residentMapper.selectPage(
+                com.baomidou.mybatisplus.extension.plugins.pagination.Page.of(request.getPage(), request.getSize()),
+                wrapper);
+        return PageResult.of(pageResult.getRecords(), pageResult.getTotal(), request.getPage(), request.getSize());
+    }
+
+    @Override
+    public int reindexAllResidents() {
+        // 确保索引存在
+        try {
+            residentEsRepository.createIndex();
+        } catch (Exception e) {
+            log.warn("Failed to create ES index during reindex: {}", e.getMessage());
+        }
+
+        // 分页读取 PostgreSQL 全部居民，批量写入 ES
+        int pageSize = 500;
+        int page = 1;
+        int total = 0;
+        while (true) {
+            com.baomidou.mybatisplus.extension.plugins.pagination.Page<Resident> pg = residentMapper.selectPage(
+                    com.baomidou.mybatisplus.extension.plugins.pagination.Page.of(page, pageSize),
+                    new LambdaQueryWrapper<>());
+            if (pg.getRecords().isEmpty()) {
+                break;
             }
-            if (StringUtils.hasText(request.getGender())) {
-                wrapper.eq(Resident::getGender, request.getGender());
-            }
-            if (StringUtils.hasText(request.getNation())) {
-                wrapper.eq(Resident::getNation, request.getNation());
+            try {
+                residentEsRepository.bulkSave(pg.getRecords(), Resident::getUuid);
+                total += pg.getRecords().size();
+                log.info("Reindexed {} residents to ES (page {})", total, page);
+            } catch (Exception e) {
+                log.error("Failed to bulk-save resident batch to ES at page {}: {}", page, e.getMessage());
             }
             if (StringUtils.hasText(request.getNationCode())) {
                 wrapper.eq(Resident::getNationCode, request.getNationCode());
@@ -200,6 +243,8 @@ public class ResidentServiceImpl implements ResidentService {
                     wrapper);
             return PageResult.of(pageResult.getRecords(), pageResult.getTotal(), request.getPage(), request.getSize());
         }
+        log.info("Reindex complete: {} residents synced to ES", total);
+        return total;
     }
 
     @Override
