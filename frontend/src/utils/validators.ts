@@ -78,7 +78,7 @@ export function isValidPoliceNo(no: string): boolean {
 
 export const policeNoRule = {
   pattern: /^P\d{8}$/,
-  message: '警号格式应为P开头+8位数字，如 P20260001',
+  message: '警号格式应为P+8位数字，如 P11010001',
   trigger: 'blur',
 }
 
@@ -94,11 +94,11 @@ export const chineseNameRule = {
   trigger: 'blur',
 }
 
-/** 密码强度校验 (6-20位) */
+/** 密码强度校验 (8-16位) */
 export const passwordRule = {
-  min: 6,
-  max: 20,
-  message: '密码长度需在6-20位之间',
+  min: 8,
+  max: 16,
+  message: '密码长度需在8-16位之间',
   trigger: 'blur',
 }
 

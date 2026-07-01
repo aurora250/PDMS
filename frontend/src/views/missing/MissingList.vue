@@ -93,6 +93,26 @@
       </template>
     </el-dialog>
 
+    <!-- 失踪详情对话框 -->
+    <el-dialog v-model="showDetail" title="失踪记录详情" width="500px">
+      <el-descriptions :column="2" border size="small">
+        <el-descriptions-item label="姓名">{{ detailForm.name }}</el-descriptions-item>
+        <el-descriptions-item label="性别">{{ detailForm.gender }}</el-descriptions-item>
+        <el-descriptions-item label="身份证号">{{ detailForm.idCardNo || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="失踪日期">{{ detailForm.missingDate }}</el-descriptions-item>
+        <el-descriptions-item label="失踪地点" :span="2">{{ detailForm.missingPlace }}</el-descriptions-item>
+        <el-descriptions-item label="体貌特征" :span="2">{{ detailForm.appearance || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="可能去向" :span="2">{{ detailForm.possibleWay || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="联系电话">{{ detailForm.contactPhone || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <ApprovalBadge :status="detailForm.status" />
+        </el-descriptions-item>
+      </el-descriptions>
+      <template #footer>
+        <el-button @click="showDetail = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 居民详情对话框 -->
     <ResidentDetail ref="detailRef" @saved="load" />
   </div>
@@ -150,13 +170,26 @@ const recoverRules = {
   summary: [{ required: true, message: '请输入寻回说明', trigger: 'blur' }],
 }
 
+// Detail dialog
+const showDetail = ref(false)
+const detailForm = reactive({
+  name: '', gender: '', idCardNo: '', missingDate: '', missingPlace: '',
+  appearance: '', possibleWay: '', contactPhone: '', status: '',
+})
+
 async function goDetail(row: any) {
-  if (!row.residentUuid) return
-  try {
-    const { residentApi } = await import('@/api/resident')
-    const resident = await residentApi.getByUuid(row.residentUuid)
-    detailRef.value?.open(resident)
-  } catch { /* ignore */ }
+  Object.assign(detailForm, {
+    name: row.name || '',
+    gender: row.gender || '',
+    idCardNo: row.idCardNo || '',
+    missingDate: row.missingDate || '',
+    missingPlace: row.missingPlace || '',
+    appearance: row.appearance || '',
+    possibleWay: row.possibleWay || '',
+    contactPhone: row.contactPhone || '',
+    status: row.status || '',
+  })
+  showDetail.value = true
 }
 
 function onIdParsed(data: { birthDate: string; gender: string }) {

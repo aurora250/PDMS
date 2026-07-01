@@ -96,10 +96,18 @@
     </el-dialog>
 
     <!-- 附件上传对话框 -->
-    <el-dialog v-model="showAttachDialog" title="附加材料" width="500px">
-      <AttachmentUploader v-model="attachFiles" />
+    <el-dialog v-model="showAttachDialog" title="附加审核材料" width="450px">
+      <el-form label-width="80px">
+        <el-form-item label="上传文件">
+          <AttachmentUploader v-model="attachFiles" />
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="attachRemark" type="textarea" placeholder="审核材料说明" />
+        </el-form-item>
+      </el-form>
       <template #footer>
-        <el-button @click="showAttachDialog = false">关闭</el-button>
+        <el-button @click="showAttachDialog = false">取消</el-button>
+        <el-button type="primary" @click="handleAttach" :loading="attaching">确认附加</el-button>
       </template>
     </el-dialog>
   </div>
@@ -145,7 +153,10 @@ let approveRid = 0
 
 // Attach dialog
 const showAttachDialog = ref(false)
+const attaching = ref(false)
 const attachFiles = ref<string[]>([])
+const attachRemark = ref('')
+let attachRid = 0
 
 async function load() {
   loading.value = true
@@ -208,8 +219,28 @@ async function handleApprove() {
 }
 
 function openAttach(row: any) {
+  attachRid = row.rid
   attachFiles.value = []
+  attachRemark.value = ''
   showAttachDialog.value = true
+}
+
+async function handleAttach() {
+  attaching.value = true
+  try {
+    const fd = new FormData()
+    if (attachFiles.value.length > 0) {
+      fd.append('attachmentPath', attachFiles.value.join(','))
+    }
+    if (attachRemark.value) {
+      fd.append('remark', attachRemark.value)
+    }
+    await householdApi.attachBusinessMaterial(attachRid, fd)
+    showSuccess('材料已附加')
+    showAttachDialog.value = false
+    load()
+  } catch (e: any) { showError(e.message || '附加失败') }
+  finally { attaching.value = false }
 }
 
 onMounted(load)

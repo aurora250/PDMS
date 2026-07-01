@@ -56,7 +56,7 @@
         <el-form-item label="成立日期" prop="establishDate">
           <el-date-picker v-model="applyForm.establishDate" type="date" value-format="YYYY-MM-DD" style="width:100%" />
         </el-form-item>
-        <el-form-item label="成员UUID列表">
+        <el-form-item label="成员UUID列表" prop="memberUuidList">
           <el-input v-model="applyForm.memberUuidList" type="textarea" placeholder="逗号分隔，如: uuid1,uuid2" />
         </el-form-item>
       </el-form>
@@ -75,6 +75,7 @@ import { ElMessageBox } from 'element-plus'
 import { householdApi } from '@/api/household'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
+import { uuidRule } from '@/utils/validators'
 import AreaCascader from '@/components/AreaCascader.vue'
 import ApprovalBadge from '@/components/ApprovalBadge.vue'
 import ResidentPicker from '@/components/ResidentPicker.vue'
@@ -99,7 +100,17 @@ const applyForm = reactive({
 const applyRules = {
   householderUuid: [{ required: true, message: '请输入户主UUID', trigger: 'blur' }],
   hukouAddress: [{ required: true, message: '请输入户籍地址', trigger: 'blur' }],
+  hukouAreaId: [{ required: true, message: '请选择户籍区域', trigger: 'change' }],
   establishDate: [{ required: true, message: '请选择成立日期', trigger: 'change' }],
+  memberUuidList: [{
+    validator: (_rule: any, value: string, cb: (err?: Error) => void) => {
+      if (!value || !value.trim()) { cb(); return }
+      const uuids = value.split(',').map(s => s.trim()).filter(Boolean)
+      const allValid = uuids.every((u: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(u))
+      cb(allValid ? undefined : new Error('UUID格式不正确，应为逗号分隔的标准UUID'))
+    },
+    trigger: 'blur',
+  }],
 }
 
 async function load() {

@@ -6,7 +6,6 @@ import com.pdm.auth.service.PoliceService;
 import com.pdm.common.core.exception.BusinessException;
 import com.pdm.common.core.result.ErrorCode;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 import org.springframework.stereotype.Service;
@@ -14,8 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
-import cn.hutool.core.util.IdUtil;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -27,8 +26,17 @@ public class PoliceServiceImpl implements PoliceService {
     @Override
     @Transactional
     public Police registerPolice(Police police) {
-        if (police.getPoliceNumber() == null) {
-            police.setPoliceNumber("P" + IdUtil.fastSimpleUUID().substring(0, 15));
+        if (police.getPoliceNumber() == null || police.getPoliceNumber().isBlank()) {
+            // Auto-generate: P + 8 random digits, collision check below
+            String generated;
+            do {
+                generated = "P" + String.format("%08d", ThreadLocalRandom.current().nextInt(100_000_000));
+            } while (policeMapper.selectByPoliceNumber(generated) != null);
+            police.setPoliceNumber(generated);
+        }
+        // Validate format: P + 8 digits
+        if (!police.getPoliceNumber().matches("^P\\d{8}$")) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "警号格式错误，应为P+8位数字，如 P11010001");
         }
         if (policeMapper.selectByPoliceNumber(police.getPoliceNumber()) != null) {
             throw new BusinessException(ErrorCode.DATA_DUPLICATE, "警号已存在");
@@ -38,14 +46,10 @@ public class PoliceServiceImpl implements PoliceService {
     }
 
     @Override
-    public Page<Police> listPolice(int page, int size, String keyword) {
-        LambdaQueryWrapper<Police> wrapper = new LambdaQueryWrapper<>();
-        if (StringUtils.hasText(keyword)) {
-            wrapper.and(w -> w.like(Police::getPoliceNumber, keyword).or().like(Police::getPoliceStation, keyword).or()
-                    .like(Police::getDepartment, keyword));
-        }
-        wrapper.orderByDesc(Police::getCreateTime);
-        return policeMapper.selectPage(Page.of(page, size), wrapper);
+    public Page<Police> listPolice(int page, int size, String keyword, String residentUuid) {
+        return policeMapper.selectPageWithResidentName(Page.of(page, size),
+                StringUtils.hasText(keyword) ? keyword : null,
+                StringUtils.hasText(residentUuid) ? residentUuid : null);
     }
 
     @Override

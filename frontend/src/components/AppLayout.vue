@@ -57,6 +57,10 @@
         </el-dropdown>
       </el-header>
       <el-main>
+        <el-breadcrumb separator="/" class="app-breadcrumb" v-if="route.path !== '/dashboard'">
+          <el-breadcrumb-item to="/dashboard">仪表盘</el-breadcrumb-item>
+          <el-breadcrumb-item v-for="m in breadcrumbs" :key="m.path" :to="m.path">{{ m.title }}</el-breadcrumb-item>
+        </el-breadcrumb>
         <router-view />
       </el-main>
     </el-container>
@@ -140,8 +144,8 @@ const MENU_ITEMS: MenuItem[] = [
   { path: '/system', title: '系统管理', icon: 'Setting', perm: 'auth:user:read',
     children: [
       { path: '/system/users', title: '用户管理', perm: 'auth:user:read' },
-      { path: '/system/police', title: '民警管理', perm: 'police:read' },
-      { path: '/system/permissions', title: '权限组', perm: 'auth:user:write' },
+      { path: '/system/police', title: '民警管理', perm: 'auth:police:read' },
+      { path: '/system/permissions', title: '权限组', perm: 'auth:permission:write' },
     ],
   },
 ]
@@ -165,6 +169,53 @@ const visibleMenus = computed(() => {
       return item
     })
     .filter(item => !item.children || item.children.length > 0)
+})
+
+// Breadcrumbs derived from route.matched, skipping layout and dashboard root
+const menuTitleMap: Record<string, string> = {
+  '/dashboard': '仪表盘',
+  '/resident': '常住人口',
+  '/resident/change-request': '变更审批',
+  '/household/book': '户口簿管理',
+  '/household/business': '户籍业务',
+  '/household/migration': '迁移管理',
+  '/household/permit': '证件管理',
+  '/floating/register': '流动登记',
+  '/floating/residence': '居住地',
+  '/floating/permit': '居住证',
+  '/floating/statistics': '统计图表',
+  '/keyperson/list': '人员列表',
+  '/keyperson/visit': '走访计划',
+  '/keyperson/petition': '信访记录',
+  '/missing/list': '失踪列表',
+  '/missing/statistics': '统计',
+  '/alert': '预警中心',
+  '/log/audit': '审计日志',
+  '/log/login': '登录日志',
+  '/system/users': '用户管理',
+  '/system/police': '民警管理',
+  '/system/permissions': '权限组',
+}
+
+const breadcrumbs = computed(() => {
+  const items: { path: string; title: string }[] = []
+  for (const r of route.matched) {
+    const title = menuTitleMap[r.path]
+    if (title && r.path !== '/dashboard') {
+      items.push({ path: r.path, title })
+    }
+  }
+  // For detail pages, append info from route params
+  if (route.path.includes('/resident/') && route.params.uuid && !route.path.includes('relations') && !route.path.includes('change-request')) {
+    items.push({ path: route.path, title: '人口详情' })
+  }
+  if (route.path.includes('/relations')) {
+    items.push({ path: route.path, title: '家庭关系' })
+  }
+  if (route.path.includes('/household/migration/') && route.path.includes('/trace')) {
+    items.push({ path: route.path, title: '迁移轨迹' })
+  }
+  return items
 })
 
 const changePwdDialogRef = ref()
@@ -257,4 +308,10 @@ function handleCommand(cmd: string) {
   font-size: 13px;
 }
 .police-badge { vertical-align: middle; }
+
+.app-breadcrumb {
+  margin-bottom: 12px;
+  padding: 8px 0;
+  font-size: 13px;
+}
 </style>

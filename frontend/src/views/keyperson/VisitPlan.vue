@@ -15,7 +15,11 @@
         <el-form-item><el-button @click="load">刷新</el-button></el-form-item>
       </el-form>
       <el-table :data="list" v-loading="loading" stripe border>
-        <el-table-column prop="keyPersonUuid" label="人员UUID" width="200" show-overflow-tooltip />
+        <el-table-column label="人员UUID" width="200" show-overflow-tooltip>
+          <template #default="{ row }">
+            <el-button text size="small" type="primary" @click="$router.push(`/resident/${row.keyPersonUuid}`)">{{ row.keyPersonUuid }}</el-button>
+          </template>
+        </el-table-column>
         <el-table-column prop="plannedDate" label="计划日期" width="120" />
         <el-table-column prop="actualDate" label="实际日期" width="120" />
         <el-table-column prop="visitType" label="走访类型" width="100" />
@@ -84,6 +88,7 @@ import { keypersonApi } from '@/api/keyperson'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
 import ApprovalBadge from '@/components/ApprovalBadge.vue'
+import { uuidRule, policeNoRule } from '@/utils/validators'
 
 const { hasPermission } = usePermission()
 const list = ref<any[]>([])
@@ -99,10 +104,10 @@ const form = reactive({
   keyPersonUuid: '', plannedDate: '', visitType: '入户走访', assignedPoliceNo: '',
 })
 const rules = {
-  keyPersonUuid: [{ required: true, message: '请输入人员UUID', trigger: 'blur' }],
+  keyPersonUuid: [{ required: true, message: '请输入人员UUID', trigger: 'blur' }, uuidRule],
   plannedDate: [{ required: true, message: '请选择计划日期', trigger: 'change' }],
   visitType: [{ required: true, message: '请选择走访类型', trigger: 'change' }],
-  assignedPoliceNo: [{ required: true, message: '请指定责任民警', trigger: 'blur' }],
+  assignedPoliceNo: [{ required: true, message: '请指定责任民警', trigger: 'blur' }, policeNoRule],
 }
 
 // Complete dialog

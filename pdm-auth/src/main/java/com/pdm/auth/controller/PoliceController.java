@@ -27,8 +27,9 @@ public class PoliceController {
 
     @GetMapping
     public Result<PageResult<Police>> listPolice(@RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size, @RequestParam(required = false) String keyword) {
-        Page<Police> policePage = policeService.listPolice(page, size, keyword);
+            @RequestParam(defaultValue = "20") int size, @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String residentUuid) {
+        Page<Police> policePage = policeService.listPolice(page, size, keyword, residentUuid);
         return Result.success(PageResult.of(policePage.getRecords(), policePage.getTotal(), page, size));
     }
 

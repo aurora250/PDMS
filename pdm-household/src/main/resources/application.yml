@@ -15,7 +15,7 @@ spring:
       discovery:
         server-addr: 127.0.0.1:8848
   datasource:
-    url: jdbc:postgresql://127.0.0.1:6432/pdm_shard_1
+    url: jdbc:postgresql://127.0.0.1:6432/pdm_db
     username: pdm
     password: pdm123
     driver-class-name: org.postgresql.Driver

@@ -3,13 +3,13 @@ import type { Resident, ResidentSearchRequest, ResidentRelation, ResidentRelatio
 
 export const residentApi = {
   search: (data: ResidentSearchRequest) => request.post('/resident/search', data),
-  getByUuid: (uuid: string) => request.get(`/resident/${uuid}`),
+  getByUuid: (uuid: string, config?: any) => request.get(`/resident/${uuid}`, config),
   create: (data: Resident) => request.post('/resident', data),
   update: (uuid: string, data: Partial<Resident>) => request.put(`/resident/${uuid}`, data),
   delete: (uuid: string) => request.delete(`/resident/${uuid}`),
   getRelations: (uuid: string) => request.get(`/resident/${uuid}/relations`),
   /** 获取关系（含姓名+子女） */
-  getRelationsDetail: (uuid: string): Promise<ResidentRelationVO> => request.get(`/resident/${uuid}/relations-detail`),
+  getRelationsDetail: (uuid: string, config?: any): Promise<ResidentRelationVO> => request.get(`/resident/${uuid}/relations-detail`, config),
   /** 获取子女列表 */
   getChildren: (uuid: string) => request.get(`/resident/${uuid}/children`),
   setRelations: (uuid: string, data: ResidentRelation) => request.post(`/resident/${uuid}/relations`, data),

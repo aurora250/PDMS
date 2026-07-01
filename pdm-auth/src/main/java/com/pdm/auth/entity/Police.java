@@ -5,6 +5,7 @@ import com.pdm.common.mybatis.BaseEntity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -28,6 +29,7 @@ public class Police extends BaseEntity {
     @TableField("jurisdiction")
     private String jurisdiction;
 
+    @NotNull(message = "辖区不能为空")
     @TableField("area_id")
     private Long areaId;
 
@@ -39,4 +41,8 @@ public class Police extends BaseEntity {
 
     @TableField("duty_status")
     private String dutyStatus;
+
+    /** 关联居民姓名，非数据库字段 */
+    @TableField(exist = false)
+    private String residentName;
 }

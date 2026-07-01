@@ -8,7 +8,7 @@ public interface PoliceService {
 
     Police registerPolice(Police police);
 
-    Page<Police> listPolice(int page, int size, String keyword);
+    Page<Police> listPolice(int page, int size, String keyword, String residentUuid);
 
     Police getPoliceByNumber(String policeNumber);
 

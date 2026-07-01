@@ -22,6 +22,19 @@
         </el-tag>
       </div>
       <div class="summary-actions" v-if="resident">
+        <!-- 跨模块身份标记 -->
+        <el-tag v-if="identities.keyPerson" type="danger" size="small" effect="dark" style="cursor:pointer"
+          @click="$router.push('/keyperson/list')">
+          重点人员: {{ identities.keyPerson.controlLevel }}
+        </el-tag>
+        <el-tag v-if="identities.missingPerson" type="warning" size="small" effect="dark" style="cursor:pointer"
+          @click="$router.push('/missing/list')">
+          失踪: {{ identities.missingPerson.status }}
+        </el-tag>
+        <el-tag v-if="identities.police" type="primary" size="small" effect="dark" style="cursor:pointer"
+          @click="$router.push('/system/police')">
+          警员: {{ identities.police.policeNumber }}
+        </el-tag>
         <el-button v-if="hasPermission('resident:write')" type="primary" size="small" @click="openEdit">
           编辑
         </el-button>
@@ -120,6 +133,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { residentApi } from '@/api/resident'
 import { householdApi } from '@/api/household'
+import { keypersonApi } from '@/api/keyperson'
+import { missingApi } from '@/api/missing'
+import { policeApi } from '@/api/auth'
 import { usePermission } from '@/composables/usePermission'
 import { showError } from '@/utils/auth'
 import type { Resident } from '@/types/resident'
@@ -146,6 +162,25 @@ const relations = reactive<any>({
   children: [],
 })
 
+const identities = reactive<Record<string, any>>({
+  keyPerson: null,
+  missingPerson: null,
+  police: null,
+})
+
+async function loadIdentities(residentUuid: string) {
+  try {
+    const [kpRes, missRes, policeRes] = await Promise.all([
+      keypersonApi.search({ keyword: residentUuid, page: 1, size: 1 }, { silent: true }).catch(() => null),
+      missingApi.search({ residentUuid, page: 1, size: 1 }, { silent: true }).catch(() => null),
+      policeApi.list({ residentUuid, page: 1, size: 1 }, { silent: true }).catch(() => null),
+    ])
+    identities.keyPerson = kpRes?.records?.[0] || null
+    identities.missingPerson = missRes?.records?.[0] || null
+    identities.police = policeRes?.records?.[0] || null
+  } catch { /* ignore */ }
+}
+
 const uuid = route.params.uuid as string
 
 async function loadAll() {
@@ -155,12 +190,17 @@ async function loadAll() {
 
   try {
     const [residentData, householdData, migrations, relationsData] = await Promise.all([
-      residentApi.getByUuid(uuid).catch(() => null),
-      householdApi.getBookByResident(uuid).catch(() => null),
-      householdApi.getMigrationTrace(uuid).catch(() => []),
-      residentApi.getRelationsDetail(uuid).catch(() => null),
+      residentApi.getByUuid(uuid, { silent: true }).catch(() => null),
+      householdApi.getBookByResident(uuid, { silent: true }).catch(() => null),
+      householdApi.getMigrationTrace(uuid, { silent: true }).catch(() => []),
+      residentApi.getRelationsDetail(uuid, { silent: true }).catch(() => null),
     ])
 
+    if (!residentData) {
+      error.value = '户籍人员不存在'
+      loading.value = false
+      return
+    }
     resident.value = residentData
     householdBook.value = householdData
     migrationRoutes.value = Array.isArray(migrations) ? migrations.map((m: any) => ({
@@ -187,6 +227,9 @@ async function loadAll() {
   } finally {
     loading.value = false
   }
+
+  // 异步加载跨模块身份标记
+  await loadIdentities(uuid)
 }
 
 function openEdit() {

@@ -30,10 +30,10 @@ CREATE TABLE IF NOT EXISTS sys_user (
     account_status VARCHAR(10) NOT NULL DEFAULT '审批中' CHECK (account_status IN ('审批中','有效','冻结','注销','锁定')),
     must_change_password BOOLEAN DEFAULT TRUE,
     update_time TIMESTAMP,
-    is_deleted SMALLINT NOT NULL DEFAULT 0,
-    CONSTRAINT uk_user_uuid UNIQUE (user_uuid),
-    CONSTRAINT uk_username UNIQUE (username)
+    is_deleted SMALLINT NOT NULL DEFAULT 0
 );
+CREATE UNIQUE INDEX IF NOT EXISTS uk_user_uuid ON sys_user (user_uuid) WHERE is_deleted = 0;
+CREATE UNIQUE INDEX IF NOT EXISTS uk_username ON sys_user (username) WHERE is_deleted = 0;
 COMMENT ON TABLE sys_user IS '系统用户表';
 
 -- ============================================================
@@ -46,15 +46,15 @@ CREATE TABLE IF NOT EXISTS police (
     resident_uuid VARCHAR(36) NOT NULL,
     police_station VARCHAR(100) NOT NULL,
     jurisdiction VARCHAR(200) NOT NULL,
-    area_id BIGINT,
+    area_id BIGINT NOT NULL,
     department VARCHAR(100) NOT NULL,
     police_rank VARCHAR(10) CHECK (police_rank IN ('警员','警司','警督','警监')),
     duty_status VARCHAR(10) NOT NULL DEFAULT '在岗' CHECK (duty_status IN ('在岗','调岗','离职')),
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP,
-    is_deleted SMALLINT NOT NULL DEFAULT 0,
-    CONSTRAINT uk_police_number UNIQUE (police_number)
+    is_deleted SMALLINT NOT NULL DEFAULT 0
 );
+CREATE UNIQUE INDEX IF NOT EXISTS uk_police_number ON police (police_number) WHERE is_deleted = 0;
 COMMENT ON TABLE police IS '警员表';
 
 -- ============================================================
@@ -67,9 +67,9 @@ CREATE TABLE IF NOT EXISTS permission_group (
     permissions TEXT,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP,
-    is_deleted SMALLINT NOT NULL DEFAULT 0,
-    CONSTRAINT uk_group_name UNIQUE (group_name)
+    is_deleted SMALLINT NOT NULL DEFAULT 0
 );
+CREATE UNIQUE INDEX IF NOT EXISTS uk_group_name ON permission_group (group_name) WHERE is_deleted = 0;
 COMMENT ON TABLE permission_group IS '权限组表';
 
 -- ============================================================
@@ -100,10 +100,10 @@ CREATE TABLE IF NOT EXISTS resident (
     household_area_id BIGINT,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP,
-    is_deleted SMALLINT NOT NULL DEFAULT 0,
-    CONSTRAINT uk_resident_uuid UNIQUE (uuid),
-    CONSTRAINT uk_id_card_no UNIQUE (id_card_no)
+    is_deleted SMALLINT NOT NULL DEFAULT 0
 );
+CREATE UNIQUE INDEX IF NOT EXISTS uk_resident_uuid ON resident (uuid) WHERE is_deleted = 0;
+CREATE UNIQUE INDEX IF NOT EXISTS uk_id_card_no ON resident (id_card_no) WHERE is_deleted = 0;
 CREATE INDEX IF NOT EXISTS idx_resident_name ON resident (name);
 CREATE INDEX IF NOT EXISTS idx_resident_create_time ON resident (create_time);
 CREATE INDEX IF NOT EXISTS idx_resident_household_area_id ON resident (household_area_id);
@@ -126,9 +126,9 @@ CREATE TABLE IF NOT EXISTS resident_relation (
     spouse_uuid VARCHAR(36),
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP,
-    is_deleted SMALLINT NOT NULL DEFAULT 0,
-    CONSTRAINT uk_relation_person_uuid UNIQUE (relation_person_uuid)
+    is_deleted SMALLINT NOT NULL DEFAULT 0
 );
+CREATE UNIQUE INDEX IF NOT EXISTS uk_relation_person_uuid ON resident_relation (relation_person_uuid) WHERE is_deleted = 0;
 COMMENT ON TABLE resident_relation IS '人员关系表';
 
 -- ============================================================
@@ -163,9 +163,9 @@ CREATE TABLE IF NOT EXISTS resident_permit (
     status VARCHAR(10) NOT NULL DEFAULT '申领' CHECK (status IN ('申领','已批准','有效','过期','注销')),
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP,
-    is_deleted SMALLINT NOT NULL DEFAULT 0,
-    CONSTRAINT uk_permit_no UNIQUE (permit_no)
+    is_deleted SMALLINT NOT NULL DEFAULT 0
 );
+CREATE UNIQUE INDEX IF NOT EXISTS uk_permit_no ON resident_permit (permit_no) WHERE is_deleted = 0;
 CREATE INDEX IF NOT EXISTS idx_resident_permit_uuid ON resident_permit (uuid);
 CREATE INDEX IF NOT EXISTS idx_resident_permit_expiry ON resident_permit (expiry_date, status);
 COMMENT ON TABLE resident_permit IS '居住证表';
@@ -245,9 +245,9 @@ CREATE TABLE IF NOT EXISTS key_person (
     responsible_police_no VARCHAR(20) NOT NULL,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP,
-    is_deleted SMALLINT NOT NULL DEFAULT 0,
-    CONSTRAINT uk_key_person_uuid UNIQUE (uuid)
+    is_deleted SMALLINT NOT NULL DEFAULT 0
 );
+CREATE UNIQUE INDEX IF NOT EXISTS uk_key_person_uuid ON key_person (uuid) WHERE is_deleted = 0;
 CREATE INDEX IF NOT EXISTS idx_kp_control_level ON key_person (control_level);
 CREATE INDEX IF NOT EXISTS idx_kp_police ON key_person (responsible_police_no);
 CREATE INDEX IF NOT EXISTS idx_kp_control_type ON key_person (control_type);
@@ -345,9 +345,9 @@ CREATE TABLE IF NOT EXISTS household_register (
     member_uuid_list TEXT,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP,
-    is_deleted SMALLINT NOT NULL DEFAULT 0,
-    CONSTRAINT uk_household_book_no UNIQUE (household_book_no)
+    is_deleted SMALLINT NOT NULL DEFAULT 0
 );
+CREATE UNIQUE INDEX IF NOT EXISTS uk_household_book_no ON household_register (household_book_no) WHERE is_deleted = 0;
 CREATE INDEX IF NOT EXISTS idx_household_holder ON household_register (householder_uuid);
 COMMENT ON TABLE household_register IS '户口本表';
 
@@ -415,9 +415,9 @@ CREATE TABLE IF NOT EXISTS approval_permit (
     status VARCHAR(10) NOT NULL DEFAULT '审批中' CHECK (status IN ('审批中','有效','作废')),
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP,
-    is_deleted SMALLINT NOT NULL DEFAULT 0,
-    CONSTRAINT uk_approval_permit_no UNIQUE (permit_no)
+    is_deleted SMALLINT NOT NULL DEFAULT 0
 );
+CREATE UNIQUE INDEX IF NOT EXISTS uk_approval_permit_no ON approval_permit (permit_no) WHERE is_deleted = 0;
 COMMENT ON TABLE approval_permit IS '准迁证表';
 
 -- ============================================================
@@ -432,9 +432,9 @@ CREATE TABLE IF NOT EXISTS migration_permit (
     status VARCHAR(10) NOT NULL DEFAULT '审批中' CHECK (status IN ('审批中','有效','作废')),
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP,
-    is_deleted SMALLINT NOT NULL DEFAULT 0,
-    CONSTRAINT uk_migration_permit_no UNIQUE (permit_no)
+    is_deleted SMALLINT NOT NULL DEFAULT 0
 );
+CREATE UNIQUE INDEX IF NOT EXISTS uk_migration_permit_no ON migration_permit (permit_no) WHERE is_deleted = 0;
 COMMENT ON TABLE migration_permit IS '迁移证表';
 
 -- ============================================================
@@ -448,9 +448,9 @@ CREATE TABLE IF NOT EXISTS area (
     area_level VARCHAR(10) NOT NULL CHECK (area_level IN ('省','市','区县','街道','社区')),
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP,
-    is_deleted SMALLINT NOT NULL DEFAULT 0,
-    CONSTRAINT uk_area_code UNIQUE (area_code)
+    is_deleted SMALLINT NOT NULL DEFAULT 0
 );
+CREATE UNIQUE INDEX IF NOT EXISTS uk_area_code ON area (area_code) WHERE is_deleted = 0;
 CREATE INDEX IF NOT EXISTS idx_area_parent_id ON area (parent_id);
 CREATE INDEX IF NOT EXISTS idx_area_level ON area (area_level);
 COMMENT ON TABLE area IS '行政区划表 - 符合 GB/T 2260-2007 中华人民共和国行政区划代码';
