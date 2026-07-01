@@ -13,11 +13,17 @@
       </el-form>
       <el-table :data="list" v-loading="loading" stripe border>
         <el-table-column prop="rid" label="ID" width="60" />
-        <el-table-column prop="uuid" label="UUID" width="200" show-overflow-tooltip />
+        <el-table-column label="UUID" width="200" show-overflow-tooltip>
+          <template #default="{ row }">
+            <el-button v-if="row.uuid" text size="small" type="primary" @click="$router.push(`/resident/${row.uuid}`)">{{ row.uuid }}</el-button>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="registerDate" label="登记日期" width="120" />
         <el-table-column prop="residencePermitNo" label="居住证号" width="180" />
-        <el-table-column label="操作" width="200">
+        <el-table-column label="操作" width="260">
           <template #default="{ row }">
+            <el-button text size="small" @click="$router.push(`/resident/${row.uuid}?tab=floating`)">轨迹</el-button>
             <el-button v-if="hasPermission('fp:write')" text size="small" type="primary" @click="openEdit(row)">编辑</el-button>
             <el-button v-if="hasPermission('fp:delete')" text size="small" type="danger" @click="del(row)">注销</el-button>
           </template>

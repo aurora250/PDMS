@@ -14,6 +14,9 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @TableName("approval_permit")
 public class ApprovalPermit extends BaseEntity {
+    @TableField("uuid")
+    private String uuid;
+
     @TableField("permit_no")
     private String permitNo;
 

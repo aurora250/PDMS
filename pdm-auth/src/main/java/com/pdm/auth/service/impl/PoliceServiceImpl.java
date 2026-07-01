@@ -48,8 +48,7 @@ public class PoliceServiceImpl implements PoliceService {
     @Override
     public Page<Police> listPolice(int page, int size, String keyword, String residentUuid) {
         return policeMapper.selectPageWithResidentName(Page.of(page, size),
-                StringUtils.hasText(keyword) ? keyword : null,
-                StringUtils.hasText(residentUuid) ? residentUuid : null);
+                StringUtils.hasText(keyword) ? keyword : null, StringUtils.hasText(residentUuid) ? residentUuid : null);
     }
 
     @Override

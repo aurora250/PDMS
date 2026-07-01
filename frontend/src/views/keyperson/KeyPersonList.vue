@@ -6,6 +6,9 @@
     </div>
     <el-card>
       <el-form inline>
+        <el-form-item label="搜索">
+          <el-input v-model="filter.keyword" placeholder="姓名/UUID" clearable @keyup.enter="load" style="width:200px" />
+        </el-form-item>
         <el-form-item label="管控级别">
           <el-select v-model="filter.level" placeholder="全部" clearable @change="load">
             <el-option v-for="l in ['一级','二级','三级']" :key="l" :label="l" :value="l" />
@@ -70,7 +73,11 @@
           </el-select>
         </el-form-item>
         <el-form-item label="责任民警" prop="responsiblePoliceNo">
-          <el-input v-model="form.responsiblePoliceNo" placeholder="输入民警编号，如 P20260001" />
+          <el-select v-model="form.responsiblePoliceNo" placeholder="搜索民警姓名或警号选择" filterable remote
+            :remote-method="searchPolice" :loading="policeSearching" clearable style="width:100%"
+            @focus="searchPolice('')">
+            <el-option v-for="p in policeOptions" :key="p.policeNumber" :label="`${p.residentName || p.policeNumber} (${p.policeNumber})`" :value="p.policeNumber" />
+          </el-select>
         </el-form-item>
         <el-form-item label="列管日期" prop="designatedAt">
           <el-date-picker v-model="form.designatedAt" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" style="width:100%" />
@@ -89,6 +96,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import { keypersonApi } from '@/api/keyperson'
+import { policeApi } from '@/api/auth'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
 import { policeNoRule } from '@/utils/validators'
@@ -98,7 +106,7 @@ const { hasPermission } = usePermission()
 const route = useRoute()
 const list = ref<any[]>([])
 const loading = ref(false)
-const filter = reactive({ level: '', type: '' })
+const filter = reactive({ level: '', type: '', keyword: '' })
 const page = reactive({ current: 1, size: 20, total: 0 })
 
 const dialogVisible = ref(false)
@@ -106,6 +114,22 @@ const isEdit = ref(false)
 const saving = ref(false)
 const formRef = ref()
 let editUuid = ''
+
+// 民警搜索
+const policeOptions = ref<any[]>([])
+const policeSearching = ref(false)
+async function searchPolice(query: string) {
+  policeSearching.value = true
+  try {
+    const res = await policeApi.list({ keyword: query || undefined, page: 1, size: 50 })
+    policeOptions.value = (res.records || []).map((p: any) => ({
+      ...p,
+      label: `${p.residentName || p.policeNumber} (${p.policeNumber})`,
+      value: p.policeNumber,
+    }))
+  } catch { policeOptions.value = [] }
+  finally { policeSearching.value = false }
+}
 
 const defaultForm = () => ({
   uuid: '', controlLevel: '一级', controlType: '刑满释放人员',
@@ -127,6 +151,7 @@ async function load() {
     const res = await keypersonApi.search({
       controlLevel: filter.level || undefined,
       controlType: filter.type || undefined,
+      keyword: filter.keyword || undefined,
       page: page.current, size: page.size,
     })
     list.value = Array.isArray(res) ? res : (res.records || [])

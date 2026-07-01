@@ -52,8 +52,11 @@
         </el-form-item>
 
         <el-divider content-position="left">居住信息</el-divider>
-        <el-form-item label="现居住地址" prop="currentAddress">
-          <el-input v-model="form.currentAddress" placeholder="请输入当前详细居住地址" />
+        <el-form-item label="居住区域" prop="areaId">
+          <AreaCascader v-model="form.areaId" placeholder="请选择省市区" />
+        </el-form-item>
+        <el-form-item label="详细地址" prop="currentAddress">
+          <el-input v-model="form.currentAddress" placeholder="请输入门牌号、街道、小区等详细居住地址" />
         </el-form-item>
         <el-row :gutter="16">
           <el-col :span="12">
@@ -114,25 +117,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { floatingApi } from '@/api/floating'
+import { residentApi } from '@/api/resident'
+import { useAuthStore } from '@/stores/auth'
 import { useGbConstants } from '@/composables/useGbConstants'
 import { showError, showSuccess } from '@/utils/auth'
 import { idCardRule, phoneRule } from '@/utils/validators'
 import IdCardInput from '@/components/IdCardInput.vue'
 import GbSelect from '@/components/GbSelect.vue'
 import AttachmentUploader from '@/components/AttachmentUploader.vue'
+import AreaCascader from '@/components/AreaCascader.vue'
 
+const auth = useAuthStore()
 const { nationCode, educationCode } = useGbConstants()
 
 const formRef = ref()
 const submitting = ref(false)
+const preloading = ref(false)
 
 const form = reactive({
   name: '', gender: '男', idCardNo: '', nation: '汉族', nationCode: '01',
   birthDate: '1990-01-01', educationLevel: '初中', educationCode: '70',
   maritalStatus: '未婚', phone: '',
-  currentAddress: '', addressType: '租赁房屋', purpose: '务工',
+  areaId: undefined as number | undefined, currentAddress: '',
+  addressType: '租赁房屋', purpose: '务工',
   workUnit: '', expectedDuration: '', originalAddress: '',
   attachment: [] as string[],
 })
@@ -145,7 +154,8 @@ const rules = {
   birthDate: [{ required: true, message: '请选择出生日期', trigger: 'change' }],
   educationLevel: [{ required: true, message: '请选择学历', trigger: 'change' }],
   phone: [{ required: true, message: '请输入电话号码', trigger: 'blur' }, phoneRule],
-  currentAddress: [{ required: true, message: '请输入现居住地址', trigger: 'blur' }],
+  areaId: [{ required: true, message: '请选择居住区域', trigger: 'change' }],
+  currentAddress: [{ required: true, message: '请输入详细地址', trigger: 'blur' }],
   addressType: [{ required: true, message: '请选择居住类型', trigger: 'change' }],
   purpose: [{ required: true, message: '请选择居住目的', trigger: 'change' }],
 }
@@ -165,12 +175,36 @@ async function handleSubmit() {
     await floatingApi.createRegister({
       ...form,
       registerDate: new Date().toISOString().slice(0, 10),
-    })
+    }, { silent: true })
     showSuccess('申报已提交，请等待审核')
+    formRef.value?.resetFields()
   } catch (e: any) {
     showError(e.message || '提交失败')
   } finally { submitting.value = false }
 }
+
+/** 从已绑定的居民实名信息自动预填 */
+onMounted(async () => {
+  if (!auth.residentUuid) return
+  preloading.value = true
+  try {
+    const resident = await residentApi.getByUuid(auth.residentUuid, { silent: true })
+    if (resident) {
+      form.name = resident.name || form.name
+      form.gender = resident.gender || form.gender
+      form.idCardNo = resident.idCardNo || form.idCardNo
+      form.nation = resident.nation || form.nation
+      form.birthDate = resident.birthDate || form.birthDate
+      form.educationLevel = resident.educationLevel || form.educationLevel
+      form.maritalStatus = resident.maritalStatus || form.maritalStatus
+      form.phone = resident.phone || form.phone
+      form.originalAddress = resident.householdAddress || form.originalAddress
+      form.areaId = resident.areaId || form.areaId
+      form.currentAddress = resident.currentAddress || form.currentAddress
+    }
+  } catch { /* ignore if resident lookup fails */ }
+  finally { preloading.value = false }
+})
 </script>
 
 <style scoped>

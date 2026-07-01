@@ -20,7 +20,12 @@
       </el-form>
       <el-table :data="list" v-loading="loading" stripe border>
         <el-table-column prop="permitNo" label="居住证号" width="180" />
-        <el-table-column prop="uuid" label="UUID" width="200" show-overflow-tooltip />
+        <el-table-column label="UUID" width="200" show-overflow-tooltip>
+          <template #default="{ row }">
+            <el-button v-if="row.uuid" text size="small" type="primary" @click="$router.push(`/resident/${row.uuid}`)">{{ row.uuid }}</el-button>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="issueDate" label="签发日" width="120" />
         <el-table-column prop="expiryDate" label="到期日" width="120" />
         <el-table-column prop="status" label="状态" width="100">

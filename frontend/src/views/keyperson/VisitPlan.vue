@@ -27,9 +27,10 @@
           <template #default="{ row }"><ApprovalBadge :status="row.status" /></template>
         </el-table-column>
         <el-table-column prop="assignedPoliceNo" label="责任民警" width="140" />
-        <el-table-column label="操作" width="120">
+        <el-table-column label="操作" width="200">
           <template #default="{ row }">
             <el-button v-if="hasPermission('keyperson:visit-plan:write') && row.status === '待走访'" text size="small" type="success" @click="openComplete(row)">完成走访</el-button>
+            <el-button text size="small" @click="$router.push(`/keyperson/petition?uuid=${row.keyPersonUuid}`)">信访记录</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -55,7 +56,11 @@
           </el-select>
         </el-form-item>
         <el-form-item label="责任民警" prop="assignedPoliceNo">
-          <el-input v-model="form.assignedPoliceNo" placeholder="民警编号" />
+          <el-select v-model="form.assignedPoliceNo" placeholder="搜索民警姓名或警号选择" filterable remote
+            :remote-method="searchPolice" :loading="policeSearching" clearable style="width:100%"
+            @focus="searchPolice('')">
+            <el-option v-for="p in policeOptions" :key="p.policeNumber" :label="`${p.residentName || p.policeNumber} (${p.policeNumber})`" :value="p.policeNumber" />
+          </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -84,17 +89,32 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { keypersonApi } from '@/api/keyperson'
+import { policeApi } from '@/api/auth'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
 import ApprovalBadge from '@/components/ApprovalBadge.vue'
 import { uuidRule, policeNoRule } from '@/utils/validators'
 
+const route = useRoute()
 const { hasPermission } = usePermission()
 const list = ref<any[]>([])
 const loading = ref(false)
 const statusFilter = ref('')
 const page = reactive({ current: 1, size: 20, total: 0 })
+
+// 民警搜索
+const policeOptions = ref<any[]>([])
+const policeSearching = ref(false)
+async function searchPolice(query: string) {
+  policeSearching.value = true
+  try {
+    const res = await policeApi.list({ keyword: query || undefined, page: 1, size: 50 })
+    policeOptions.value = (res.records || []).map((p: any) => ({ ...p, label: `${p.residentName || p.policeNumber} (${p.policeNumber})`, value: p.policeNumber }))
+  } catch { policeOptions.value = [] }
+  finally { policeSearching.value = false }
+}
 
 // Create dialog
 const dialogVisible = ref(false)
@@ -125,6 +145,7 @@ async function load() {
   try {
     const res = await keypersonApi.listVisitPlan({
       status: statusFilter.value || undefined,
+      keyPersonUuid: (route.query.uuid as string) || undefined,
       page: page.current, size: page.size,
     })
     list.value = Array.isArray(res) ? res : (res.records || [])

@@ -42,20 +42,21 @@ public class UserController {
         String phone = (String) body.get("phone");
         String residentUuid = (String) body.get("residentUuid");
 
-        authService.registerUser(userUuid, username, password, phone, residentUuid);
+        String userRole = body.containsKey("userRole") ? (String) body.get("userRole") : "普通用户";
+        authService.registerUser(userUuid, username, password, phone, residentUuid, userRole, "[]");
 
-        // 注册后立即设置角色和权限组
-        User updates = new User();
-        if (body.containsKey("userRole")) {
-            updates.setUserRole((String) body.get("userRole"));
+        // 注册后如有权限组或账号状态需额外设置（角色已在 registerUser 中设置）
+        if (body.containsKey("permissionGroupId") || body.containsKey("accountStatus")) {
+            User updates = new User();
+            if (body.containsKey("permissionGroupId")) {
+                updates.setPermissionGroupId(((Number) body.get("permissionGroupId")).longValue());
+            }
+            if (body.containsKey("accountStatus")) {
+                updates.setAccountStatus((String) body.get("accountStatus"));
+            }
+            return Result.success(userService.updateUser(userUuid, updates));
         }
-        if (body.containsKey("permissionGroupId")) {
-            updates.setPermissionGroupId(((Number) body.get("permissionGroupId")).longValue());
-        }
-        if (body.containsKey("accountStatus")) {
-            updates.setAccountStatus((String) body.get("accountStatus"));
-        }
-        return Result.success(userService.updateUser(userUuid, updates));
+        return Result.success(null);
     }
 
     @GetMapping("/{uuid}")

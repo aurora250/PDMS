@@ -24,6 +24,9 @@
           <el-button type="primary" size="large" :loading="loading" native-type="submit" style="width:100%">
             登 录
           </el-button>
+          <div style="text-align:center; margin-top:12px">
+            <el-button text size="small" @click="$router.push('/register')">没有账号？立即注册</el-button>
+          </div>
         </el-form-item>
       </el-form>
     </el-card>

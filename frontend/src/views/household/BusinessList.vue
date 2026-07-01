@@ -8,7 +8,8 @@
       <el-form inline>
         <el-form-item label="状态">
           <el-select v-model="statusFilter" placeholder="全部" clearable @change="load">
-            <el-option label="待受理" value="待受理" /><el-option label="审批中" value="审批中" />
+            <el-option label="审批中" value="审批中" />
+            <el-option label="市局审批中" value="市局审批中" />
             <el-option label="已批准" value="已批准" /><el-option label="已驳回" value="已驳回" />
           </el-select>
         </el-form-item>
@@ -23,17 +24,27 @@
       </el-form>
       <el-table :data="list" v-loading="loading" stripe border>
         <el-table-column prop="rid" label="ID" width="60" />
-        <el-table-column prop="applicantUuid" label="申请人" width="180" show-overflow-tooltip />
+        <el-table-column label="申请人" width="180" show-overflow-tooltip>
+          <template #default="{ row }">
+            <el-button v-if="row.applicantUuid" text size="small" type="primary" @click="$router.push(`/resident/${row.applicantUuid}`)">{{ row.applicantUuid }}</el-button>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="businessType" label="业务类型" width="120" />
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }"><ApprovalBadge :status="row.status" /></template>
         </el-table-column>
         <el-table-column prop="handleDate" label="办理日期" width="120" />
-        <el-table-column label="操作" width="280">
+        <el-table-column label="操作" width="320">
           <template #default="{ row }">
-            <el-button v-if="hasPermission('household:approve') && row.status !== '已批准'" text size="small" type="success" @click="showApprove(row, '通过')">通过</el-button>
-            <el-button v-if="hasPermission('household:approve') && row.status !== '已驳回'" text size="small" type="danger" @click="showApprove(row, '驳回')">驳回</el-button>
-            <el-button v-if="hasPermission('household:second-approve') && row.status === '一审'" text size="small" type="primary" @click="showApprove(row, '二审通过')">二审通过</el-button>
+            <!-- 民警：审批中可直接通过或提交市局 -->
+            <el-button v-if="hasPermission('household:approve') && row.status === '审批中'" text size="small" type="success" @click="showApprove(row, '通过')">通过</el-button>
+            <el-button v-if="hasPermission('household:approve') && row.status === '审批中'" text size="small" type="warning" @click="showApprove(row, '提交市局')">提交市局</el-button>
+            <el-button v-if="hasPermission('household:approve') && (row.status === '审批中' || row.status === '市局审批中')" text size="small" type="danger" @click="showApprove(row, '驳回')">驳回</el-button>
+            <!-- 市局：市局审批中可最终通过/驳回 -->
+            <el-button v-if="hasPermission('household:second-approve') && row.status === '市局审批中'" text size="small" type="success" @click="showApprove(row, '通过')">市局通过</el-button>
+            <el-button v-if="hasPermission('household:second-approve') && row.status === '市局审批中'" text size="small" type="danger" @click="showApprove(row, '驳回')">市局驳回</el-button>
+            <!-- 街道办：附加材料（不审批） -->
             <el-button v-if="hasPermission('household:material:attach')" text size="small" @click="openAttach(row)">附加材料</el-button>
           </template>
         </el-table-column>
@@ -204,14 +215,16 @@ function showApprove(row: any, action: string) {
 
 async function handleApprove() {
   try {
-    const actionText = approveAction.value === '驳回' ? '确认驳回该业务申请？' : '确认通过该业务申请？'
+    const actionText = approveAction.value === '驳回' ? '确认驳回该业务申请？'
+      : approveAction.value === '提交市局' ? '确认提交市局审批（特殊事项）？'
+      : '确认通过该业务申请？'
     await ElMessageBox.confirm(actionText, '确认操作', { type: 'warning' })
   } catch { showApproveDialog.value = false; return }
   approving.value = true
   try {
-    const status = approveAction.value === '通过' ? '已批准' : approveAction.value === '二审通过' ? '已批准' : '已驳回'
-    await householdApi.approveBusiness(approveRid, status, rejectReason.value || undefined)
-    showSuccess(approveAction.value === '驳回' ? '已驳回' : '已通过')
+    // 直接发送审批动作（通过/驳回/提交市局），后端状态机决定下一状态
+    await householdApi.approveBusiness(approveRid, approveAction.value, rejectReason.value || undefined)
+    showSuccess(approveAction.value === '驳回' ? '已驳回' : approveAction.value === '提交市局' ? '已提交市局' : '已通过')
     showApproveDialog.value = false
     load()
   } catch (e: any) { showError(e.message || '操作失败') }

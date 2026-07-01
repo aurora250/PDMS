@@ -142,7 +142,7 @@ CREATE TABLE IF NOT EXISTS resident_change_request (
     request_time DATE NOT NULL,
     original_data TEXT NOT NULL,
     modified_data TEXT NOT NULL,
-    status VARCHAR(10) NOT NULL DEFAULT '请求' CHECK (status IN ('请求','一审','二审','通过','驳回')),
+    status VARCHAR(10) NOT NULL DEFAULT '请求' CHECK (status IN ('请求','市局审批中','通过','驳回')),
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP,
     is_deleted SMALLINT NOT NULL DEFAULT 0
@@ -161,6 +161,8 @@ CREATE TABLE IF NOT EXISTS resident_permit (
     issue_date DATE NOT NULL,
     expiry_date DATE NOT NULL,
     status VARCHAR(10) NOT NULL DEFAULT '申领' CHECK (status IN ('申领','已批准','有效','过期','注销')),
+    reviewer_uuid VARCHAR(36),
+    issuer_uuid VARCHAR(36),
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP,
     is_deleted SMALLINT NOT NULL DEFAULT 0
@@ -363,7 +365,7 @@ CREATE TABLE IF NOT EXISTS household_business_request (
     handle_date DATE NOT NULL,
     handle_basis VARCHAR(200),
     fee DECIMAL(10,2),
-    status VARCHAR(10) NOT NULL DEFAULT '审批中' CHECK (status IN ('待受理','审批中','已批准','已驳回')),
+    status VARCHAR(10) NOT NULL DEFAULT '审批中' CHECK (status IN ('审批中','市局审批中','已批准','已驳回')),
     reject_reason VARCHAR(500),
     remark TEXT,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -390,7 +392,7 @@ CREATE TABLE IF NOT EXISTS household_migration_request (
     handle_date DATE NOT NULL,
     handle_basis VARCHAR(200),
     fee DECIMAL(10,2),
-    status VARCHAR(20) NOT NULL CHECK (status IN ('准迁证审批中','准迁证审批驳回','迁移证审批中','迁移证审批驳回','迁移审批中','迁移审批驳回','迁移审批通过')),
+    status VARCHAR(20) NOT NULL CHECK (status IN ('准迁证审批中','准迁证已批准','准迁证审批驳回','迁移证已批准','迁移审批通过','迁移审批驳回')),
     reject_reason VARCHAR(500),
     approval_permit_no VARCHAR(36),
     migration_permit_no VARCHAR(36),
@@ -408,6 +410,7 @@ COMMENT ON TABLE household_migration_request IS '户籍迁移业务请求表';
 -- ============================================================
 CREATE TABLE IF NOT EXISTS approval_permit (
     id BIGSERIAL PRIMARY KEY,
+    uuid VARCHAR(36),
     permit_no VARCHAR(36) NOT NULL,
     issue_date DATE NOT NULL,
     expiry_date DATE NOT NULL,
@@ -425,6 +428,7 @@ COMMENT ON TABLE approval_permit IS '准迁证表';
 -- ============================================================
 CREATE TABLE IF NOT EXISTS migration_permit (
     id BIGSERIAL PRIMARY KEY,
+    uuid VARCHAR(36),
     permit_no VARCHAR(36) NOT NULL,
     issue_date DATE NOT NULL,
     expiry_date DATE NOT NULL,
@@ -618,7 +622,7 @@ INSERT INTO permission_group (group_name, description, permissions) VALUES
 ('用户管理员组', '用户账号管理：创建、修改、状态变更',
  '["auth:user:read","auth:user:write","auth:user:status"]'),
 ('普通用户组', '群众自助服务：自我申报、业务查询',
- '["self:resident:read","self:fp:write","self:household:apply","self:missing:recovery:write","statistics:read"]');
+ '["self:resident:read","self:fp:write","self:household:apply","self:missing:recovery:write","statistics:read","fp:read","fp:write","household:read","household:write"]');
 
 -- 默认管理员账号 (密码: Admin@123)
 INSERT INTO sys_user (user_uuid, username, password, resident_uuid, user_role, permission_group_id, phone, account_status, must_change_password, register_materials)

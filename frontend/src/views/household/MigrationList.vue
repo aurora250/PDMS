@@ -9,12 +9,11 @@
         <el-form-item label="状态">
           <el-select v-model="statusFilter" placeholder="全部" clearable @change="load">
             <el-option label="准迁证审批中" value="准迁证审批中" />
+            <el-option label="准迁证已批准" value="准迁证已批准" />
             <el-option label="准迁证审批驳回" value="准迁证审批驳回" />
-            <el-option label="迁移证审批中" value="迁移证审批中" />
-            <el-option label="迁移证审批驳回" value="迁移证审批驳回" />
-            <el-option label="迁移审批中" value="迁移审批中" />
-            <el-option label="迁移审批驳回" value="迁移审批驳回" />
+            <el-option label="迁移证已批准" value="迁移证已批准" />
             <el-option label="迁移审批通过" value="迁移审批通过" />
+            <el-option label="迁移审批驳回" value="迁移审批驳回" />
           </el-select>
         </el-form-item>
         <el-form-item label="迁出省">
@@ -31,19 +30,25 @@
       </el-form>
       <el-table :data="list" v-loading="loading" stripe border>
         <el-table-column prop="rid" label="ID" width="60" />
-        <el-table-column prop="applicantUuid" label="人员UUID" width="200" show-overflow-tooltip />
+        <el-table-column label="人员UUID" width="200" show-overflow-tooltip>
+          <template #default="{ row }">
+            <el-button v-if="row.applicantUuid" text size="small" type="primary" @click="$router.push(`/resident/${row.applicantUuid}`)">{{ row.applicantUuid }}</el-button>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="outgoingAddress" label="迁出地址" min-width="180" />
         <el-table-column prop="incomingAddress" label="迁入地址" min-width="180" />
         <el-table-column prop="businessType" label="类型" width="80" />
         <el-table-column prop="status" label="状态" width="120">
           <template #default="{ row }"><ApprovalBadge :status="row.status" /></template>
         </el-table-column>
-        <el-table-column label="操作" width="280">
+        <el-table-column label="操作" width="300">
           <template #default="{ row }">
-            <el-button text size="small" @click="$router.push(`/household/migration/${row.applicantUuid}/trace`)">轨迹</el-button>
-            <el-button v-if="hasPermission('household:approve') && !row.status?.includes('通过')" text size="small" type="success" @click="showApprove(row, '通过')">通过</el-button>
-            <el-button v-if="hasPermission('household:approve') && !row.status?.includes('驳回')" text size="small" type="danger" @click="showApprove(row, '驳回')">驳回</el-button>
-            <el-button v-if="hasPermission('household:second-approve') && row.status === '一审'" text size="small" type="primary" @click="showApprove(row, '二审通过')">二审通过</el-button>
+            <el-button text size="small" @click="$router.push(`/resident/${row.applicantUuid}?tab=migration`)">轨迹</el-button>
+            <!-- 民警：按阶段逐步审批 -->
+            <el-button v-if="hasPermission('household:approve') && (row.status === '准迁证审批中' || row.status === '准迁证已批准' || row.status === '迁移证已批准')" text size="small" type="success" @click="showApprove(row, '通过')">通过</el-button>
+            <el-button v-if="hasPermission('household:approve') && !row.status?.includes('驳回') && row.status !== '迁移审批通过'" text size="small" type="danger" @click="showApprove(row, '驳回')">驳回</el-button>
+            <!-- 街道办：附加材料（不审批） -->
             <el-button v-if="hasPermission('household:material:attach')" text size="small" @click="openAttach(row)">附加材料</el-button>
           </template>
         </el-table-column>
@@ -229,8 +234,8 @@ async function handleApprove() {
   } catch { showApproveDialog.value = false; return }
   approving.value = true
   try {
-    const status = approveAction.value === '通过' ? '迁移审批通过' : approveAction.value === '二审通过' ? '迁移审批通过' : '迁移审批驳回'
-    await householdApi.approveMigration(approveRid, status, rejectReason.value || undefined)
+    // 直接发送审批动作（通过/驳回），后端状态机决定下一阶段
+    await householdApi.approveMigration(approveRid, approveAction.value, rejectReason.value || undefined)
     showSuccess(approveAction.value === '驳回' ? '已驳回' : '已通过')
     showApproveDialog.value = false
     load()
@@ -271,12 +276,11 @@ async function handleAttach() {
 }
 
 onMounted(() => {
+  if (route.query.fromAddress) fromFilter.value = route.query.fromAddress as string
+  if (route.query.toAddress) toFilter.value = route.query.toAddress as string
   if (route.query.from) fromFilter.value = route.query.from as string
   if (route.query.to) toFilter.value = route.query.to as string
   load()
-})
-watch(() => route.query.from, (val) => {
-  if (val) { fromFilter.value = val as string; load() }
 })
 </script>
 

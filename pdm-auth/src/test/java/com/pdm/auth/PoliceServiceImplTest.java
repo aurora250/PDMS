@@ -113,7 +113,8 @@ class PoliceServiceImplTest {
             mockPage.setRecords(List.of(testPolice));
             mockPage.setTotal(1);
 
-            when(policeMapper.selectPageWithResidentName(any(Page.class), eq("P00000001"), isNull())).thenReturn(mockPage);
+            when(policeMapper.selectPageWithResidentName(any(Page.class), eq("P00000001"), isNull()))
+                    .thenReturn(mockPage);
 
             Page<Police> result = policeService.listPolice(1, 20, "P00000001", null);
 

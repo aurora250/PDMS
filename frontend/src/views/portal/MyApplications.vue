@@ -57,12 +57,12 @@ async function load() {
       res = await householdApi.listBusiness({
         status: statusFilter.value || undefined,
         page: page.current, size: page.size,
-      })
+      }, { silent: true })
     } else {
       res = await floatingApi.listPermit({
         status: statusFilter.value || undefined,
         page: page.current, size: page.size,
-      })
+      }, { silent: true })
     }
     list.value = Array.isArray(res) ? res : (res.records || [])
     page.total = res.total || 0
