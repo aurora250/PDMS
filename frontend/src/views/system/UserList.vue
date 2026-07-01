@@ -2,7 +2,7 @@
   <div class="user-page">
     <div class="page-header">
       <h3>用户管理</h3>
-      <el-button v-if="hasPermission('auth:user:write')" type="primary" @click="openCreate">创建用户</el-button>
+      <el-button v-if="hasPermission('auth:user:write') && auth.role !== '用户管理员'" type="primary" @click="openCreate">创建用户</el-button>
     </div>
     <el-card>
       <el-form inline style="margin-bottom:12px">
@@ -11,7 +11,7 @@
         </el-form-item>
         <el-form-item label="角色">
           <el-select v-model="userRoleFilter" placeholder="全部" clearable @change="load">
-            <el-option v-for="r in ROLES" :key="r" :label="r" :value="r" />
+            <el-option v-for="r in availableRoles" :key="r" :label="r" :value="r" />
           </el-select>
         </el-form-item>
         <el-form-item><el-button type="primary" @click="load">搜索</el-button></el-form-item>
@@ -28,13 +28,14 @@
         <el-table-column prop="mustChangePassword" label="须改密" width="80">
           <template #default="{ row }">{{ row.mustChangePassword ? '是' : '否' }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="200">
+        <el-table-column label="操作" width="280">
           <template #default="{ row }">
-            <el-button v-if="hasPermission('auth:user:write')" text size="small" type="primary" @click="openEdit(row)">编辑</el-button>
+            <el-button v-if="hasPermission('auth:user:write') && auth.role !== '用户管理员'" text size="small" type="primary" @click="openEdit(row)">编辑</el-button>
             <el-button v-if="hasPermission('auth:user:status')" text size="small" @click="toggleStatus(row)">
               {{ row.accountStatus === '有效' ? '禁用' : '启用' }}
             </el-button>
             <el-button v-if="hasPermission('auth:user:write')" text size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button v-if="hasPermission('auth:user:write') && auth.role !== '用户管理员'" text size="small" type="warning" @click="openResetPassword(row)">重置密码</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -50,7 +51,7 @@
         <el-form-item v-if="!editing" label="密码" prop="password"><el-input v-model="form.password" type="password" placeholder="8-16位密码" maxlength="16" show-password /></el-form-item>
         <el-form-item label="角色" prop="userRole">
           <el-select v-model="form.userRole">
-            <el-option v-for="r in ROLES" :key="r" :label="r" :value="r" />
+            <el-option v-for="r in availableRoles" :key="r" :label="r" :value="r" />
           </el-select>
         </el-form-item>
         <el-form-item label="权限组" prop="permissionGroupId">
@@ -65,6 +66,18 @@
         <el-button type="primary" @click="handleSave">保存</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="pwdDialogVisible" title="重置密码" width="400px">
+      <el-form ref="pwdFormRef" :model="pwdForm" :rules="pwdRules" label-width="100px">
+        <el-form-item label="新密码" prop="password">
+          <el-input v-model="pwdForm.password" type="password" placeholder="8-16位密码" maxlength="16" show-password />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="pwdDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleResetPassword">确认重置</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -73,11 +86,20 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessageBox } from 'element-plus'
 import { userApi, permissionGroupApi } from '@/api/auth'
 import { usePermission } from '@/composables/usePermission'
+import { useAuthStore } from '@/stores/auth'
 import { showError, showSuccess } from '@/utils/auth'
 import { phoneRule } from '@/utils/validators'
 
 const { hasPermission } = usePermission()
-const ROLES = ['系统管理员','市局负责人','数据审查员','采集员','街道办','民警','用户管理员','普通用户']
+const auth = useAuthStore()
+
+const ALL_ROLES = ['系统管理员','市局负责人','数据审查员','采集员','街道办','民警','用户管理员','普通用户']
+const USER_ADMIN_ROLES = ['普通用户', '采集员', '街道办']
+
+/** 用户管理员只能看到/管理这三种角色 */
+const availableRoles = computed(() =>
+  auth.role === '用户管理员' ? USER_ADMIN_ROLES : ALL_ROLES
+)
 
 const list = ref<any[]>([])
 const groups = ref<any[]>([])
@@ -91,9 +113,10 @@ const userRoleFilter = ref('')
 let editUuid = ''
 
 const defaultForm = () => ({
-  username: '', password: '', userRole: '普通用户', permissionGroupId: 8, phone: '',
+  username: '', password: '', userRole: '普通用户', permissionGroupId: null as any, phone: '',
 })
 const form = reactive(defaultForm())
+
 const uRules = computed(() => ({
   username: [{ required: true, message: '请输入用户名' }],
   password: editing.value ? [] : [{ required: true, message: '请输入密码' }, { min: 8, max: 16, message: '密码长度需在8-16位之间' }],
@@ -111,15 +134,20 @@ async function load() {
   } catch { /* */ } finally { loading.value = false }
 }
 async function loadGroups() {
-  try { groups.value = await permissionGroupApi.list() } catch { /* */ }
+  // silent 抑制 403 弹窗：非管理员角色无 auth:permission:write 权限
+  try { groups.value = await permissionGroupApi.list({ silent: true } as any) } catch { /* */ }
 }
 
 function openCreate() {
-  Object.assign(form, defaultForm()); editing.value = false; dialogVisible.value = true
+  Object.assign(form, defaultForm())
+  editing.value = false
+  dialogVisible.value = true
 }
 function openEdit(row: any) {
   editUuid = row.userUuid
-  Object.assign(form, row); editing.value = true; dialogVisible.value = true
+  Object.assign(form, row)
+  editing.value = true
+  dialogVisible.value = true
 }
 async function handleSave() {
   const valid = await formRef.value?.validate().catch(() => false)
@@ -138,7 +166,6 @@ async function handleSave() {
   } catch (e: any) { showError(e.message || '操作失败') }
 }
 async function toggleStatus(row: any) {
-  // 后端 CHECK 约束: '审批中','有效','冻结','注销','锁定'
   const newStatus = row.accountStatus === '有效' ? '冻结' : '有效'
   const actionText = newStatus === '冻结' ? '禁用' : '启用'
   try {
@@ -148,6 +175,7 @@ async function toggleStatus(row: any) {
     load()
   } catch (e: any) { if (e !== 'cancel') showError(e.message || '操作失败') }
 }
+
 async function handleDelete(row: any) {
   try {
     await ElMessageBox.confirm('确认删除该用户？此操作不可恢复。', '确认删除', { type: 'warning' })
@@ -155,6 +183,32 @@ async function handleDelete(row: any) {
     showSuccess('删除成功')
     load()
   } catch (e: any) { if (e !== 'cancel') showError(e.message || '删除失败') }
+}
+
+// ====== 重置密码 ======
+const pwdDialogVisible = ref(false)
+const pwdFormRef = ref()
+const pwdForm = reactive({ password: '' })
+let resetUuid = ''
+const pwdRules = {
+  password: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 8, max: 16, message: '密码长度需在8-16位之间', trigger: 'blur' },
+  ],
+}
+function openResetPassword(row: any) {
+  resetUuid = row.userUuid
+  pwdForm.password = ''
+  pwdDialogVisible.value = true
+}
+async function handleResetPassword() {
+  const valid = await pwdFormRef.value?.validate().catch(() => false)
+  if (valid === false) return
+  try {
+    await userApi.resetPassword(resetUuid, pwdForm.password)
+    showSuccess('密码重置成功')
+    pwdDialogVisible.value = false
+  } catch (e: any) { showError(e.message || '重置失败') }
 }
 
 onMounted(() => { load(); loadGroups() })

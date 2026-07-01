@@ -135,6 +135,7 @@ function openEdit(row: any) {
 }
 
 function showDetail(row: any) {
+  // Read-only detail: open edit dialog but disable all inputs
   editNo = row.policeNumber
   Object.assign(form, row)
   editing.value = false; readonly.value = true; dialogVisible.value = true

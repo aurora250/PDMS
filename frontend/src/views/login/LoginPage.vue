@@ -98,6 +98,8 @@ async function handleLogin() {
       showChangePwd.value = true
     } else if (auth.role === '普通用户') {
       router.push('/portal')
+    } else if (auth.role === '用户管理员') {
+      router.push('/system/users')
     } else {
       router.push('/dashboard')
     }
@@ -118,6 +120,7 @@ async function handleChangePwd() {
     showSuccess('密码修改成功')
     showChangePwd.value = false
     if (auth.role === '普通用户') router.push('/portal')
+    else if (auth.role === '用户管理员') router.push('/system/users')
     else router.push('/dashboard')
   } catch (e: any) {
     showError(e.message || '修改密码失败')

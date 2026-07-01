@@ -67,6 +67,9 @@ public class PoliceServiceImpl implements PoliceService {
         if (police == null) {
             throw new BusinessException(ErrorCode.DATA_NOT_FOUND, "警员不存在");
         }
+        if (StringUtils.hasText(updates.getResidentUuid())) {
+            police.setResidentUuid(updates.getResidentUuid());
+        }
         if (StringUtils.hasText(updates.getPoliceStation())) {
             police.setPoliceStation(updates.getPoliceStation());
         }

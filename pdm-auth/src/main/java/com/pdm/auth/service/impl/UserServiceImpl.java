@@ -9,6 +9,7 @@ import com.pdm.common.core.result.ErrorCode;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -23,12 +24,20 @@ import lombok.RequiredArgsConstructor;
 public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
+    private final PasswordEncoder passwordEncoder;
+
+    private static final List<String> USER_ADMIN_VISIBLE_ROLES = List.of("普通用户", "采集员", "街道办");
 
     @Override
-    public Page<User> listUsers(int page, int size, String keyword, String role, String status) {
+    public Page<User> listUsers(int page, int size, String keyword, String role, String status, String callerRole) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(keyword)) {
-            wrapper.and(w -> w.like(User::getUsername, keyword).or().like(User::getUserUuid, keyword));
+            wrapper.and(w -> w.like(User::getUsername, keyword)
+                    .or().eq(User::getUserUuid, keyword));
+        }
+        // 用户管理员只能看到其管辖范围内的角色
+        if ("用户管理员".equals(callerRole)) {
+            wrapper.in(User::getUserRole, USER_ADMIN_VISIBLE_ROLES);
         }
         if (StringUtils.hasText(role)) {
             wrapper.eq(User::getUserRole, role);
@@ -101,5 +110,20 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException("活跃用户需先停用账号再删除");
         }
         userMapper.deleteById(user.getId());
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(String userUuid, String newPassword) {
+        User user = userMapper.selectByUserUuid(userUuid);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.DATA_NOT_FOUND, "用户不存在");
+        }
+        if (newPassword == null || newPassword.length() < 8 || newPassword.length() > 16) {
+            throw new BusinessException(ErrorCode.PASSWORD_WEAK);
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setMustChangePassword(true);
+        userMapper.updateById(user);
     }
 }

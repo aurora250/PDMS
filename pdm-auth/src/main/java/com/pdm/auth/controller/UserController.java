@@ -5,6 +5,7 @@ import com.pdm.auth.service.AuthService;
 import com.pdm.auth.service.UserService;
 import com.pdm.common.core.result.Result;
 import com.pdm.common.dto.PageResult;
+import com.pdm.common.security.UserContextHolder;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
@@ -26,8 +27,10 @@ public class UserController {
     @GetMapping
     public Result<PageResult<User>> listUsers(@RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size, @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String role, @RequestParam(required = false) String status) {
-        Page<User> userPage = userService.listUsers(page, size, keyword, role, status);
+            @RequestParam(value = "userRole", required = false) String role,
+            @RequestParam(required = false) String status) {
+        String callerRole = UserContextHolder.getRole();
+        Page<User> userPage = userService.listUsers(page, size, keyword, role, status, callerRole);
         return Result.success(PageResult.of(userPage.getRecords(), userPage.getTotal(), page, size));
     }
 
@@ -75,6 +78,12 @@ public class UserController {
     @DeleteMapping("/{uuid}")
     public Result<Void> deleteUser(@PathVariable String uuid) {
         userService.deleteUser(uuid);
+        return Result.success();
+    }
+
+    @PutMapping("/{uuid}/password")
+    public Result<Void> resetPassword(@PathVariable String uuid, @RequestBody Map<String, String> body) {
+        userService.resetPassword(uuid, body.get("password"));
         return Result.success();
     }
 }
