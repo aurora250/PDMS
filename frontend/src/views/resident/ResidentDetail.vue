@@ -39,7 +39,7 @@
       <el-form-item label="居住地区" prop="areaId">
         <AreaCascader v-model="addressForm.areaId" placeholder="选择居住地省市区" />
       </el-form-item>
-      <el-form-item label="居住详址" prop="addressDetail">
+      <el-form-item label="居住详址">
         <el-input v-model="addressForm.detail" placeholder="街道/路/号/楼/室" />
         <span class="form-tip">请填写与所选地区对应的街道门牌号等详细地址</span>
       </el-form-item>
@@ -68,7 +68,7 @@
       <el-form-item label="户籍地区" prop="householdAreaId">
         <AreaCascader v-model="addressForm.householdAreaId" placeholder="选择户籍地省市区" />
       </el-form-item>
-      <el-form-item label="户籍详址" prop="householdDetail">
+      <el-form-item label="户籍详址">
         <el-input v-model="addressForm.householdDetail" placeholder="街道/路/号/楼/室" />
         <span class="form-tip">请填写与所选地区对应的详细门牌号</span>
       </el-form-item>
@@ -102,6 +102,9 @@ const saving = ref(false)
 const formRef = ref()
 let editUuid = ''
 
+// 保存编辑前的原始数据，用于变更申请diff
+let originalData: any = null
+
 const defaultForm = () => ({
   name: '', formerName: '', gender: '男', idCardNo: '',
   nation: '汉族', nationCode: '01', birthDate: '1990-01-01',
@@ -133,10 +136,8 @@ const rules = {
   maritalStatus: [{ required: true, message: '请选择婚姻状况', trigger: 'change' }],
   phone: [{ required: true, message: '请输入电话', trigger: 'blur' }, phoneRule],
   areaId: [{ required: true, message: '请选择居住地区', trigger: 'change' }],
-  addressDetail: [{ required: true, message: '请填写详细地址', trigger: 'blur' }],
   householdType: [{ required: true, message: '请选择户口类型', trigger: 'change' }],
   householdAreaId: [{ required: true, message: '请选择户籍地区', trigger: 'change' }],
-  householdDetail: [{ required: true, message: '请填写详细地址', trigger: 'blur' }],
 }
 
 function onNationChange() { form.nationCode = nationCode(form.nation) }
@@ -189,6 +190,7 @@ async function open(row?: Resident) {
   visible.value = true
   if (row) {
     editUuid = row.uuid!
+    originalData = { ...row }  // 深拷贝原始数据用于变更申请diff
     Object.assign(form, row)
     // 地区ID来自 row，级联菜单据此显示默认值
     addressForm.areaId = row.areaId ?? null
@@ -199,13 +201,14 @@ async function open(row?: Resident) {
   }
 }
 
-/** 从完整地址中剥离地区前缀，仅保留街道门牌号部分 */
+/** 从完整地址中剥离地区前缀，仅保留街道门牌号部分；若剥离后为空则返回完整地址 */
 async function stripAreaPrefix(fullAddress: string, areaId: number | null | undefined): Promise<string> {
   if (!fullAddress || !areaId) return fullAddress
   try {
     const path: string = await areaApi.getPath(areaId)
     if (path && fullAddress.startsWith(path)) {
-      return fullAddress.substring(path.length)
+      const stripped = fullAddress.substring(path.length)
+      return stripped.trim() || fullAddress
     }
   } catch { /* ignore */ }
   return fullAddress
@@ -244,8 +247,35 @@ async function handleSave() {
     }
 
     if (isEdit.value) {
-      await residentApi.update(editUuid, payload)
-      showSuccess('修改成功')
+      // 编辑模式：提交变更申请（需审批后生效）
+      const changedFields: string[] = []
+      const orig: Record<string, any> = {}
+      const mod: Record<string, any> = {}
+
+      for (const key of Object.keys(payload)) {
+        const newVal = (payload as any)[key]
+        const oldVal = originalData ? (originalData as any)[key] : undefined
+        if (newVal !== oldVal && newVal !== '' && oldVal !== undefined) {
+          changedFields.push(key)
+          orig[key] = oldVal
+          mod[key] = newVal
+        }
+      }
+
+      if (changedFields.length === 0) {
+        showError('未检测到任何变更')
+        saving.value = false
+        return
+      }
+
+      await residentApi.submitChangeRequest({
+        applicantUuid: editUuid,
+        changeField: changedFields.join('、'),
+        originalData: JSON.stringify(orig),
+        modifiedData: JSON.stringify(mod),
+        status: '请求',
+      })
+      showSuccess('变更申请已提交，请等待审核')
     } else {
       await residentApi.create(payload)
       showSuccess('新增成功')

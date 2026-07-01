@@ -23,6 +23,7 @@ public class LoginResponse implements Serializable {
     private String userUuid;
     private String username;
     private String role;
+    private String residentUuid;
     private List<String> permissions;
     private boolean mustChangePassword;
 }

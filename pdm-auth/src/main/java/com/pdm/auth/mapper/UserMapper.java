@@ -19,4 +19,7 @@ public interface UserMapper extends BaseMapper<User> {
 
     @Select("SELECT COUNT(*) FROM sys_user WHERE username = #{username} AND is_deleted = 0")
     int countByUsername(@Param("username") String username);
+
+    @Select("SELECT COUNT(*) FROM sys_user WHERE phone = #{phone} AND is_deleted = 0")
+    int countByPhone(@Param("phone") String phone);
 }

@@ -22,6 +22,7 @@
 
         <!-- Infrastructure -->
         <module>pdm-gateway</module>
+        <module>pdm-log</module>
 
         <!-- Business services -->
         <module>pdm-auth</module>
@@ -30,7 +31,6 @@
         <module>pdm-keyperson</module>
         <module>pdm-floating-population</module>
         <module>pdm-missingperson</module>
-        <module>pdm-log</module>
         <module>pdm-notification</module>
     </modules>
 

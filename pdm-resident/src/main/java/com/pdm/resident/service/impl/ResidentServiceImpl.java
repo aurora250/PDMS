@@ -297,12 +297,15 @@ public class ResidentServiceImpl implements ResidentService {
     @Override
     public ResidentRelationVO getRelationsWithNames(String uuid) {
         ResidentRelation relation = relationMapper.selectByPersonUuid(uuid);
-        if (relation == null) {
-            throw new BusinessException(ErrorCode.DATA_NOT_FOUND, "未找到人员关系");
-        }
 
         ResidentRelationVO vo = new ResidentRelationVO();
         vo.setRelationPersonUuid(uuid);
+
+        if (relation == null) {
+            // 本人未录入关系，但仍可反向查询子女、配偶
+            vo.setChildren(relationMapper.selectChildren(uuid));
+            return vo;
+        }
 
         // 批量查询相关人员的姓名
         List<String> relatedUuids = new ArrayList<>();
@@ -364,14 +367,53 @@ public class ResidentServiceImpl implements ResidentService {
         return request;
     }
 
+    /**
+     * 变更申请审批状态机（与户籍业务一致）:
+     *   一般事项: 请求 → [民警通过] → 通过（自动应用变更到居民数据）
+     *   特殊事项: 请求 → [民警提交市局] → 市局审批中 → [市局通过] → 通过
+     *   驳回:     请求/市局审批中 → [驳回] → 驳回
+     */
     @Override
     @Transactional
-    public ResidentChangeRequest approveChangeRequest(Long rid, String status, String handlerUuid) {
+    public ResidentChangeRequest approveChangeRequest(Long rid, String action, String handlerUuid) {
         ResidentChangeRequest request = changeRequestMapper.selectById(rid);
         if (request == null) {
             throw new BusinessException(ErrorCode.DATA_NOT_FOUND, "变更请求不存在");
         }
-        request.setStatus(status);
+
+        String current = request.getStatus();
+        String next;
+
+        switch (action) {
+            case "通过":
+                if ("请求".equals(current)) {
+                    next = "通过";              // 民警直接通过（一般事项）
+                } else if ("市局审批中".equals(current)) {
+                    next = "通过";              // 市局最终通过
+                } else {
+                    throw new BusinessException(ErrorCode.PARAM_ERROR,
+                            "当前状态不允许审批通过: " + current);
+                }
+                break;
+            case "提交市局":
+                if (!"请求".equals(current)) {
+                    throw new BusinessException(ErrorCode.PARAM_ERROR,
+                            "仅请求状态可提交市局: " + current);
+                }
+                next = "市局审批中";
+                break;
+            case "驳回":
+                if ("通过".equals(current) || "驳回".equals(current)) {
+                    throw new BusinessException(ErrorCode.PARAM_ERROR,
+                            "当前状态不允许驳回: " + current);
+                }
+                next = "驳回";
+                break;
+            default:
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "未知审批操作: " + action);
+        }
+
+        request.setStatus(next);
         String currentHandlers = request.getHandlerIdList();
         if (currentHandlers == null) {
             request.setHandlerIdList(handlerUuid);
@@ -381,15 +423,39 @@ public class ResidentServiceImpl implements ResidentService {
         changeRequestMapper.updateById(request);
 
         // If approved, apply the change to resident
-        if ("通过".equals(status)) {
+        if ("通过".equals(next)) {
             try {
                 Map<String, Object> modifiedData = objectMapper.readValue(request.getModifiedData(), Map.class);
                 Resident resident = residentMapper.selectByUuid(request.getApplicantUuid());
                 if (resident != null) {
                     if (modifiedData.containsKey("name"))
                         resident.setName((String) modifiedData.get("name"));
+                    if (modifiedData.containsKey("formerName"))
+                        resident.setFormerName((String) modifiedData.get("formerName"));
+                    if (modifiedData.containsKey("gender"))
+                        resident.setGender((String) modifiedData.get("gender"));
                     if (modifiedData.containsKey("nation"))
                         resident.setNation((String) modifiedData.get("nation"));
+                    if (modifiedData.containsKey("nationCode"))
+                        resident.setNationCode((String) modifiedData.get("nationCode"));
+                    if (modifiedData.containsKey("educationLevel"))
+                        resident.setEducationLevel((String) modifiedData.get("educationLevel"));
+                    if (modifiedData.containsKey("educationCode"))
+                        resident.setEducationCode((String) modifiedData.get("educationCode"));
+                    if (modifiedData.containsKey("bloodType"))
+                        resident.setBloodType((String) modifiedData.get("bloodType"));
+                    if (modifiedData.containsKey("maritalStatus"))
+                        resident.setMaritalStatus((String) modifiedData.get("maritalStatus"));
+                    if (modifiedData.containsKey("occupation"))
+                        resident.setOccupation((String) modifiedData.get("occupation"));
+                    if (modifiedData.containsKey("phone"))
+                        resident.setPhone((String) modifiedData.get("phone"));
+                    if (modifiedData.containsKey("residence"))
+                        resident.setResidence((String) modifiedData.get("residence"));
+                    if (modifiedData.containsKey("householdType"))
+                        resident.setHouseholdType((String) modifiedData.get("householdType"));
+                    if (modifiedData.containsKey("householdAddress"))
+                        resident.setHouseholdAddress((String) modifiedData.get("householdAddress"));
                     residentMapper.updateById(resident);
                 }
             } catch (Exception e) {

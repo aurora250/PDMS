@@ -12,7 +12,12 @@
         <el-form-item><el-button @click="load">搜索</el-button></el-form-item>
       </el-form>
       <el-table :data="list" v-loading="loading" stripe border>
-        <el-table-column prop="uuid" label="UUID" width="200" show-overflow-tooltip />
+        <el-table-column label="UUID" width="200" show-overflow-tooltip>
+          <template #default="{ row }">
+            <el-button v-if="row.uuid" text size="small" type="primary" @click="$router.push(`/resident/${row.uuid}`)">{{ row.uuid }}</el-button>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="currentAddress" label="现地址" min-width="200" />
         <el-table-column prop="addressType" label="类型" width="100" />
         <el-table-column prop="purpose" label="目的" width="80" />

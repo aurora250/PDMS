@@ -100,11 +100,20 @@ public class HouseholdServiceImpl implements HouseholdService {
         return result;
     }
 
-    /** 四级审批流: 采集员录入→街道办初审→民警复核→市局审批 */
+    /**
+     * 审批流: 采集员上报 → 民警审核 → 市局（仅特殊事项）
+     *         街道办只附加材料，不参与审批
+     * 状态机:
+     *   一般事项: 审批中 → [民警通过] → 已批准
+     *   特殊事项: 审批中 → [民警提交市局] → 市局审批中 → [市局通过] → 已批准
+     *   驳回:     审批中/市局审批中 → [驳回] → 已驳回
+     */
     @Override
     @Transactional
     public HouseholdBusinessRequest submitBusiness(HouseholdBusinessRequest request) {
-        request.setHandleDate(LocalDate.now());
+        if (request.getHandleDate() == null) {
+            request.setHandleDate(LocalDate.now());
+        }
         request.setStatus("审批中");
         businessMapper.insert(request);
         return request;
@@ -112,11 +121,44 @@ public class HouseholdServiceImpl implements HouseholdService {
 
     @Override
     @Transactional
-    public HouseholdBusinessRequest approveBusiness(Long rid, String status, String handlerUuid, String rejectReason) {
+    public HouseholdBusinessRequest approveBusiness(Long rid, String action, String handlerUuid, String rejectReason) {
         HouseholdBusinessRequest req = businessMapper.selectById(rid);
         if (req == null)
             throw new BusinessException(ErrorCode.DATA_NOT_FOUND);
-        req.setStatus(status);
+
+        String current = req.getStatus();
+        String next;
+
+        switch (action) {
+            case "通过":
+                if ("审批中".equals(current)) {
+                    next = "已批准";           // 民警直接通过（一般事项）
+                } else if ("市局审批中".equals(current)) {
+                    next = "已批准";           // 市局最终通过
+                } else {
+                    throw new BusinessException(ErrorCode.PARAM_ERROR,
+                            "当前状态不允许审批通过: " + current);
+                }
+                break;
+            case "提交市局":
+                if (!"审批中".equals(current)) {
+                    throw new BusinessException(ErrorCode.PARAM_ERROR,
+                            "仅审批中状态可提交市局: " + current);
+                }
+                next = "市局审批中";
+                break;
+            case "驳回":
+                if ("已批准".equals(current) || "已驳回".equals(current)) {
+                    throw new BusinessException(ErrorCode.PARAM_ERROR,
+                            "当前状态不允许驳回: " + current);
+                }
+                next = "已驳回";
+                break;
+            default:
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "未知审批操作: " + action);
+        }
+
+        req.setStatus(next);
         req.setHandlerUuid(handlerUuid);
         if (rejectReason != null)
             req.setRejectReason(rejectReason);
@@ -176,10 +218,25 @@ public class HouseholdServiceImpl implements HouseholdService {
         return req;
     }
 
+    /**
+     * 迁移审批状态机:
+     *   准迁证审批中 → [民警通过] → 准迁证已批准（自动签发准迁证）
+     *   准迁证已批准 → [民警通过] → 迁移证已批准（自动签发迁移证）
+     *   迁移证已批准 → [民警通过] → 迁移审批通过
+     *   任意非终态 → [驳回] → 对应阶段驳回
+     */
+    private static final java.util.Map<String, String> MIGRATION_APPROVAL_NEXT = java.util.Map.of(
+            "准迁证审批中", "准迁证已批准",
+            "准迁证已批准", "迁移证已批准",
+            "迁移证已批准", "迁移审批通过"
+    );
+
     @Override
     @Transactional
     public HouseholdMigrationRequest submitMigration(HouseholdMigrationRequest request) {
-        request.setHandleDate(LocalDate.now());
+        if (request.getHandleDate() == null) {
+            request.setHandleDate(LocalDate.now());
+        }
         request.setStatus("准迁证审批中");
         migrationMapper.insert(request);
         return request;
@@ -187,12 +244,56 @@ public class HouseholdServiceImpl implements HouseholdService {
 
     @Override
     @Transactional
-    public HouseholdMigrationRequest approveMigration(Long rid, String status, String handlerUuid,
+    public HouseholdMigrationRequest approveMigration(Long rid, String action, String handlerUuid,
             String rejectReason) {
         HouseholdMigrationRequest req = migrationMapper.selectById(rid);
         if (req == null)
             throw new BusinessException(ErrorCode.MIGRATION_NOT_FOUND);
-        req.setStatus(status);
+
+        String current = req.getStatus();
+
+        if ("驳回".equals(action)) {
+            if (current.contains("驳回") || "迁移审批通过".equals(current)) {
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "当前状态不允许驳回: " + current);
+            }
+            // 准迁证审批中→准迁证审批驳回, 准迁证已批准/迁移证已批准→迁移审批驳回
+            if (current.startsWith("准迁证")) {
+                req.setStatus("准迁证审批驳回");
+            } else {
+                req.setStatus("迁移审批驳回");
+            }
+        } else {
+            // 通过：按状态机流转
+            String nextStatus = MIGRATION_APPROVAL_NEXT.get(current);
+            if (nextStatus == null) {
+                throw new BusinessException(ErrorCode.PARAM_ERROR,
+                        "当前状态不允许审批通过: " + current);
+            }
+            req.setStatus(nextStatus);
+
+            // 自动签发证件并回填证号
+            if ("准迁证已批准".equals(nextStatus) && req.getApprovalPermitNo() == null) {
+                ApprovalPermit approvalPermit = new ApprovalPermit();
+                approvalPermit.setUuid(req.getApplicantUuid());
+                approvalPermit.setPermitNo(PermitNumberGenerator.approvalPermit(null,
+                        LocalDate.now(), System.currentTimeMillis() % 1_000_000));
+                approvalPermit.setIssueDate(LocalDate.now());
+                approvalPermit.setStatus("有效");
+                approvalPermitMapper.insert(approvalPermit);
+                req.setApprovalPermitNo(approvalPermit.getPermitNo());
+            }
+            if ("迁移证已批准".equals(nextStatus) && req.getMigrationPermitNo() == null) {
+                MigrationPermit migrationPermit = new MigrationPermit();
+                migrationPermit.setUuid(req.getApplicantUuid());
+                migrationPermit.setPermitNo(PermitNumberGenerator.migrationPermit(null,
+                        LocalDate.now(), System.currentTimeMillis() % 1_000_000));
+                migrationPermit.setIssueDate(LocalDate.now());
+                migrationPermit.setStatus("有效");
+                migrationPermitMapper.insert(migrationPermit);
+                req.setMigrationPermitNo(migrationPermit.getPermitNo());
+            }
+        }
+
         req.setHandlerUuid(handlerUuid);
         if (rejectReason != null)
             req.setRejectReason(rejectReason);

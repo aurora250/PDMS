@@ -30,6 +30,11 @@
         </dependency>
         <dependency>
             <groupId>com.pdm</groupId>
+            <artifactId>pdm-log</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.pdm</groupId>
             <artifactId>pdm-common-mybatis</artifactId>
         </dependency>
         <dependency>

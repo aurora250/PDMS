@@ -10,6 +10,8 @@ import com.pdm.common.core.result.ErrorCode;
 import com.pdm.common.dto.LoginRequest;
 import com.pdm.common.dto.LoginResponse;
 import com.pdm.common.security.JwtTokenProvider;
+import com.pdm.log.entity.LoginLog;
+import com.pdm.log.service.LogService;
 
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -33,20 +35,28 @@ public class AuthServiceImpl implements AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final RedisTemplate<String, String> redisTemplate;
     private final PermissionGroupService permissionGroupService;
+    private final LogService logService;
 
     @Override
     @Transactional
     public LoginResponse login(LoginRequest request, String ipAddress) {
         User user = userMapper.selectByUsername(request.getUsername());
         if (user == null) {
+            recordLoginLog("unknown", ipAddress, 0, "用户名不存在: " + request.getUsername());
             throw new BusinessException(ErrorCode.USERNAME_OR_PASSWORD_ERROR);
         }
 
         // Check account status
-        checkAccountStatus(user);
+        try {
+            checkAccountStatus(user);
+        } catch (BusinessException e) {
+            recordLoginLog(user.getUserUuid(), ipAddress, 0, e.getMessage());
+            throw e;
+        }
 
         // Check lock
         if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(LocalDateTime.now())) {
+            recordLoginLog(user.getUserUuid(), ipAddress, 0, "账号已锁定");
             throw new BusinessException(ErrorCode.ACCOUNT_LOCKED);
         }
 
@@ -59,6 +69,8 @@ public class AuthServiceImpl implements AuthService {
                 user.setFailedLoginCount(0);
             }
             userMapper.updateById(user);
+            // 记录登录失败日志
+            recordLoginLog(user.getUserUuid(), ipAddress, 0, "密码错误");
             throw new BusinessException(ErrorCode.USERNAME_OR_PASSWORD_ERROR);
         }
 
@@ -76,11 +88,15 @@ public class AuthServiceImpl implements AuthService {
         user.setToken(accessToken);
         userMapper.updateById(user);
 
+        // 记录登录成功日志
+        recordLoginLog(user.getUserUuid(), ipAddress, 1, null);
+
         boolean mustChangePassword = user.getMustChangePassword() != null && user.getMustChangePassword();
 
         return LoginResponse.builder().accessToken(accessToken).refreshToken(refreshToken)
                 .expiresIn(BaseConstants.JWT_EXPIRATION_MS / 1000).userUuid(user.getUserUuid())
-                .username(user.getUsername()).role(user.getUserRole()).permissions(permissions)
+                .username(user.getUsername()).role(user.getUserRole())
+                .residentUuid(user.getResidentUuid()).permissions(permissions)
                 .mustChangePassword(mustChangePassword).build();
     }
 
@@ -122,7 +138,7 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(ErrorCode.DATA_NOT_FOUND);
         }
         if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
-            throw new BusinessException(ErrorCode.USERNAME_OR_PASSWORD_ERROR);
+            throw new BusinessException(ErrorCode.OLD_PASSWORD_ERROR);
         }
         validatePasswordStrength(newPassword);
         user.setPassword(passwordEncoder.encode(newPassword));
@@ -132,9 +148,16 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void registerUser(String userUuid, String username, String rawPassword, String phone, String residentUuid) {
+    public void registerUser(String userUuid, String username, String rawPassword, String phone, String residentUuid,
+            String userRole, String registerMaterials) {
         if (userMapper.countByUsername(username) > 0) {
             throw new BusinessException(ErrorCode.DATA_DUPLICATE, "用户名已存在");
+        }
+        if (phone != null && !phone.isEmpty() && userMapper.countByPhone(phone) > 0) {
+            throw new BusinessException(ErrorCode.DATA_DUPLICATE, "手机号已被注册");
+        }
+        if (residentUuid == null || residentUuid.isBlank()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "必须关联居民完成实名认证");
         }
         validatePasswordStrength(rawPassword);
 
@@ -143,12 +166,12 @@ public class AuthServiceImpl implements AuthService {
         user.setUsername(username);
         user.setPassword(passwordEncoder.encode(rawPassword));
         user.setPhone(phone);
-        user.setResidentUuid(residentUuid != null ? residentUuid : user.getUserUuid());
-        user.setUserRole("普通用户");
+        user.setResidentUuid(residentUuid);
+        user.setUserRole(userRole != null ? userRole : "普通用户");
         user.setAccountStatus("审批中");
         user.setMustChangePassword(true);
         user.setFailedLoginCount(0);
-        user.setRegisterMaterials("[]");
+        user.setRegisterMaterials(registerMaterials != null ? registerMaterials : "[]");
         userMapper.insert(user);
     }
 
@@ -158,6 +181,20 @@ public class AuthServiceImpl implements AuthService {
             case "注销" -> throw new BusinessException(ErrorCode.ACCOUNT_CANCELLED);
             case "审批中" -> throw new BusinessException(ErrorCode.ACCOUNT_PENDING_APPROVAL);
             case "锁定" -> throw new BusinessException(ErrorCode.ACCOUNT_LOCKED);
+        }
+    }
+
+    private void recordLoginLog(String userUuid, String ipAddress, int isSuccess, String failReason) {
+        try {
+            LoginLog loginLog = new LoginLog();
+            loginLog.setUserUuid(userUuid);
+            loginLog.setLoginTime(LocalDateTime.now());
+            loginLog.setIpAddress(ipAddress);
+            loginLog.setIsSuccess(isSuccess);
+            loginLog.setFailReason(failReason);
+            logService.recordLoginLog(loginLog);
+        } catch (Exception e) {
+            log.warn("Failed to record login log: {}", e.getMessage());
         }
     }
 

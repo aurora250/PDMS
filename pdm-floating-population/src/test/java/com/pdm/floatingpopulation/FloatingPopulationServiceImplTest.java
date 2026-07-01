@@ -107,7 +107,8 @@ class FloatingPopulationServiceImplTest {
 
             assertNotNull(result);
             assertEquals(Long.valueOf(101L), result.getRid());
-            verify(fpRegisterRecordMapper).updateById(updates);
+            assertEquals("信息变更", result.getRejectReason());
+            verify(fpRegisterRecordMapper).updateById(testFpRecord);
         }
 
         @Test
@@ -177,7 +178,7 @@ class FloatingPopulationServiceImplTest {
         @Test
         @DisplayName("审批通过居住证")
         void shouldApprovePermit() {
-            testPermit.setStatus("审批中");
+            testPermit.setStatus("申领");
             when(residentPermitMapper.selectById(1L)).thenReturn(testPermit);
 
             ResidentPermit result = fpService.approvePermit(1L, "admin-uuid");
@@ -205,6 +206,7 @@ class FloatingPopulationServiceImplTest {
         @Test
         @DisplayName("正常签发居住证并更新登记记录")
         void shouldIssuePermitAndUpdateFpRecord() {
+            testPermit.setStatus("已批准");
             when(residentPermitMapper.selectById(1L)).thenReturn(testPermit);
             when(fpRegisterRecordMapper.selectOne(any())).thenReturn(testFpRecord);
 
@@ -218,6 +220,7 @@ class FloatingPopulationServiceImplTest {
         @Test
         @DisplayName("签发时无关联登记记录仍正常签发")
         void shouldIssuePermitEvenWithoutFpRecord() {
+            testPermit.setStatus("已批准");
             when(residentPermitMapper.selectById(1L)).thenReturn(testPermit);
             when(fpRegisterRecordMapper.selectOne(any())).thenReturn(null);
 

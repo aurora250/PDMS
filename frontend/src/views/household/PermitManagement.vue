@@ -22,6 +22,12 @@
         <el-form-item><el-button @click="load">搜索</el-button></el-form-item>
       </el-form>
       <el-table :data="list" v-loading="loading" stripe border>
+        <el-table-column label="持有人" width="200" show-overflow-tooltip>
+          <template #default="{ row }">
+            <el-button v-if="row.uuid" text size="small" type="primary" @click="$router.push(`/resident/${row.uuid}`)">{{ row.uuid }}</el-button>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="permitNo" label="证件编号" width="200" />
         <el-table-column prop="issueDate" label="签发日期" width="120" />
         <el-table-column v-if="tab === 'approval'" prop="expiryDate" label="有效期至" width="120" />
@@ -45,6 +51,9 @@
     <!-- 签发对话框 -->
     <el-dialog v-model="dialogVisible" :title="tab === 'approval' ? '签发准迁证' : '签发迁移证'" width="500px" @close="resetForm">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+        <el-form-item label="持有人UUID" prop="uuid">
+          <ResidentPicker v-model="form.uuid" placeholder="搜索姓名或身份证号选择持有人" />
+        </el-form-item>
         <el-form-item label="证件编号">
           <el-input v-model="form.permitNo" :placeholder="tab === 'approval' ? '如: AP-2026-00001' : '如: MP-2026-00001'" />
         </el-form-item>
@@ -76,6 +85,7 @@ import { householdApi } from '@/api/household'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
 import ApprovalBadge from '@/components/ApprovalBadge.vue'
+import ResidentPicker from '@/components/ResidentPicker.vue'
 
 const { hasPermission } = usePermission()
 const tab = ref('approval')
@@ -89,7 +99,7 @@ const dialogVisible = ref(false)
 const issuing = ref(false)
 const formRef = ref()
 const form = reactive({
-  permitNo: '', issueDate: new Date().toISOString().slice(0, 10),
+  uuid: '', permitNo: '', issueDate: new Date().toISOString().slice(0, 10),
   expiryDate: '', issuingAuthority: '', outgoingPoliceStation: '',
 })
 
@@ -132,6 +142,7 @@ async function handleVoid(row: any) {
 }
 
 function openIssue() {
+  form.uuid = ''
   form.permitNo = ''
   form.issueDate = new Date().toISOString().slice(0, 10)
   form.expiryDate = ''
@@ -149,12 +160,14 @@ async function handleIssue() {
   try {
     if (tab.value === 'approval') {
       await householdApi.createApprovalPermit({
+        uuid: form.uuid,
         permitNo: form.permitNo, issueDate: form.issueDate,
         expiryDate: form.expiryDate, issuingAuthority: form.issuingAuthority,
         status: '有效',
       })
     } else {
       await householdApi.createMigrationPermit({
+        uuid: form.uuid,
         permitNo: form.permitNo, issueDate: form.issueDate,
         outgoingPoliceStation: form.outgoingPoliceStation, status: '有效',
       })

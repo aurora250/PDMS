@@ -160,7 +160,7 @@ class HouseholdServiceImplTest {
             HouseholdBusinessRequest result = householdService.approveBusiness(301L, "通过", "admin-uuid", null);
 
             assertNotNull(result);
-            assertEquals("通过", result.getStatus());
+            assertEquals("已批准", result.getStatus());
             verify(businessMapper).updateById(testBusiness);
         }
 
@@ -172,7 +172,7 @@ class HouseholdServiceImplTest {
             HouseholdBusinessRequest result = householdService.approveBusiness(301L, "驳回", "admin-uuid", "材料不齐全");
 
             assertNotNull(result);
-            assertEquals("驳回", result.getStatus());
+            assertEquals("已驳回", result.getStatus());
             assertEquals("材料不齐全", result.getRejectReason());
             verify(businessMapper).updateById(testBusiness);
         }
@@ -214,7 +214,7 @@ class HouseholdServiceImplTest {
             HouseholdMigrationRequest result = householdService.approveMigration(401L, "通过", "admin-uuid", null);
 
             assertNotNull(result);
-            assertEquals("通过", result.getStatus());
+            assertEquals("准迁证已批准", result.getStatus());
             verify(migrationMapper).updateById(testMigration);
         }
 
@@ -226,7 +226,7 @@ class HouseholdServiceImplTest {
             HouseholdMigrationRequest result = householdService.approveMigration(401L, "驳回", "admin-uuid", "不符合迁移条件");
 
             assertNotNull(result);
-            assertEquals("驳回", result.getStatus());
+            assertEquals("准迁证审批驳回", result.getStatus());
             assertEquals("不符合迁移条件", result.getRejectReason());
         }
 

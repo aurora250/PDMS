@@ -8,8 +8,9 @@
       <el-form inline>
         <el-form-item label="状态">
           <el-select v-model="statusFilter" placeholder="全部" clearable @change="load">
-            <el-option label="请求" value="请求" /><el-option label="一审" value="一审" />
-            <el-option label="二审" value="二审" /><el-option label="通过" value="通过" />
+            <el-option label="请求" value="请求" />
+            <el-option label="市局审批中" value="市局审批中" />
+            <el-option label="通过" value="通过" />
             <el-option label="驳回" value="驳回" />
           </el-select>
         </el-form-item>
@@ -17,19 +18,36 @@
       </el-form>
       <el-table :data="list" v-loading="loading" stripe border>
         <el-table-column prop="rid" label="ID" width="60" />
-        <el-table-column prop="applicantUuid" label="申请人" width="180" show-overflow-tooltip />
+        <el-table-column label="申请人" width="180" show-overflow-tooltip>
+          <template #default="{ row }">
+            <el-button v-if="row.applicantUuid" text size="small" type="primary" @click="$router.push(`/resident/${row.applicantUuid}`)">{{ row.applicantUuid }}</el-button>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="changeField" label="变更字段" width="120" />
-        <el-table-column prop="originalData" label="原值" width="150" />
-        <el-table-column prop="modifiedData" label="新值" width="150" />
+        <el-table-column label="原值" min-width="140">
+          <template #default="{ row }">
+            <span class="data-cell">{{ formatJson(row.originalData) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="新值" min-width="140">
+          <template #default="{ row }">
+            <span class="data-cell">{{ formatJson(row.modifiedData) }}</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="status" label="状态" width="80">
           <template #default="{ row }"><ApprovalBadge :status="row.status" /></template>
         </el-table-column>
         <el-table-column prop="requestTime" label="申请时间" width="120" />
-        <el-table-column label="操作" width="200">
+        <el-table-column label="操作" width="280">
           <template #default="{ row }">
+            <!-- 民警：请求中可审批/驳回/提交市局 -->
             <el-button v-if="hasPermission('resident:change-request:approve') && row.status === '请求'" text size="small" type="success" @click="approve(row, '通过')">通过</el-button>
-            <el-button v-if="hasPermission('resident:change-request:approve') && row.status === '请求'" text size="small" type="danger" @click="approve(row, '驳回')">驳回</el-button>
-            <el-button v-if="hasPermission('resident:change-request:second-approve') && row.status === '一审'" text size="small" type="success" @click="approve(row, '通过')">二审通过</el-button>
+            <el-button v-if="hasPermission('resident:change-request:approve') && row.status === '请求'" text size="small" type="warning" @click="approve(row, '提交市局')">提交市局</el-button>
+            <el-button v-if="hasPermission('resident:change-request:approve') && (row.status === '请求' || row.status === '市局审批中')" text size="small" type="danger" @click="approve(row, '驳回')">驳回</el-button>
+            <!-- 市局：市局审批中可最终审批 -->
+            <el-button v-if="hasPermission('resident:change-request:second-approve') && row.status === '市局审批中'" text size="small" type="success" @click="approve(row, '通过')">市局通过</el-button>
+            <el-button v-if="hasPermission('resident:change-request:second-approve') && row.status === '市局审批中'" text size="small" type="danger" @click="approve(row, '驳回')">市局驳回</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -84,6 +102,19 @@ import ApprovalBadge from '@/components/ApprovalBadge.vue'
 import ResidentPicker from '@/components/ResidentPicker.vue'
 
 const { hasPermission } = usePermission()
+
+/** 将JSON字符串格式化为可读的 key: value 文本 */
+function formatJson(raw: string): string {
+  if (!raw) return '-'
+  try {
+    const obj = JSON.parse(raw)
+    return Object.entries(obj)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join('；')
+  } catch {
+    return raw
+  }
+}
 const list = ref<any[]>([])
 const loading = ref(false)
 const statusFilter = ref('')
@@ -119,12 +150,14 @@ async function load() {
   finally { loading.value = false }
 }
 
-async function approve(row: any, status: string) {
+async function approve(row: any, action: string) {
   try {
-    const actionText = status === '驳回' ? '确认驳回该变更请求？' : '确认通过该变更请求？'
+    const actionText = action === '驳回' ? '确认驳回该变更请求？'
+      : action === '提交市局' ? '确认提交市局审批（特殊事项）？'
+      : '确认通过该变更请求？'
     await ElMessageBox.confirm(actionText, '确认操作', { type: 'warning' })
-    await residentApi.approveChangeRequest(row.rid, status)
-    showSuccess(status === '通过' ? '已通过' : '已驳回')
+    await residentApi.approveChangeRequest(row.rid, action)
+    showSuccess(action === '驳回' ? '已驳回' : action === '提交市局' ? '已提交市局' : '已通过')
     load()
   } catch (e: any) { if (e !== 'cancel') showError(e.message || '操作失败') }
 }
@@ -161,4 +194,5 @@ onMounted(load)
 <style scoped>
 .page-header { margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
 .page-header h3 { margin: 0; }
+.data-cell { font-size: 12px; color: #606266; word-break: break-all; }
 </style>

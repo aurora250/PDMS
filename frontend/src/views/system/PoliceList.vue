@@ -14,7 +14,12 @@
       <el-table :data="list" v-loading="loading" stripe border>
         <el-table-column prop="policeNumber" label="警号" width="140" />
         <el-table-column label="姓名" width="100">
-          <template #default="{ row }">{{ row.residentName || row.policeNumber }}</template>
+          <template #default="{ row }">
+            <el-button v-if="row.residentUuid" text size="small" type="primary" @click="$router.push(`/resident/${row.residentUuid}`)">
+              {{ row.residentName || row.policeNumber }}
+            </el-button>
+            <span v-else>{{ row.residentName || row.policeNumber }}</span>
+          </template>
         </el-table-column>
         <el-table-column prop="policeRank" label="警衔" width="80" />
         <el-table-column prop="policeStation" label="派出所" min-width="150" />
@@ -36,35 +41,38 @@
       </div>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" :title="editing ? '编辑民警' : '新增民警'" width="500px">
-      <el-form ref="policeFormRef" :model="form" :rules="policeRules" label-width="100px">
-        <el-form-item v-if="!editing" label="警号" prop="policeNumber">
+    <el-dialog v-model="dialogVisible" :title="readonly ? '民警详情' : (editing ? '编辑民警' : '新增民警')" width="500px">
+      <el-form ref="policeFormRef" :model="form" :rules="policeRules" label-width="100px" :disabled="readonly">
+        <el-form-item v-if="!editing && !readonly" label="警号" prop="policeNumber">
           <el-input v-model="form.policeNumber" placeholder="如: P11010001" maxlength="9" />
         </el-form-item>
-        <el-form-item label="居民UUID" prop="residentUuid">
-          <ResidentPicker v-model="form.residentUuid" placeholder="搜索姓名或身份证号选择关联居民" />
+        <el-form-item v-if="readonly && form.policeNumber" label="警号">
+          <el-input :model-value="form.policeNumber" disabled />
+        </el-form-item>
+        <el-form-item label="关联居民" prop="residentUuid">
+          <ResidentPicker v-model="form.residentUuid" placeholder="搜索姓名或身份证号选择关联居民" :disabled="readonly || editing" />
         </el-form-item>
         <el-form-item label="警衔" prop="policeRank">
-          <el-select v-model="form.policeRank" style="width:100%">
+          <el-select v-model="form.policeRank" style="width:100%" :disabled="readonly">
             <el-option v-for="r in ['警员','警司','警督','警监']" :key="r" :label="r" :value="r" />
           </el-select>
         </el-form-item>
         <el-form-item label="派出所" prop="policeStation">
-          <el-input v-model="form.policeStation" maxlength="100" />
+          <el-input v-model="form.policeStation" maxlength="100" :disabled="readonly" />
         </el-form-item>
         <el-form-item label="部门" prop="department">
-          <el-input v-model="form.department" placeholder="如: 治安大队" maxlength="100" />
+          <el-input v-model="form.department" placeholder="如: 治安大队" maxlength="100" :disabled="readonly" />
         </el-form-item>
         <el-form-item label="辖区" prop="areaId">
           <AreaCascader v-model="form.areaId" />
         </el-form-item>
         <el-form-item label="辖区详址" prop="jurisdiction">
-          <el-input v-model="form.jurisdiction" placeholder="详细地址，如: 某某社区" maxlength="200" />
+          <el-input v-model="form.jurisdiction" placeholder="详细地址，如: 某某社区" maxlength="200" :disabled="readonly" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSave">保存</el-button>
+        <el-button @click="dialogVisible = false">关闭</el-button>
+        <el-button v-if="!readonly" type="primary" @click="handleSave">保存</el-button>
       </template>
     </el-dialog>
   </div>
@@ -87,6 +95,7 @@ const keyword = ref('')
 const page = reactive({ current: 1, size: 20, total: 0 })
 const dialogVisible = ref(false)
 const editing = ref(false)
+const readonly = ref(false)
 let editNo = ''
 
 const form = reactive({
@@ -116,21 +125,19 @@ async function load() {
 
 function openCreate() {
   Object.assign(form, { policeNumber: '', residentUuid: '', policeRank: '警员', policeStation: '', department: '', jurisdiction: '', areaId: undefined })
-  editing.value = false; dialogVisible.value = true
+  editing.value = false; readonly.value = false; dialogVisible.value = true
 }
 
 function openEdit(row: any) {
   editNo = row.policeNumber
   Object.assign(form, row)
-  editing.value = true; dialogVisible.value = true
+  editing.value = true; readonly.value = false; dialogVisible.value = true
 }
 
 function showDetail(row: any) {
-  // Read-only detail: open edit dialog but disable all inputs
   editNo = row.policeNumber
   Object.assign(form, row)
-  editing.value = true
-  dialogVisible.value = true
+  editing.value = false; readonly.value = true; dialogVisible.value = true
 }
 
 async function handleSave() {

@@ -38,10 +38,14 @@ service.interceptors.response.use(
       }
     }
     if (error.response?.status === 403) {
-      ElMessage.error('权限不足')
+      if (!(error.config as any)?.silent) {
+        ElMessage.error('权限不足')
+      }
     }
     if (error.response?.status >= 500) {
-      ElMessage.error('服务器异常')
+      if (!(error.config as any)?.silent) {
+        ElMessage.error('服务器异常')
+      }
     }
     return Promise.reject(error)
   }
