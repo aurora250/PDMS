@@ -368,10 +368,8 @@ public class ResidentServiceImpl implements ResidentService {
     }
 
     /**
-     * 变更申请审批状态机（与户籍业务一致）:
-     *   一般事项: 请求 → [民警通过] → 通过（自动应用变更到居民数据）
-     *   特殊事项: 请求 → [民警提交市局] → 市局审批中 → [市局通过] → 通过
-     *   驳回:     请求/市局审批中 → [驳回] → 驳回
+     * 变更申请审批状态机（与户籍业务一致）: 一般事项: 请求 → [民警通过] → 通过（自动应用变更到居民数据） 特殊事项: 请求 → [民警提交市局] →
+     * 市局审批中 → [市局通过] → 通过 驳回: 请求/市局审批中 → [驳回] → 驳回
      */
     @Override
     @Transactional
@@ -385,31 +383,28 @@ public class ResidentServiceImpl implements ResidentService {
         String next;
 
         switch (action) {
-            case "通过":
+            case "通过" :
                 if ("请求".equals(current)) {
-                    next = "通过";              // 民警直接通过（一般事项）
+                    next = "通过"; // 民警直接通过（一般事项）
                 } else if ("市局审批中".equals(current)) {
-                    next = "通过";              // 市局最终通过
+                    next = "通过"; // 市局最终通过
                 } else {
-                    throw new BusinessException(ErrorCode.PARAM_ERROR,
-                            "当前状态不允许审批通过: " + current);
+                    throw new BusinessException(ErrorCode.PARAM_ERROR, "当前状态不允许审批通过: " + current);
                 }
                 break;
-            case "提交市局":
+            case "提交市局" :
                 if (!"请求".equals(current)) {
-                    throw new BusinessException(ErrorCode.PARAM_ERROR,
-                            "仅请求状态可提交市局: " + current);
+                    throw new BusinessException(ErrorCode.PARAM_ERROR, "仅请求状态可提交市局: " + current);
                 }
                 next = "市局审批中";
                 break;
-            case "驳回":
+            case "驳回" :
                 if ("通过".equals(current) || "驳回".equals(current)) {
-                    throw new BusinessException(ErrorCode.PARAM_ERROR,
-                            "当前状态不允许驳回: " + current);
+                    throw new BusinessException(ErrorCode.PARAM_ERROR, "当前状态不允许驳回: " + current);
                 }
                 next = "驳回";
                 break;
-            default:
+            default :
                 throw new BusinessException(ErrorCode.PARAM_ERROR, "未知审批操作: " + action);
         }
 

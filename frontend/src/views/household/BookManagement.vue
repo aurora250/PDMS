@@ -33,8 +33,8 @@
         <el-table-column label="操作" width="260">
           <template #default="{ row }">
             <el-button text size="small" type="primary" @click="$router.push(`/resident/${row.householderUuid}?tab=household`)">详情</el-button>
-            <el-button text size="small" @click="handleReissue(row)">补办</el-button>
-            <el-button text size="small" @click="handleRenew(row)">换发</el-button>
+            <el-button v-if="hasPermission('household:write')" text size="small" @click="handleReissue(row)">补办</el-button>
+            <el-button v-if="hasPermission('household:write')" text size="small" @click="handleRenew(row)">换发</el-button>
           </template>
         </el-table-column>
       </el-table>

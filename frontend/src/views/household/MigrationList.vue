@@ -2,7 +2,7 @@
   <div>
     <div class="page-header">
       <h3>迁移管理</h3>
-      <el-button v-if="hasPermission('household:write')" type="primary" @click="openCreate">新增迁移</el-button>
+      <el-button v-if="hasPermission('household:approve')" type="primary" @click="openCreate">新增迁移</el-button>
     </div>
     <el-card>
       <el-form inline>

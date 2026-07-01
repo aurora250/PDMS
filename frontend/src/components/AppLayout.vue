@@ -77,14 +77,15 @@ const auth = useAuthStore()
 const app = useAppStore()
 const route = useRoute()
 const router = useRouter()
-const { hasPermission } = usePermission()
+const { hasPermission, hasAnyPermission } = usePermission()
 
 interface MenuItem {
   path: string
   title: string
   icon: string
   perm?: string
-  children?: { path: string; title: string; perm?: string }[]
+  anyPerm?: string[]
+  children?: { path: string; title: string; perm?: string; anyPerm?: string[] }[]
 }
 
 const MENU_ITEMS: MenuItem[] = [
@@ -93,7 +94,7 @@ const MENU_ITEMS: MenuItem[] = [
     path: '/resident', title: '常住人口', icon: 'User', perm: 'resident:read',
     children: [
       { path: '/resident', title: '人口列表' },
-      { path: '/resident/change-request', title: '变更审批' },
+      { path: '/resident/change-request', title: '变更审批', anyPerm: ['resident:change-request:approve', 'resident:change-request:second-approve'] },
     ],
   },
   {
@@ -102,31 +103,31 @@ const MENU_ITEMS: MenuItem[] = [
       { path: '/household/book', title: '户口簿管理' },
       { path: '/household/business', title: '户籍业务' },
       { path: '/household/migration', title: '迁移管理' },
-      { path: '/household/permit', title: '证件管理' },
+      { path: '/household/permit', title: '证件管理', anyPerm: ['household:approve', 'household:second-approve'] },
     ],
   },
   {
     path: '/floating', title: '流动人口', icon: 'Ship', perm: 'fp:read',
     children: [
-      { path: '/floating/register', title: '流动登记' },
+      { path: '/floating/register', title: '流动登记', perm: 'fp:write' },
       { path: '/floating/residence', title: '居住地' },
-      { path: '/floating/permit', title: '居住证' },
-      { path: '/floating/statistics', title: '统计图表' },
+      { path: '/floating/permit', title: '居住证', perm: 'fp:permit:approve' },
+      { path: '/floating/statistics', title: '统计图表', perm: 'fp:write' },
     ],
   },
   {
     path: '/keyperson', title: '重点人员', icon: 'Warning', perm: 'keyperson:read',
     children: [
       { path: '/keyperson/list', title: '人员列表' },
-      { path: '/keyperson/visit', title: '走访计划' },
-      { path: '/keyperson/petition', title: '信访记录' },
+      { path: '/keyperson/visit', title: '走访计划', perm: 'keyperson:visit-plan:write' },
+      { path: '/keyperson/petition', title: '信访记录', perm: 'keyperson:petition:write' },
     ],
   },
   {
     path: '/missing', title: '失踪人口', icon: 'Search', perm: 'missing:read',
     children: [
       { path: '/missing/list', title: '失踪列表' },
-      { path: '/missing/statistics', title: '统计' },
+      { path: '/missing/statistics', title: '统计', perm: 'missing:write' },
     ],
   },
   { path: '/alert', title: '预警中心', icon: 'Bell', perm: 'alert:read' },
@@ -137,7 +138,7 @@ const MENU_ITEMS: MenuItem[] = [
       { path: '/log/login', title: '登录日志' },
     ],
   },
-  { path: '/system', title: '系统管理', icon: 'Setting', perm: 'auth:user:read',
+  { path: '/system', title: '系统管理', icon: 'Setting',
     children: [
       { path: '/system/users', title: '用户管理', perm: 'auth:user:read' },
       { path: '/system/police', title: '民警管理', perm: 'auth:police:read' },
@@ -149,6 +150,7 @@ const MENU_ITEMS: MenuItem[] = [
 const visibleMenus = computed(() => {
   return MENU_ITEMS
     .filter(item => {
+      if (item.anyPerm) return hasAnyPermission(...item.anyPerm)
       if (!item.perm) return true
       return hasPermission(item.perm)
     })
@@ -157,6 +159,7 @@ const visibleMenus = computed(() => {
         return {
           ...item,
           children: item.children.filter(child => {
+            if (child.anyPerm) return hasAnyPermission(...child.anyPerm)
             if (!child.perm) return true
             return hasPermission(child.perm)
           }),

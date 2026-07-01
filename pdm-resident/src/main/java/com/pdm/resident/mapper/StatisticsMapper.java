@@ -49,26 +49,19 @@ public interface StatisticsMapper {
     List<Map<String, Object>> getCityPopulation(@Param("provinceName") String provinceName);
 
     /**
-     * 人口流向数据（户籍迁移省份间流动统计，不限制 business_type）
-     * 直接按解析后的省份名判断是否跨省，排除省内自环
+     * 人口流向数据（户籍迁移省份间流动统计，不限制 business_type） 直接按解析后的省份名判断是否跨省，排除省内自环
      */
-    @Select("SELECT from_name, to_name, SUM(value) AS value FROM ("
-            + " SELECT "
+    @Select("SELECT from_name, to_name, SUM(value) AS value FROM (" + " SELECT "
             + "  COALESCE(p_from.area_name, c_from.area_name) AS from_name, "
             + "  COALESCE(p_to.area_name, c_to.area_name) AS to_name, COUNT(*) AS value "
-            + "FROM household_migration_request m "
-            + "LEFT JOIN area a_from ON m.outgoing_area_id = a_from.area_id "
+            + "FROM household_migration_request m " + "LEFT JOIN area a_from ON m.outgoing_area_id = a_from.area_id "
             + "LEFT JOIN area c_from ON a_from.parent_id = c_from.area_code::BIGINT "
             + "LEFT JOIN area p_from ON c_from.parent_id = p_from.area_code::BIGINT "
             + "LEFT JOIN area a_to ON m.incoming_area_id = a_to.area_id "
             + "LEFT JOIN area c_to ON a_to.parent_id = c_to.area_code::BIGINT "
             + "LEFT JOIN area p_to ON c_to.parent_id = p_to.area_code::BIGINT "
             + "WHERE m.is_deleted = 0 AND m.outgoing_area_id IS NOT NULL AND m.incoming_area_id IS NOT NULL "
-            + "GROUP BY 1,2 "
-            + ") sub "
-            + "WHERE from_name IS NOT NULL AND to_name IS NOT NULL "
-            + "  AND from_name != to_name "
-            + "GROUP BY from_name, to_name "
-            + "ORDER BY value DESC LIMIT 100")
+            + "GROUP BY 1,2 " + ") sub " + "WHERE from_name IS NOT NULL AND to_name IS NOT NULL "
+            + "  AND from_name != to_name " + "GROUP BY from_name, to_name " + "ORDER BY value DESC LIMIT 100")
     List<Map<String, Object>> getMigrationFlows();
 }

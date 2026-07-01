@@ -32,8 +32,7 @@ public class UserServiceImpl implements UserService {
     public Page<User> listUsers(int page, int size, String keyword, String role, String status, String callerRole) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(keyword)) {
-            wrapper.and(w -> w.like(User::getUsername, keyword)
-                    .or().eq(User::getUserUuid, keyword));
+            wrapper.and(w -> w.like(User::getUsername, keyword).or().eq(User::getUserUuid, keyword));
         }
         // 用户管理员只能看到其管辖范围内的角色
         if ("用户管理员".equals(callerRole)) {

@@ -6,12 +6,12 @@ import com.pdm.common.dto.LoginRequest;
 import com.pdm.common.dto.LoginResponse;
 import com.pdm.common.security.UserContextHolder;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 import java.util.UUID;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -50,8 +50,7 @@ public class AuthController {
     }
 
     /**
-     * 公众自助注册（无需登录）。群众/采集员/街道办通过实名认证注册账号，
-     * 非群众角色需附加材料，注册后状态为"审批中"，由管理员审核后生效。
+     * 公众自助注册（无需登录）。群众/采集员/街道办通过实名认证注册账号， 非群众角色需附加材料，注册后状态为"审批中"，由管理员审核后生效。
      */
     @PostMapping("/register")
     public Result<String> register(@RequestBody Map<String, Object> body) {

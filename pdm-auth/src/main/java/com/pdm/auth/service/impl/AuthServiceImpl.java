@@ -95,9 +95,8 @@ public class AuthServiceImpl implements AuthService {
 
         return LoginResponse.builder().accessToken(accessToken).refreshToken(refreshToken)
                 .expiresIn(BaseConstants.JWT_EXPIRATION_MS / 1000).userUuid(user.getUserUuid())
-                .username(user.getUsername()).role(user.getUserRole())
-                .residentUuid(user.getResidentUuid()).permissions(permissions)
-                .mustChangePassword(mustChangePassword).build();
+                .username(user.getUsername()).role(user.getUserRole()).residentUuid(user.getResidentUuid())
+                .permissions(permissions).mustChangePassword(mustChangePassword).build();
     }
 
     @Override

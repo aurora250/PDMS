@@ -101,12 +101,8 @@ public class HouseholdServiceImpl implements HouseholdService {
     }
 
     /**
-     * 审批流: 采集员上报 → 民警审核 → 市局（仅特殊事项）
-     *         街道办只附加材料，不参与审批
-     * 状态机:
-     *   一般事项: 审批中 → [民警通过] → 已批准
-     *   特殊事项: 审批中 → [民警提交市局] → 市局审批中 → [市局通过] → 已批准
-     *   驳回:     审批中/市局审批中 → [驳回] → 已驳回
+     * 审批流: 采集员上报 → 民警审核 → 市局（仅特殊事项） 街道办只附加材料，不参与审批 状态机: 一般事项: 审批中 → [民警通过] → 已批准
+     * 特殊事项: 审批中 → [民警提交市局] → 市局审批中 → [市局通过] → 已批准 驳回: 审批中/市局审批中 → [驳回] → 已驳回
      */
     @Override
     @Transactional
@@ -130,31 +126,28 @@ public class HouseholdServiceImpl implements HouseholdService {
         String next;
 
         switch (action) {
-            case "通过":
+            case "通过" :
                 if ("审批中".equals(current)) {
-                    next = "已批准";           // 民警直接通过（一般事项）
+                    next = "已批准"; // 民警直接通过（一般事项）
                 } else if ("市局审批中".equals(current)) {
-                    next = "已批准";           // 市局最终通过
+                    next = "已批准"; // 市局最终通过
                 } else {
-                    throw new BusinessException(ErrorCode.PARAM_ERROR,
-                            "当前状态不允许审批通过: " + current);
+                    throw new BusinessException(ErrorCode.PARAM_ERROR, "当前状态不允许审批通过: " + current);
                 }
                 break;
-            case "提交市局":
+            case "提交市局" :
                 if (!"审批中".equals(current)) {
-                    throw new BusinessException(ErrorCode.PARAM_ERROR,
-                            "仅审批中状态可提交市局: " + current);
+                    throw new BusinessException(ErrorCode.PARAM_ERROR, "仅审批中状态可提交市局: " + current);
                 }
                 next = "市局审批中";
                 break;
-            case "驳回":
+            case "驳回" :
                 if ("已批准".equals(current) || "已驳回".equals(current)) {
-                    throw new BusinessException(ErrorCode.PARAM_ERROR,
-                            "当前状态不允许驳回: " + current);
+                    throw new BusinessException(ErrorCode.PARAM_ERROR, "当前状态不允许驳回: " + current);
                 }
                 next = "已驳回";
                 break;
-            default:
+            default :
                 throw new BusinessException(ErrorCode.PARAM_ERROR, "未知审批操作: " + action);
         }
 
@@ -219,17 +212,11 @@ public class HouseholdServiceImpl implements HouseholdService {
     }
 
     /**
-     * 迁移审批状态机:
-     *   准迁证审批中 → [民警通过] → 准迁证已批准（自动签发准迁证）
-     *   准迁证已批准 → [民警通过] → 迁移证已批准（自动签发迁移证）
-     *   迁移证已批准 → [民警通过] → 迁移审批通过
-     *   任意非终态 → [驳回] → 对应阶段驳回
+     * 迁移审批状态机: 准迁证审批中 → [民警通过] → 准迁证已批准（自动签发准迁证） 准迁证已批准 → [民警通过] → 迁移证已批准（自动签发迁移证）
+     * 迁移证已批准 → [民警通过] → 迁移审批通过 任意非终态 → [驳回] → 对应阶段驳回
      */
-    private static final java.util.Map<String, String> MIGRATION_APPROVAL_NEXT = java.util.Map.of(
-            "准迁证审批中", "准迁证已批准",
-            "准迁证已批准", "迁移证已批准",
-            "迁移证已批准", "迁移审批通过"
-    );
+    private static final java.util.Map<String, String> MIGRATION_APPROVAL_NEXT = java.util.Map.of("准迁证审批中", "准迁证已批准",
+            "准迁证已批准", "迁移证已批准", "迁移证已批准", "迁移审批通过");
 
     @Override
     @Transactional
@@ -266,8 +253,7 @@ public class HouseholdServiceImpl implements HouseholdService {
             // 通过：按状态机流转
             String nextStatus = MIGRATION_APPROVAL_NEXT.get(current);
             if (nextStatus == null) {
-                throw new BusinessException(ErrorCode.PARAM_ERROR,
-                        "当前状态不允许审批通过: " + current);
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "当前状态不允许审批通过: " + current);
             }
             req.setStatus(nextStatus);
 
@@ -275,8 +261,8 @@ public class HouseholdServiceImpl implements HouseholdService {
             if ("准迁证已批准".equals(nextStatus) && req.getApprovalPermitNo() == null) {
                 ApprovalPermit approvalPermit = new ApprovalPermit();
                 approvalPermit.setUuid(req.getApplicantUuid());
-                approvalPermit.setPermitNo(PermitNumberGenerator.approvalPermit(null,
-                        LocalDate.now(), System.currentTimeMillis() % 1_000_000));
+                approvalPermit.setPermitNo(PermitNumberGenerator.approvalPermit(null, LocalDate.now(),
+                        System.currentTimeMillis() % 1_000_000));
                 approvalPermit.setIssueDate(LocalDate.now());
                 approvalPermit.setStatus("有效");
                 approvalPermitMapper.insert(approvalPermit);
@@ -285,8 +271,8 @@ public class HouseholdServiceImpl implements HouseholdService {
             if ("迁移证已批准".equals(nextStatus) && req.getMigrationPermitNo() == null) {
                 MigrationPermit migrationPermit = new MigrationPermit();
                 migrationPermit.setUuid(req.getApplicantUuid());
-                migrationPermit.setPermitNo(PermitNumberGenerator.migrationPermit(null,
-                        LocalDate.now(), System.currentTimeMillis() % 1_000_000));
+                migrationPermit.setPermitNo(PermitNumberGenerator.migrationPermit(null, LocalDate.now(),
+                        System.currentTimeMillis() % 1_000_000));
                 migrationPermit.setIssueDate(LocalDate.now());
                 migrationPermit.setStatus("有效");
                 migrationPermitMapper.insert(migrationPermit);

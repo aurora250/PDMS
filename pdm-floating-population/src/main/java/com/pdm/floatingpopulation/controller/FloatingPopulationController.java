@@ -37,8 +37,8 @@ public class FloatingPopulationController {
             @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int size) {
         LambdaQueryWrapper<FpRegisterRecord> w = new LambdaQueryWrapper<>();
         if (keyword != null && !keyword.isEmpty())
-            w.and(wr -> wr.like(FpRegisterRecord::getUuid, keyword)
-                    .or().like(FpRegisterRecord::getResidencePermitNo, keyword));
+            w.and(wr -> wr.like(FpRegisterRecord::getUuid, keyword).or().like(FpRegisterRecord::getResidencePermitNo,
+                    keyword));
         w.orderByDesc(FpRegisterRecord::getCreateTime);
         Page<FpRegisterRecord> r = fpRegisterMapper.selectPage(Page.of(page, size), w);
         return Result.success(PageResult.of(r.getRecords(), r.getTotal(), page, size));
@@ -103,9 +103,9 @@ public class FloatingPopulationController {
             @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int size) {
         LambdaQueryWrapper<ResidentRegistration> w = new LambdaQueryWrapper<>();
         if (keyword != null && !keyword.isEmpty())
-            w.and(wr -> wr.like(ResidentRegistration::getUuid, keyword)
-                    .or().like(ResidentRegistration::getCurrentAddress, keyword)
-                    .or().like(ResidentRegistration::getOriginalAddress, keyword));
+            w.and(wr -> wr.like(ResidentRegistration::getUuid, keyword).or()
+                    .like(ResidentRegistration::getCurrentAddress, keyword).or()
+                    .like(ResidentRegistration::getOriginalAddress, keyword));
         w.orderByDesc(ResidentRegistration::getCreateTime);
         Page<ResidentRegistration> r = residenceMapper.selectPage(Page.of(page, size), w);
         return Result.success(PageResult.of(r.getRecords(), r.getTotal(), page, size));
