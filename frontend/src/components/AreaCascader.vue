@@ -75,6 +75,9 @@ function buildTree(flatList: any[]): AreaNode[] {
     if (children && children.length > 0) {
       node.children = children
       node.leaf = false
+    } else if (!node.leaf) {
+      // 没有子节点的非区县级节点也标记为叶子，避免显示"no data"
+      node.leaf = true
     }
   }
 
