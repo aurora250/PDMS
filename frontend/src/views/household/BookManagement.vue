@@ -15,6 +15,11 @@
             <el-option label="无效" value="无效" /><el-option label="审批中" value="审批中" />
           </el-select>
         </el-form-item>
+        <el-form-item label="成立日期">
+          <el-date-picker v-model="dateRange" type="daterange" range-separator="至"
+            start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD"
+            @change="load" style="width:260px" />
+        </el-form-item>
         <el-form-item><el-button type="primary" @click="load">搜索</el-button></el-form-item>
       </el-form>
       <el-table :data="list" v-loading="loading" stripe border>
@@ -25,8 +30,9 @@
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }"><ApprovalBadge :status="row.status" /></template>
         </el-table-column>
-        <el-table-column label="操作" width="200">
+        <el-table-column label="操作" width="260">
           <template #default="{ row }">
+            <el-button text size="small" type="primary" @click="$router.push(`/resident/${row.householderUuid}?tab=household`)">详情</el-button>
             <el-button text size="small" @click="handleReissue(row)">补办</el-button>
             <el-button text size="small" @click="handleRenew(row)">换发</el-button>
           </template>
@@ -86,6 +92,7 @@ const list = ref<any[]>([])
 const loading = ref(false)
 const kw = ref('')
 const bookStatus = ref('')
+const dateRange = ref<string[]>([])
 const page = reactive({ current: 1, size: 20, total: 0 })
 
 const showApply = ref(false)
@@ -116,7 +123,7 @@ const applyRules = {
 async function load() {
   loading.value = true
   try {
-    const res = await householdApi.searchBook({ keyword: kw.value || undefined, status: bookStatus.value || undefined, page: page.current, size: page.size })
+    const res = await householdApi.searchBook({ keyword: kw.value || undefined, status: bookStatus.value || undefined, startDate: dateRange.value?.[0] || undefined, endDate: dateRange.value?.[1] || undefined, page: page.current, size: page.size })
     list.value = Array.isArray(res) ? res : (res.records || [])
     page.total = res.total || 0
   } catch { /* ignore */ }

@@ -13,5 +13,6 @@ public interface AuthService {
 
     void changePassword(String userUuid, String oldPassword, String newPassword);
 
-    void registerUser(String userUuid, String username, String rawPassword, String phone, String residentUuid);
+    void registerUser(String userUuid, String username, String rawPassword, String phone, String residentUuid,
+            String userRole, String registerMaterials);
 }

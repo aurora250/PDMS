@@ -11,6 +11,12 @@ const router = createRouter({
       meta: { public: true },
     },
     {
+      path: '/register',
+      name: 'Register',
+      component: () => import('@/views/login/RegisterPage.vue'),
+      meta: { public: true },
+    },
+    {
       path: '/portal',
       component: () => import('@/views/portal/PortalLayout.vue'),
       children: [

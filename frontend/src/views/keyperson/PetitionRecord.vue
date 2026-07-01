@@ -16,6 +16,11 @@
         <el-table-column prop="evaluation" label="评估" width="80" />
         <el-table-column prop="remark" label="备注" min-width="200" />
         <el-table-column prop="handlerPoliceNo" label="处理民警" width="140" />
+        <el-table-column label="操作" width="100">
+          <template #default="{ row }">
+            <el-button text size="small" @click="$router.push(`/keyperson/visit?uuid=${row.keyPersonUuid}`)">走访计划</el-button>
+          </template>
+        </el-table-column>
       </el-table>
       <div style="margin-top:16px;text-align:right">
         <el-pagination v-model:current-page="page.current" v-model:page-size="page.size" :total="page.total"
@@ -36,7 +41,11 @@
           <el-input v-model="form.address" placeholder="如: 区政府门口" />
         </el-form-item>
         <el-form-item label="处理民警" prop="handlerPoliceNo">
-          <el-input v-model="form.handlerPoliceNo" placeholder="民警编号" />
+          <el-select v-model="form.handlerPoliceNo" placeholder="搜索民警姓名或警号选择" filterable remote
+            :remote-method="searchPolice" :loading="policeSearching" clearable style="width:100%"
+            @focus="searchPolice('')">
+            <el-option v-for="p in policeOptions" :key="p.policeNumber" :label="`${p.residentName || p.policeNumber} (${p.policeNumber})`" :value="p.policeNumber" />
+          </el-select>
         </el-form-item>
         <el-form-item label="评估" prop="evaluation">
           <el-select v-model="form.evaluation" style="width:100%">
@@ -58,15 +67,30 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { keypersonApi } from '@/api/keyperson'
+import { policeApi } from '@/api/auth'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
 import { uuidRule, policeNoRule } from '@/utils/validators'
 
+const route = useRoute()
 const { hasPermission } = usePermission()
 const list = ref<any[]>([])
 const loading = ref(false)
 const page = reactive({ current: 1, size: 20, total: 0 })
+
+// 民警搜索
+const policeOptions = ref<any[]>([])
+const policeSearching = ref(false)
+async function searchPolice(query: string) {
+  policeSearching.value = true
+  try {
+    const res = await policeApi.list({ keyword: query || undefined, page: 1, size: 50 })
+    policeOptions.value = (res.records || []).map((p: any) => ({ ...p, label: `${p.residentName || p.policeNumber} (${p.policeNumber})`, value: p.policeNumber }))
+  } catch { policeOptions.value = [] }
+  finally { policeSearching.value = false }
+}
 
 const dialogVisible = ref(false)
 const submitting = ref(false)
@@ -86,7 +110,7 @@ const rules = {
 async function load() {
   loading.value = true
   try {
-    const res = await keypersonApi.listPetition({ page: page.current, size: page.size })
+    const res = await keypersonApi.listPetition({ keyPersonUuid: (route.query.uuid as string) || undefined, page: page.current, size: page.size })
     list.value = Array.isArray(res) ? res : (res.records || [])
     page.total = res.total || 0
   } catch { /* ignore */ }

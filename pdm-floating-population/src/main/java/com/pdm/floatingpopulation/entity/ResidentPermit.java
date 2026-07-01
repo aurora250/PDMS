@@ -29,4 +29,10 @@ public class ResidentPermit extends BaseEntity {
 
     @TableField("status")
     private String status;
+
+    @TableField("reviewer_uuid")
+    private String reviewerUuid;
+
+    @TableField("issuer_uuid")
+    private String issuerUuid;
 }

@@ -730,15 +730,64 @@ BEGIN
         FOR i IN 1..15000 LOOP
             r_uuid := pool[i];
             r_gender := genders[i];
-            father_uuid := CASE WHEN random() < 0.85 THEN male_pool[floor(random()*array_length(male_pool,1))::INT+1] ELSE NULL END;
-            mother_uuid := CASE WHEN random() < 0.90 THEN female_pool[floor(random()*array_length(female_pool,1))::INT+1] ELSE NULL END;
-            spouse_uuid := CASE WHEN random() < 0.55 THEN
-                CASE WHEN r_gender = '男' THEN female_pool[floor(random()*array_length(female_pool,1))::INT+1]
-                     ELSE male_pool[floor(random()*array_length(male_pool,1))::INT+1] END
-                ELSE NULL END;
+
+            -- 父亲（排除自身引用）
+            father_uuid := NULL;
+            IF random() < 0.85 THEN
+                LOOP
+                    father_uuid := male_pool[floor(random()*array_length(male_pool,1))::INT+1];
+                    EXIT WHEN father_uuid != r_uuid;
+                END LOOP;
+            END IF;
+
+            -- 母亲（排除自身引用）
+            mother_uuid := NULL;
+            IF random() < 0.90 THEN
+                LOOP
+                    mother_uuid := female_pool[floor(random()*array_length(female_pool,1))::INT+1];
+                    EXIT WHEN mother_uuid != r_uuid;
+                END LOOP;
+            END IF;
+
+            -- 配偶（异性池已排除自身引用风险，但仍做保护）
+            spouse_uuid := NULL;
+            IF random() < 0.55 THEN
+                IF r_gender = '男' THEN
+                    LOOP
+                        spouse_uuid := female_pool[floor(random()*array_length(female_pool,1))::INT+1];
+                        EXIT WHEN spouse_uuid != r_uuid;
+                    END LOOP;
+                ELSE
+                    LOOP
+                        spouse_uuid := male_pool[floor(random()*array_length(male_pool,1))::INT+1];
+                        EXIT WHEN spouse_uuid != r_uuid;
+                    END LOOP;
+                END IF;
+            END IF;
+
             INSERT INTO resident_relation (relation_person_uuid, father_uuid, mother_uuid, spouse_uuid, is_deleted)
             VALUES (r_uuid, father_uuid, mother_uuid, spouse_uuid, 0);
         END LOOP;
+
+        -- 配偶互逆修正: 确保 A→S 则 S→A
+        -- Step 1: 更新已有记录的配偶
+        UPDATE resident_relation target
+        SET spouse_uuid = src.relation_person_uuid
+        FROM resident_relation src
+        WHERE target.relation_person_uuid = src.spouse_uuid
+          AND target.spouse_uuid IS NULL;
+
+        -- Step 2: 为没有关系记录的配偶插入记录（DISTINCT ON 防多人同配偶产生的重复键）
+        INSERT INTO resident_relation (relation_person_uuid, father_uuid, mother_uuid, spouse_uuid, is_deleted)
+        SELECT DISTINCT ON (src.spouse_uuid)
+            src.spouse_uuid, NULL, NULL, src.relation_person_uuid, 0
+        FROM resident_relation src
+        WHERE src.spouse_uuid IS NOT NULL
+          AND NOT EXISTS (
+              SELECT 1 FROM resident_relation t2
+              WHERE t2.relation_person_uuid = src.spouse_uuid
+          )
+        ORDER BY src.spouse_uuid, src.relation_person_uuid;
 END $$;
 
 -- ============================================================
@@ -756,8 +805,8 @@ BEGIN
             arr_rand(ARRAY['name','phone','residence','occupation','education_level','marital_status']),
             CURRENT_DATE - (floor(random()*180)::INT || ' days')::INTERVAL,
             '{"original":"test"}', '{"modified":"test_new"}',
-            CASE WHEN random()<0.35 THEN '请求' WHEN random()<0.55 THEN '一审'
-                 WHEN random()<0.70 THEN '二审' WHEN random()<0.85 THEN '通过' ELSE '驳回' END,
+            CASE WHEN random()<0.45 THEN '请求' WHEN random()<0.65 THEN '通过'
+                 WHEN random()<0.80 THEN '市局审批中' WHEN random()<0.95 THEN '驳回' ELSE '请求' END,
             0);
     END LOOP;
 END $$;
@@ -1022,7 +1071,7 @@ BEGIN
             CURRENT_DATE - (floor(random()*180)::INT || ' days')::INTERVAL,
             CASE WHEN random()<0.50 THEN '户籍管理条例第'||floor(random()*10+1)::TEXT||'条' ELSE NULL END,
             CASE WHEN random()<0.30 THEN (floor(random()*100)::INT)::NUMERIC(10,2) ELSE NULL END,
-            CASE WHEN random()<0.40 THEN '已批准' WHEN random()<0.55 THEN '审批中' WHEN random()<0.70 THEN '已驳回' ELSE '待受理' END,
+            CASE WHEN random()<0.35 THEN '已批准' WHEN random()<0.60 THEN '审批中' WHEN random()<0.75 THEN '已驳回' WHEN random()<0.85 THEN '市局审批中' ELSE '审批中' END,
             CASE WHEN random()<0.10 THEN '材料不全' ELSE NULL END,
             CASE WHEN random()<0.20 THEN '备注信息'||i ELSE NULL END, 0);
     END LOOP;
@@ -1077,9 +1126,9 @@ BEGIN
                 v_base_date + ((j * 37) || ' days')::INTERVAL,
                 CASE WHEN j%2=0 THEN '迁移管理条例第'||(1+i%8)::TEXT||'条' ELSE NULL END,
                 CASE WHEN j%4=0 THEN ((i*j*10)%200)::NUMERIC(10,2) ELSE NULL END,
-                CASE WHEN i%5=0 THEN '迁移审批通过' WHEN i%5=1 THEN '准迁证审批中'
-                     WHEN i%5=2 THEN '迁移审批中' WHEN i%5=3 THEN '迁移证审批中'
-                     ELSE '准迁证审批驳回' END,
+                CASE WHEN i%6=0 THEN '迁移审批通过' WHEN i%6=1 THEN '准迁证审批中'
+                     WHEN i%6=2 THEN '准迁证已批准' WHEN i%6=3 THEN '迁移证已批准'
+                     WHEN i%6=4 THEN '准迁证审批驳回' ELSE '迁移审批驳回' END,
                 CASE WHEN i%10=0 THEN '材料不全' ELSE NULL END,
                 CASE WHEN i%3=0 THEN 'AP'||LPAD(i::TEXT,8,'0') ELSE NULL END,
                 CASE WHEN i%4=0 THEN 'MP'||LPAD(i::TEXT,8,'0') ELSE NULL END,
@@ -1095,8 +1144,9 @@ END $$;
 -- ============================================================
 -- 18. 准迁证 (300) — 无外部依赖，generate_series 效率高
 -- ============================================================
-INSERT INTO approval_permit (permit_no, issue_date, expiry_date, issuing_authority, status, is_deleted)
+INSERT INTO approval_permit (uuid, permit_no, issue_date, expiry_date, issuing_authority, status, is_deleted)
 SELECT
+    (SELECT uuid FROM resident ORDER BY random() + gs LIMIT 1),
     '000000' || TO_CHAR(issue_d, 'YYYY') || LPAD(gs::TEXT, 6, '0'),
     issue_d,
     issue_d + (30 + floor(random() * 60)::INT || ' days')::INTERVAL,
@@ -1110,8 +1160,9 @@ LATERAL (SELECT CURRENT_DATE - (floor(random() * 365)::INT || ' days')::INTERVAL
 -- ============================================================
 -- 19. 迁移证 (300)
 -- ============================================================
-INSERT INTO migration_permit (permit_no, issue_date, expiry_date, outgoing_police_station, status, is_deleted)
+INSERT INTO migration_permit (uuid, permit_no, issue_date, expiry_date, outgoing_police_station, status, is_deleted)
 SELECT
+    (SELECT uuid FROM resident ORDER BY random() + gs LIMIT 1),
     '000000' || TO_CHAR(issue_d, 'YYYY') || LPAD(gs::TEXT, 6, '0'),
     issue_d,
     issue_d + (30 + floor(random() * 60)::INT || ' days')::INTERVAL,

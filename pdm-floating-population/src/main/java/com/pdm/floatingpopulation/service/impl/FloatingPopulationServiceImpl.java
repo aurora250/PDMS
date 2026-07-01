@@ -37,8 +37,9 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
     @Override
     @Transactional
     public FpRegisterRecord registerFp(FpRegisterRecord record) {
-        record.setRegisterDate(LocalDate.now());
-        record.setResidencePermitNo(null);
+        if (record.getRegisterDate() == null) {
+            record.setRegisterDate(LocalDate.now());
+        }
         fpRegisterRecordMapper.insert(record);
         return record;
     }
@@ -50,9 +51,23 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
         if (existing == null) {
             throw new BusinessException(ErrorCode.FP_RECORD_NOT_FOUND);
         }
-        record.setRid(rid);
-        fpRegisterRecordMapper.updateById(record);
-        return record;
+        // 部分更新：只合并非空字段，避免覆盖已有数据
+        if (record.getUuid() != null)
+            existing.setUuid(record.getUuid());
+        if (record.getRegisterDate() != null)
+            existing.setRegisterDate(record.getRegisterDate());
+        if (record.getResidencePermitNo() != null)
+            existing.setResidencePermitNo(record.getResidencePermitNo());
+        if (record.getAgentUuid() != null)
+            existing.setAgentUuid(record.getAgentUuid());
+        if (record.getAttachment() != null)
+            existing.setAttachment(record.getAttachment());
+        if (record.getReviewerUuid() != null)
+            existing.setReviewerUuid(record.getReviewerUuid());
+        if (record.getRejectReason() != null)
+            existing.setRejectReason(record.getRejectReason());
+        fpRegisterRecordMapper.updateById(existing);
+        return existing;
     }
 
     @Override
@@ -88,7 +103,11 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
         if (permit == null) {
             throw new BusinessException(ErrorCode.RESIDENT_PERMIT_NOT_FOUND);
         }
+        if (!"申领".equals(permit.getStatus())) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "仅可审批状态为\"申领\"的居住证，当前状态：" + permit.getStatus());
+        }
         permit.setStatus("已批准");
+        permit.setReviewerUuid(reviewerUuid);
         residentPermitMapper.updateById(permit);
         return permit;
     }
@@ -99,6 +118,9 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
         ResidentPermit permit = residentPermitMapper.selectById(id);
         if (permit == null) {
             throw new BusinessException(ErrorCode.RESIDENT_PERMIT_NOT_FOUND);
+        }
+        if (!"已批准".equals(permit.getStatus())) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "仅可制发状态为\"已批准\"的居住证，当前状态：" + permit.getStatus());
         }
         permit.setStatus("有效");
         permit.setIssueDate(LocalDate.now());
@@ -145,13 +167,24 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
         permit.setExpiryDate(renewal.getNewExpiryDate());
         residentPermitMapper.updateById(permit);
 
+        // 同步更新流动人口登记记录中的居住证信息
+        LambdaQueryWrapper<FpRegisterRecord> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(FpRegisterRecord::getUuid, permit.getUuid());
+        FpRegisterRecord record = fpRegisterRecordMapper.selectOne(wrapper);
+        if (record != null) {
+            record.setResidencePermitNo(permit.getPermitNo());
+            fpRegisterRecordMapper.updateById(record);
+        }
+
         return renewal;
     }
 
     @Override
     @Transactional
     public ResidentRegistration registerResidence(ResidentRegistration registration) {
-        registration.setRegisterDate(LocalDate.now());
+        if (registration.getRegisterDate() == null) {
+            registration.setRegisterDate(LocalDate.now());
+        }
         residentRegistrationMapper.insert(registration);
         return registration;
     }

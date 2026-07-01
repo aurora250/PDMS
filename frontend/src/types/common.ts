@@ -30,6 +30,9 @@ export interface LoginResponse {
   accessToken: string
   refreshToken: string
   role: string
+  residentUuid?: string
   permissions: string[]
   mustChangePassword: boolean
+  username?: string
+  userUuid?: string
 }

@@ -187,7 +187,7 @@ public class HouseholdController {
             @RequestParam(defaultValue = "20") int size) {
         LambdaQueryWrapper<ApprovalPermit> w = new LambdaQueryWrapper<>();
         if (keyword != null && !keyword.isEmpty())
-            w.like(ApprovalPermit::getPermitNo, keyword);
+            w.and(wr -> wr.like(ApprovalPermit::getPermitNo, keyword).or().like(ApprovalPermit::getUuid, keyword));
         if (status != null && !status.isEmpty())
             w.eq(ApprovalPermit::getStatus, status);
         w.orderByDesc(ApprovalPermit::getCreateTime);
@@ -211,7 +211,7 @@ public class HouseholdController {
             @RequestParam(defaultValue = "20") int size) {
         LambdaQueryWrapper<MigrationPermit> w = new LambdaQueryWrapper<>();
         if (keyword != null && !keyword.isEmpty())
-            w.like(MigrationPermit::getPermitNo, keyword);
+            w.and(wr -> wr.like(MigrationPermit::getPermitNo, keyword).or().like(MigrationPermit::getUuid, keyword));
         if (status != null && !status.isEmpty())
             w.eq(MigrationPermit::getStatus, status);
         w.orderByDesc(MigrationPermit::getCreateTime);

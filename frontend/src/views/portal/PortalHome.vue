@@ -77,8 +77,8 @@ onMounted(async () => {
   loading.value = true
   try {
     const [biz, fp] = await Promise.all([
-      householdApi.listBusiness().catch(() => []),
-      floatingApi.listPermit().catch(() => []),
+      householdApi.listBusiness(undefined, { silent: true }).catch(() => []),
+      floatingApi.listPermit(undefined, { silent: true }).catch(() => []),
     ])
     const bizArr = Array.isArray(biz) ? biz : (biz?.records || [])
     const fpArr = Array.isArray(fp) ? fp : (fp?.records || [])
