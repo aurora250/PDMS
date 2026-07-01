@@ -1079,7 +1079,16 @@ END $$;
 
 -- ============================================================
 -- 17. 户籍迁移业务请求 (每人2-5次连续迁移，~600条)
+-- 跨省迁移确保迁出/迁入来自不同省份
 -- ============================================================
+-- 先构建省份→城市映射临时表
+DROP TABLE IF EXISTS _prov_cities;
+CREATE TEMP TABLE _prov_cities AS
+SELECT LEFT(a.area_code, 2) AS prov_pfx, array_agg(d.area_id) AS city_ids
+FROM area a
+JOIN (SELECT unnest(ids) AS area_id FROM _area_districts) d ON a.area_id = d.area_id
+GROUP BY LEFT(a.area_code, 2);
+
 DO $$
 DECLARE
     pool VARCHAR(36)[]; pc INT;
@@ -1091,6 +1100,8 @@ DECLARE
     v_curr_area BIGINT;
     v_bt TEXT;
     v_base_date DATE;
+    v_pfx1 TEXT; v_pfx2 TEXT;
+    v_cities1 BIGINT[]; v_cities2 BIGINT[];
     i INT; j INT;
 BEGIN
     SELECT array_agg(uuid) INTO pool FROM _res_pool; pc := array_length(pool,1);
@@ -1099,13 +1110,31 @@ BEGIN
 
     FOR i IN 1..200 LOOP
         v_person_uuid := pool[1 + (i % pc)];
-        v_chain_len := 2 + (i % 4);  -- 确定性链长2-5
+        v_chain_len := 2 + (i % 4);
         v_base_date := CURRENT_DATE - ((i * 7 % 1095) || ' days')::INTERVAL;
         v_prev_area := area_ids[1 + (i % ac)];
 
         FOR j IN 1..v_chain_len LOOP
-            v_curr_area := area_ids[1 + ((i + j) % ac)];
             v_bt := CASE WHEN (i + j) % 3 = 0 THEN '跨省' WHEN (i + j) % 3 = 1 THEN '省内' ELSE '市内' END;
+
+            IF v_bt = '跨省' THEN
+                -- 跨省：从两个不同省份各随机选一个城市
+                SELECT prov_pfx, city_ids INTO v_pfx1, v_cities1
+                FROM _prov_cities ORDER BY random() LIMIT 1;
+                SELECT prov_pfx, city_ids INTO v_pfx2, v_cities2
+                FROM _prov_cities WHERE prov_pfx != v_pfx1 ORDER BY random() LIMIT 1;
+                v_prev_area := v_cities1[1 + (i % array_length(v_cities1, 1))];
+                v_curr_area := v_cities2[1 + (j % array_length(v_cities2, 1))];
+            ELSIF v_bt = '省内' THEN
+                -- 省内：同一省份不同城市
+                SELECT prov_pfx, city_ids INTO v_pfx1, v_cities1
+                FROM _prov_cities ORDER BY random() LIMIT 1;
+                v_prev_area := v_cities1[1 + (i % array_length(v_cities1, 1))];
+                v_curr_area := v_cities1[1 + ((i + j) % array_length(v_cities1, 1))];
+            ELSE
+                -- 市内：随机选取
+                v_curr_area := area_ids[1 + ((i + j) % ac)];
+            END IF;
 
             INSERT INTO household_migration_request (
                 handler_uuid, applicant_uuid, incoming_address,
@@ -1140,6 +1169,8 @@ BEGIN
         END LOOP;
     END LOOP;
 END $$;
+
+DROP TABLE IF EXISTS _prov_cities;
 
 -- ============================================================
 -- 18. 准迁证 (300) — 无外部依赖，generate_series 效率高
