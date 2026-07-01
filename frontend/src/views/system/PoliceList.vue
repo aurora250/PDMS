@@ -36,12 +36,12 @@
       </div>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" :title="editing ? '编辑民警' : '新增民警'" width="500px">
-      <el-form ref="policeFormRef" :model="form" :rules="policeRules" label-width="100px">
+    <el-dialog v-model="dialogVisible" :title="isDetail ? '民警详情' : (editing ? '编辑民警' : '新增民警')" width="500px">
+      <el-form ref="policeFormRef" :model="form" :rules="policeRules" label-width="100px" :disabled="isDetail">
         <el-form-item v-if="!editing" label="警号" prop="policeNumber">
           <el-input v-model="form.policeNumber" placeholder="如: P11010001" maxlength="9" />
         </el-form-item>
-        <el-form-item label="居民UUID" prop="residentUuid">
+        <el-form-item label="关联居民" prop="residentUuid">
           <ResidentPicker v-model="form.residentUuid" placeholder="搜索姓名或身份证号选择关联居民" />
         </el-form-item>
         <el-form-item label="警衔" prop="policeRank">
@@ -64,7 +64,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSave">保存</el-button>
+        <el-button v-if="!isDetail" type="primary" @click="handleSave">保存</el-button>
       </template>
     </el-dialog>
   </div>
@@ -87,6 +87,7 @@ const keyword = ref('')
 const page = reactive({ current: 1, size: 20, total: 0 })
 const dialogVisible = ref(false)
 const editing = ref(false)
+const isDetail = ref(false)
 let editNo = ''
 
 const form = reactive({
@@ -116,21 +117,19 @@ async function load() {
 
 function openCreate() {
   Object.assign(form, { policeNumber: '', residentUuid: '', policeRank: '警员', policeStation: '', department: '', jurisdiction: '', areaId: undefined })
-  editing.value = false; dialogVisible.value = true
+  editing.value = false; isDetail.value = false; dialogVisible.value = true
 }
 
 function openEdit(row: any) {
   editNo = row.policeNumber
   Object.assign(form, row)
-  editing.value = true; dialogVisible.value = true
+  editing.value = true; isDetail.value = false; dialogVisible.value = true
 }
 
 function showDetail(row: any) {
-  // Read-only detail: open edit dialog but disable all inputs
   editNo = row.policeNumber
   Object.assign(form, row)
-  editing.value = true
-  dialogVisible.value = true
+  editing.value = true; isDetail.value = true; dialogVisible.value = true
 }
 
 async function handleSave() {

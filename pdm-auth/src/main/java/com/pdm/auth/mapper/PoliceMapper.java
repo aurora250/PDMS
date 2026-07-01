@@ -24,6 +24,7 @@ public interface PoliceMapper extends BaseMapper<Police> {
         "WHERE p.is_deleted = 0 " +
         "<if test='keyword != null and keyword != \"\"'>" +
         "AND (p.police_number LIKE CONCAT('%',#{keyword},'%') " +
+        "OR r.name LIKE CONCAT('%',#{keyword},'%') " +
         "OR p.police_station LIKE CONCAT('%',#{keyword},'%') " +
         "OR p.department LIKE CONCAT('%',#{keyword},'%'))" +
         "</if>" +

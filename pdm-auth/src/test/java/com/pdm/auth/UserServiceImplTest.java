@@ -64,7 +64,7 @@ class UserServiceImplTest {
 
             when(userMapper.selectPage(any(Page.class), any())).thenReturn(mockPage);
 
-            Page<User> result = userService.listUsers(1, 20, null, null, null);
+            Page<User> result = userService.listUsers(1, 20, null, null, null, null);
 
             assertNotNull(result);
             assertEquals(1, result.getTotal());
@@ -80,7 +80,7 @@ class UserServiceImplTest {
 
             when(userMapper.selectPage(any(Page.class), any())).thenReturn(mockPage);
 
-            Page<User> result = userService.listUsers(1, 20, "admin", null, null);
+            Page<User> result = userService.listUsers(1, 20, "admin", null, null, null);
 
             assertNotNull(result);
             assertEquals(1, result.getRecords().size());
@@ -95,7 +95,7 @@ class UserServiceImplTest {
 
             when(userMapper.selectPage(any(Page.class), any())).thenReturn(mockPage);
 
-            Page<User> result = userService.listUsers(1, 20, null, "系统管理员", null);
+            Page<User> result = userService.listUsers(1, 20, null, "系统管理员", null, null);
 
             assertNotNull(result);
             assertEquals(1, result.getRecords().size());
@@ -110,7 +110,7 @@ class UserServiceImplTest {
 
             when(userMapper.selectPage(any(Page.class), any())).thenReturn(mockPage);
 
-            Page<User> result = userService.listUsers(1, 20, null, null, "有效");
+            Page<User> result = userService.listUsers(1, 20, null, null, "有效", null);
 
             assertNotNull(result);
             assertEquals(1, result.getRecords().size());
@@ -125,7 +125,7 @@ class UserServiceImplTest {
 
             when(userMapper.selectPage(any(Page.class), any())).thenReturn(mockPage);
 
-            Page<User> result = userService.listUsers(1, 20, "admin", "系统管理员", "有效");
+            Page<User> result = userService.listUsers(1, 20, "admin", "系统管理员", "有效", null);
 
             assertNotNull(result);
             assertEquals(1, result.getTotal());
@@ -140,7 +140,7 @@ class UserServiceImplTest {
 
             when(userMapper.selectPage(any(Page.class), any())).thenReturn(mockPage);
 
-            Page<User> result = userService.listUsers(1, 20, "nonexistent", null, null);
+            Page<User> result = userService.listUsers(1, 20, "nonexistent", null, null, null);
 
             assertEquals(0, result.getTotal());
             assertTrue(result.getRecords().isEmpty());

@@ -7,6 +7,7 @@ export const userApi = {
   create: (data: any) => request.post('/auth/users', data),
   update: (uuid: string, data: any) => request.put(`/auth/users/${uuid}`, data),
   updateStatus: (uuid: string, status: string) => request.put(`/auth/users/${uuid}/status`, { status }),
+  resetPassword: (uuid: string, password: string) => request.put(`/auth/users/${uuid}/password`, { password }),
   delete: (uuid: string) => request.delete(`/auth/users/${uuid}`),
 }
 
@@ -20,7 +21,7 @@ export const policeApi = {
 
 /** 权限组 */
 export const permissionGroupApi = {
-  list: () => request.get('/auth/permission-groups'),
+  list: (config?: any) => request.get('/auth/permission-groups', config),
   create: (data: any) => request.post('/auth/permission-groups', data),
   update: (id: number, data: any) => request.put(`/auth/permission-groups/${id}`, data),
   delete: (id: number) => request.delete(`/auth/permission-groups/${id}`),

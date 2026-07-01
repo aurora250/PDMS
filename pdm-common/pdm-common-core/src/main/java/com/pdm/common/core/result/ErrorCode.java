@@ -19,7 +19,7 @@ public enum ErrorCode {
                             "账号已被冻结"), ACCOUNT_CANCELLED(2008, "账号已被注销"), ACCOUNT_PENDING_APPROVAL(2009,
                                     "账号正在审批中"), PASSWORD_WEAK(2010,
                                             "密码强度不足，需8-16位包含大小写字母+数字+特殊字符"), FIRST_LOGIN_MUST_CHANGE_PASSWORD(2011,
-                                                    "首次登录必须修改密码"), LOGIN_FAILED_EXCEED_LIMIT(2012, "连续登录失败超过限制，账号已锁定"),
+                                                    "首次登录必须修改密码"), LOGIN_FAILED_EXCEED_LIMIT(2012, "连续登录失败超过限制，账号已锁定"), OLD_PASSWORD_ERROR(2013, "原密码错误"),
 
     // Resident errors 3000-3999
     RESIDENT_NOT_FOUND(3000, "户籍人员不存在"), ID_CARD_INVALID(3001, "身份证号格式不正确"), ID_CARD_DUPLICATE(3002,

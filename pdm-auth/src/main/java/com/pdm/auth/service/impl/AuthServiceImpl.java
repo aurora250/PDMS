@@ -122,7 +122,7 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException(ErrorCode.DATA_NOT_FOUND);
         }
         if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
-            throw new BusinessException(ErrorCode.USERNAME_OR_PASSWORD_ERROR);
+            throw new BusinessException(ErrorCode.OLD_PASSWORD_ERROR);
         }
         validatePasswordStrength(newPassword);
         user.setPassword(passwordEncoder.encode(newPassword));
