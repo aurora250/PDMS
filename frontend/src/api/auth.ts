@@ -12,7 +12,7 @@ export const userApi = {
 
 /** 民警 */
 export const policeApi = {
-  list: (params?: any) => request.get('/auth/police', { params }),
+  list: (params?: any, config?: any) => request.get('/auth/police', { params, ...config }),
   create: (data: any) => request.post('/auth/police', data),
   update: (no: string, data: any) => request.put(`/auth/police/${no}`, data),
   updateStatus: (no: string, dutyStatus: string) => request.put(`/auth/police/${no}/status`, { dutyStatus }),

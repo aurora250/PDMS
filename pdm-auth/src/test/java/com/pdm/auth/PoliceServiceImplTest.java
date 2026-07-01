@@ -24,6 +24,8 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,7 +44,7 @@ class PoliceServiceImplTest {
     void setUp() {
         testPolice = new Police();
         testPolice.setId(1L);
-        testPolice.setPoliceNumber("P0001");
+        testPolice.setPoliceNumber("P00000001");
         testPolice.setPoliceStation("朝阳分局");
         testPolice.setJurisdiction("朝阳区");
         testPolice.setDepartment("刑侦支队");
@@ -75,10 +77,10 @@ class PoliceServiceImplTest {
         @DisplayName("警号已存在应拒绝")
         void shouldRejectDuplicatePoliceNumber() {
             Police newPolice = new Police();
-            newPolice.setPoliceNumber("P0001");
+            newPolice.setPoliceNumber("P00000001");
             newPolice.setPoliceStation("海淀分局");
 
-            when(policeMapper.selectByPoliceNumber("P0001")).thenReturn(testPolice);
+            when(policeMapper.selectByPoliceNumber("P00000001")).thenReturn(testPolice);
 
             BusinessException ex = assertThrows(BusinessException.class, () -> policeService.registerPolice(newPolice));
             assertEquals(ErrorCode.DATA_DUPLICATE.getCode(), ex.getCode());
@@ -111,14 +113,14 @@ class PoliceServiceImplTest {
             mockPage.setRecords(List.of(testPolice));
             mockPage.setTotal(1);
 
-            when(policeMapper.selectPage(any(Page.class), any())).thenReturn(mockPage);
+            when(policeMapper.selectPageWithResidentName(any(Page.class), eq("P00000001"), isNull())).thenReturn(mockPage);
 
-            Page<Police> result = policeService.listPolice(1, 20, "P0001");
+            Page<Police> result = policeService.listPolice(1, 20, "P00000001", null);
 
             assertNotNull(result);
             assertEquals(1, result.getTotal());
             assertEquals(1, result.getRecords().size());
-            assertEquals("P0001", result.getRecords().get(0).getPoliceNumber());
+            assertEquals("P00000001", result.getRecords().get(0).getPoliceNumber());
         }
 
         @Test
@@ -128,9 +130,9 @@ class PoliceServiceImplTest {
             mockPage.setRecords(List.of(testPolice));
             mockPage.setTotal(1);
 
-            when(policeMapper.selectPage(any(Page.class), any())).thenReturn(mockPage);
+            when(policeMapper.selectPageWithResidentName(any(Page.class), isNull(), isNull())).thenReturn(mockPage);
 
-            Page<Police> result = policeService.listPolice(1, 20, null);
+            Page<Police> result = policeService.listPolice(1, 20, null, null);
 
             assertNotNull(result);
             assertEquals(1, result.getRecords().size());
@@ -143,9 +145,9 @@ class PoliceServiceImplTest {
             mockPage.setRecords(List.of());
             mockPage.setTotal(0);
 
-            when(policeMapper.selectPage(any(Page.class), any())).thenReturn(mockPage);
+            when(policeMapper.selectPageWithResidentName(any(Page.class), eq("不存在的警号"), isNull())).thenReturn(mockPage);
 
-            Page<Police> result = policeService.listPolice(1, 20, "不存在的警号");
+            Page<Police> result = policeService.listPolice(1, 20, "不存在的警号", null);
 
             assertNotNull(result);
             assertEquals(0, result.getTotal());
@@ -160,22 +162,22 @@ class PoliceServiceImplTest {
         @Test
         @DisplayName("按警号查询成功")
         void shouldFindByPoliceNumber() {
-            when(policeMapper.selectByPoliceNumber("P0001")).thenReturn(testPolice);
+            when(policeMapper.selectByPoliceNumber("P00000001")).thenReturn(testPolice);
 
-            Police result = policeService.getPoliceByNumber("P0001");
+            Police result = policeService.getPoliceByNumber("P00000001");
 
             assertNotNull(result);
-            assertEquals("P0001", result.getPoliceNumber());
+            assertEquals("P00000001", result.getPoliceNumber());
             assertEquals("朝阳分局", result.getPoliceStation());
         }
 
         @Test
         @DisplayName("警号不存在应抛异常")
         void shouldThrowOnNonExistentPoliceNumber() {
-            when(policeMapper.selectByPoliceNumber("P9999")).thenReturn(null);
+            when(policeMapper.selectByPoliceNumber("P99999999")).thenReturn(null);
 
             BusinessException ex = assertThrows(BusinessException.class,
-                    () -> policeService.getPoliceByNumber("P9999"));
+                    () -> policeService.getPoliceByNumber("P99999999"));
             assertEquals(ErrorCode.DATA_NOT_FOUND.getCode(), ex.getCode());
         }
     }
@@ -193,9 +195,9 @@ class PoliceServiceImplTest {
             updates.setPoliceRank("二级警司");
             updates.setJurisdiction("海淀区");
 
-            when(policeMapper.selectByPoliceNumber("P0001")).thenReturn(testPolice);
+            when(policeMapper.selectByPoliceNumber("P00000001")).thenReturn(testPolice);
 
-            Police result = policeService.updatePolice("P0001", updates);
+            Police result = policeService.updatePolice("P00000001", updates);
 
             assertNotNull(result);
             assertEquals("海淀分局", result.getPoliceStation());
@@ -211,9 +213,9 @@ class PoliceServiceImplTest {
             Police updates = new Police();
             updates.setPoliceStation("丰台分局");
 
-            when(policeMapper.selectByPoliceNumber("P0001")).thenReturn(testPolice);
+            when(policeMapper.selectByPoliceNumber("P00000001")).thenReturn(testPolice);
 
-            Police result = policeService.updatePolice("P0001", updates);
+            Police result = policeService.updatePolice("P00000001", updates);
 
             assertEquals("丰台分局", result.getPoliceStation());
             assertEquals("刑侦支队", result.getDepartment());
@@ -225,10 +227,10 @@ class PoliceServiceImplTest {
             Police updates = new Police();
             updates.setPoliceStation("丰台分局");
 
-            when(policeMapper.selectByPoliceNumber("P9999")).thenReturn(null);
+            when(policeMapper.selectByPoliceNumber("P99999999")).thenReturn(null);
 
             BusinessException ex = assertThrows(BusinessException.class,
-                    () -> policeService.updatePolice("P9999", updates));
+                    () -> policeService.updatePolice("P99999999", updates));
             assertEquals(ErrorCode.DATA_NOT_FOUND.getCode(), ex.getCode());
             verify(policeMapper, never()).updateById(any(Police.class));
         }
@@ -241,9 +243,9 @@ class PoliceServiceImplTest {
         @Test
         @DisplayName("正常更新为在岗")
         void shouldSetStatusToOnDuty() {
-            when(policeMapper.selectByPoliceNumber("P0001")).thenReturn(testPolice);
+            when(policeMapper.selectByPoliceNumber("P00000001")).thenReturn(testPolice);
 
-            policeService.updatePoliceStatus("P0001", "在岗");
+            policeService.updatePoliceStatus("P00000001", "在岗");
 
             assertEquals("在岗", testPolice.getDutyStatus());
             verify(policeMapper).updateById(testPolice);
@@ -252,9 +254,9 @@ class PoliceServiceImplTest {
         @Test
         @DisplayName("正常更新为调岗")
         void shouldSetStatusToTransferred() {
-            when(policeMapper.selectByPoliceNumber("P0001")).thenReturn(testPolice);
+            when(policeMapper.selectByPoliceNumber("P00000001")).thenReturn(testPolice);
 
-            policeService.updatePoliceStatus("P0001", "调岗");
+            policeService.updatePoliceStatus("P00000001", "调岗");
 
             assertEquals("调岗", testPolice.getDutyStatus());
         }
@@ -262,9 +264,9 @@ class PoliceServiceImplTest {
         @Test
         @DisplayName("正常更新为离职")
         void shouldSetStatusToResigned() {
-            when(policeMapper.selectByPoliceNumber("P0001")).thenReturn(testPolice);
+            when(policeMapper.selectByPoliceNumber("P00000001")).thenReturn(testPolice);
 
-            policeService.updatePoliceStatus("P0001", "离职");
+            policeService.updatePoliceStatus("P00000001", "离职");
 
             assertEquals("离职", testPolice.getDutyStatus());
         }
@@ -272,10 +274,10 @@ class PoliceServiceImplTest {
         @Test
         @DisplayName("非法执勤状态应抛异常")
         void shouldRejectInvalidStatus() {
-            when(policeMapper.selectByPoliceNumber("P0001")).thenReturn(testPolice);
+            when(policeMapper.selectByPoliceNumber("P00000001")).thenReturn(testPolice);
 
             BusinessException ex = assertThrows(BusinessException.class,
-                    () -> policeService.updatePoliceStatus("P0001", "病假"));
+                    () -> policeService.updatePoliceStatus("P00000001", "病假"));
             assertEquals(ErrorCode.PARAM_ERROR.getCode(), ex.getCode());
             verify(policeMapper, never()).updateById(any(Police.class));
         }
@@ -283,9 +285,9 @@ class PoliceServiceImplTest {
         @Test
         @DisplayName("民警不存在时更新状态应抛异常")
         void shouldThrowWhenPoliceNotFound() {
-            when(policeMapper.selectByPoliceNumber("P9999")).thenReturn(null);
+            when(policeMapper.selectByPoliceNumber("P99999999")).thenReturn(null);
 
-            assertThrows(BusinessException.class, () -> policeService.updatePoliceStatus("P9999", "在岗"));
+            assertThrows(BusinessException.class, () -> policeService.updatePoliceStatus("P99999999", "在岗"));
         }
     }
 }

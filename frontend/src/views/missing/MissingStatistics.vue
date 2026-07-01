@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="page-header"><h3>失踪人口统计</h3></div>
+    <div class="page-header"><h3>失踪与重点人员统计</h3></div>
 
     <!-- 概览卡片 -->
     <el-row :gutter="16" style="margin-bottom:16px">

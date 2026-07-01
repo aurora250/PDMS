@@ -18,7 +18,7 @@
           <el-input v-model="form.username" placeholder="用户名" prefix-icon="User" size="large" />
         </el-form-item>
         <el-form-item prop="password">
-          <el-input v-model="form.password" type="password" placeholder="密码" prefix-icon="Lock" size="large" show-password maxlength="20" />
+          <el-input v-model="form.password" type="password" placeholder="密码" prefix-icon="Lock" size="large" show-password maxlength="16" />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" size="large" :loading="loading" native-type="submit" style="width:100%">
@@ -32,13 +32,13 @@
     <el-dialog v-model="showChangePwd" title="修改密码" :close-on-click-modal="false" :close-on-press-escape="false" width="400px">
       <el-form ref="pwdFormRef" :model="pwdForm" :rules="pwdRules">
         <el-form-item prop="oldPassword">
-          <el-input v-model="pwdForm.oldPassword" type="password" placeholder="当前密码" show-password maxlength="20" />
+          <el-input v-model="pwdForm.oldPassword" type="password" placeholder="当前密码" show-password maxlength="16" />
         </el-form-item>
         <el-form-item prop="newPassword">
-          <el-input v-model="pwdForm.newPassword" type="password" placeholder="6-20位新密码" show-password maxlength="20" />
+          <el-input v-model="pwdForm.newPassword" type="password" placeholder="8-16位新密码" show-password maxlength="16" />
         </el-form-item>
         <el-form-item prop="confirmPassword">
-          <el-input v-model="pwdForm.confirmPassword" type="password" placeholder="再次输入新密码" show-password maxlength="20" />
+          <el-input v-model="pwdForm.confirmPassword" type="password" placeholder="再次输入新密码" show-password maxlength="16" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -74,7 +74,7 @@ const pwdRules = {
   oldPassword: [{ required: true, message: '请输入当前密码', trigger: 'blur' }],
   newPassword: [
     { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, max: 20, message: '密码长度需在6-20位之间', trigger: 'blur' },
+    { min: 8, max: 16, message: '密码长度需在8-16位之间', trigger: 'blur' },
   ],
   confirmPassword: [
     { required: true, message: '请确认密码', trigger: 'blur' },

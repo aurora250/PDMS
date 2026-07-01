@@ -309,47 +309,6 @@ BEGIN
     END LOOP;
 END $$;
 
--- ============================================================
--- 2. 警员 (80人)
--- ============================================================
-DO $$
-DECLARE
-    i INT;
-    ranks TEXT[] := ARRAY['警员','警司','警督','警监'];
-    r_weights FLOAT[] := ARRAY[0.55,0.30,0.12,0.03];
-    cum_r FLOAT[];
-    stations TEXT[] := ARRAY['东城分局','西城分局','朝阳分局','海淀分局','丰台分局',
-                              '石景山分局','通州分局','大兴分局','顺义分局','昌平分局'];
-    depts TEXT[] := ARRAY['治安大队','刑侦大队','户政科','社区警务队','巡逻队','指挥中心'];
-    user_uuids VARCHAR(36)[];
-    area_ids BIGINT[];
-BEGIN
-    cum_r := r_weights;
-    FOR i IN 2..4 LOOP cum_r[i] := cum_r[i] + cum_r[i-1]; END LOOP;
-
-    SELECT ids INTO area_ids FROM _area_districts;
-    SELECT array_agg(user_uuid) INTO user_uuids FROM sys_user WHERE user_role = '民警' LIMIT 80;
-
-    FOR i IN 1..80 LOOP
-        INSERT INTO police (police_number, user_uuid, resident_uuid,
-                           police_station, jurisdiction, area_id, department,
-                           police_rank, duty_status, is_deleted)
-        VALUES ('P' || LPAD(i::TEXT, 6, '0'),
-                user_uuids[i],
-                seq_uuid(i + 51000),
-                arr_rand(stations), gen_address(arr_rand(area_ids), i + 600000),
-                arr_rand(area_ids),
-                arr_rand(depts),
-                weighted_pick(ranks, cum_r),
-                CASE WHEN random() < 0.88 THEN '在岗' WHEN random() < 0.70 THEN '调岗' ELSE '离职' END,
-                0);
-    END LOOP;
-END $$;
-
--- ============================================================
-
--- ============================================================
--- ============================================================
 -- 3. 常住人口 (50,000) — 核心表
 -- 使用 VOLATILE SQL 函数确保 random() 每行重新计算
 -- ============================================================
@@ -609,6 +568,62 @@ DROP TABLE IF EXISTS _hh_types;
 DROP TABLE IF EXISTS _hh_statuses;
 DROP TABLE IF EXISTS _area_ids;
 
+
+-- ============================================================
+-- 2. 警员 (80人) — 放在常住人口之后以便关联真实居民
+-- ============================================================
+DO $$
+DECLARE
+    i INT;
+    idx INT;
+    seq_map INT[];
+    selected_pfx TEXT;
+    ranks TEXT[] := ARRAY['警员','警司','警督','警监'];
+    r_weights FLOAT[] := ARRAY[0.55,0.30,0.12,0.03];
+    cum_r FLOAT[];
+    stations TEXT[] := ARRAY['东城分局','西城分局','朝阳分局','海淀分局','丰台分局',
+                              '石景山分局','通州分局','大兴分局','顺义分局','昌平分局'];
+    depts TEXT[] := ARRAY['治安大队','刑侦大队','户政科','社区警务队','巡逻队','指挥中心'];
+    user_uuids VARCHAR(36)[];
+    resident_uuids VARCHAR(36)[];
+    area_ids BIGINT[];
+    area_prefixes TEXT[];
+BEGIN
+    cum_r := r_weights;
+    FOR i IN 2..4 LOOP cum_r[i] := cum_r[i] + cum_r[i-1]; END LOOP;
+
+    -- 构建 area_id 与 area_code 前4位的映射数组（只含市级区域）
+    WITH district_data AS (
+        SELECT a.area_id, LEFT(a.area_code, 4) AS pfx
+        FROM area a JOIN (SELECT unnest(ids) AS area_id FROM _area_districts) d USING (area_id)
+    )
+    SELECT array_agg(area_id), array_agg(pfx) INTO area_ids, area_prefixes FROM district_data;
+
+    -- 初始化序号数组
+    seq_map := ARRAY(SELECT 0 FROM generate_series(1, array_length(area_ids, 1)));
+
+    SELECT array_agg(user_uuid) INTO user_uuids FROM sys_user WHERE user_role = '民警' LIMIT 80;
+    SELECT array_agg(uuid) INTO resident_uuids FROM (SELECT uuid FROM resident ORDER BY random() LIMIT 80) sub;
+
+    FOR i IN 1..80 LOOP
+        idx := floor(random() * array_length(area_ids, 1) + 1)::INT;
+        seq_map[idx] := seq_map[idx] + 1;
+        selected_pfx := area_prefixes[idx];
+
+        INSERT INTO police (police_number, user_uuid, resident_uuid,
+                           police_station, jurisdiction, area_id, department,
+                           police_rank, duty_status, is_deleted)
+        VALUES ('P' || selected_pfx || LPAD(seq_map[idx]::TEXT, 4, '0'),
+                user_uuids[i],
+                resident_uuids[i],
+                arr_rand(stations), gen_address(area_ids[idx], i + 600000),
+                area_ids[idx],
+                arr_rand(depts),
+                weighted_pick(ranks, cum_r),
+                CASE WHEN random() < 0.88 THEN '在岗' WHEN random() < 0.70 THEN '调岗' ELSE '离职' END,
+                0);
+    END LOOP;
+END $$;
 
 -- ============================================================
 -- 4. 户口本 (5,000)

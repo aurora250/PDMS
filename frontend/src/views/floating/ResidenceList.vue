@@ -36,7 +36,7 @@
         <el-form-item label="居民UUID" prop="uuid">
           <ResidentPicker v-model="form.uuid" placeholder="搜索姓名或身份证号选择居民" />
         </el-form-item>
-        <el-form-item label="原始地址" prop="originalAddress">
+        <el-form-item label="原始地址">
           <el-input v-model="form.originalAddress" placeholder="户籍地址" />
         </el-form-item>
         <el-form-item label="现居住地址" prop="currentAddress">

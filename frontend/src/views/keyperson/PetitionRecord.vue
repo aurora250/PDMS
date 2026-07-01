@@ -6,7 +6,11 @@
     </div>
     <el-card>
       <el-table :data="list" v-loading="loading" stripe border>
-        <el-table-column prop="keyPersonUuid" label="人员UUID" width="200" show-overflow-tooltip />
+        <el-table-column label="人员UUID" width="200" show-overflow-tooltip>
+          <template #default="{ row }">
+            <el-button text size="small" type="primary" @click="$router.push(`/resident/${row.keyPersonUuid}`)">{{ row.keyPersonUuid }}</el-button>
+          </template>
+        </el-table-column>
         <el-table-column prop="petitionTime" label="信访时间" width="170" />
         <el-table-column prop="address" label="信访地点" min-width="150" />
         <el-table-column prop="evaluation" label="评估" width="80" />
@@ -57,6 +61,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { keypersonApi } from '@/api/keyperson'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
+import { uuidRule, policeNoRule } from '@/utils/validators'
 
 const { hasPermission } = usePermission()
 const list = ref<any[]>([])
@@ -71,10 +76,10 @@ const form = reactive({
   address: '', handlerPoliceNo: '', evaluation: '一般', remark: '',
 })
 const rules = {
-  keyPersonUuid: [{ required: true, message: '请输入人员UUID', trigger: 'blur' }],
+  keyPersonUuid: [{ required: true, message: '请输入人员UUID', trigger: 'blur' }, uuidRule],
   petitionTime: [{ required: true, message: '请选择信访时间', trigger: 'change' }],
   address: [{ required: true, message: '请输入信访地点', trigger: 'blur' }],
-  handlerPoliceNo: [{ required: true, message: '请输入处理民警编号', trigger: 'blur' }],
+  handlerPoliceNo: [{ required: true, message: '请输入处理民警编号', trigger: 'blur' }, policeNoRule],
   remark: [{ required: true, message: '请输入备注', trigger: 'blur' }],
 }
 

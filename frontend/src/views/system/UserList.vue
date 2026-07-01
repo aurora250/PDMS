@@ -47,7 +47,7 @@
     <el-dialog v-model="dialogVisible" :title="editing ? '编辑用户' : '创建用户'" width="500px">
       <el-form ref="formRef" :model="form" :rules="uRules" label-width="100px">
         <el-form-item v-if="!editing" label="用户名" prop="username"><el-input v-model="form.username" placeholder="请输入用户名" maxlength="50" /></el-form-item>
-        <el-form-item v-if="!editing" label="密码" prop="password"><el-input v-model="form.password" type="password" placeholder="6-20位密码" maxlength="20" show-password /></el-form-item>
+        <el-form-item v-if="!editing" label="密码" prop="password"><el-input v-model="form.password" type="password" placeholder="8-16位密码" maxlength="16" show-password /></el-form-item>
         <el-form-item label="角色" prop="userRole">
           <el-select v-model="form.userRole">
             <el-option v-for="r in ROLES" :key="r" :label="r" :value="r" />
@@ -96,7 +96,9 @@ const defaultForm = () => ({
 const form = reactive(defaultForm())
 const uRules = computed(() => ({
   username: [{ required: true, message: '请输入用户名' }],
-  password: editing.value ? [] : [{ required: true, message: '请输入密码' }, { min: 6, max: 20, message: '密码长度需在6-20位之间' }],
+  password: editing.value ? [] : [{ required: true, message: '请输入密码' }, { min: 8, max: 16, message: '密码长度需在8-16位之间' }],
+  userRole: [{ required: true, message: '请选择角色', trigger: 'change' }],
+  permissionGroupId: [{ required: true, message: '请选择权限组', trigger: 'change' }],
   phone: [phoneRule],
 }))
 

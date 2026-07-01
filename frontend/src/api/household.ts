@@ -7,7 +7,7 @@ export const householdApi = {
   reissueBook: (data: any) => request.post('/household/book/reissue', data),
   renewBook: (data: any) => request.post('/household/book/renew', data),
   /** 按居民UUID查询户口簿 */
-  getBookByResident: (residentUuid: string) => request.get(`/household/book/by-resident/${residentUuid}`),
+  getBookByResident: (residentUuid: string, config?: any) => request.get(`/household/book/by-resident/${residentUuid}`, config),
   // 业务
   listBusiness: (params?: any) => request.get('/household/business', { params }),
   createBusiness: (data: any) => request.post('/household/business', data),
@@ -24,7 +24,7 @@ export const householdApi = {
   /** 附加审核材料（街道办） */
   attachMigrationMaterial: (rid: number, data: FormData) =>
     request.post(`/household/migration/${rid}/material`, data, { headers: { 'Content-Type': 'multipart/form-data' } }),
-  getMigrationTrace: (uuid: string) => request.get(`/household/migration/trace/${uuid}`),
+  getMigrationTrace: (uuid: string, config?: any) => request.get(`/household/migration/trace/${uuid}`, config),
   // 准迁证
   listApprovalPermit: (params?: any) => request.get('/household/approval-permit', { params }),
   createApprovalPermit: (data: any) => request.post('/household/approval-permit', data),

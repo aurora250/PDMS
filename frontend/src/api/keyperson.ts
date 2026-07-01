@@ -1,7 +1,7 @@
 import request from './request'
 
 export const keypersonApi = {
-  search: (params?: any) => request.get('/keyperson/search', { params }),
+  search: (params?: any, config?: any) => request.get('/keyperson/search', { params, ...config }),
   create: (data: any) => request.post('/keyperson/', data),
   update: (uuid: string, data: any) => request.put(`/keyperson/${uuid}`, data),
   delete: (uuid: string) => request.delete(`/keyperson/${uuid}`),

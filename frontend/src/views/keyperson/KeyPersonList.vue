@@ -25,7 +25,11 @@
         <el-form-item><el-button @click="load">刷新</el-button></el-form-item>
       </el-form>
       <el-table :data="list" v-loading="loading" stripe border>
-        <el-table-column prop="uuid" label="UUID" width="200" show-overflow-tooltip />
+        <el-table-column label="UUID" width="200" show-overflow-tooltip>
+          <template #default="{ row }">
+            <el-button text size="small" type="primary" @click="$router.push(`/resident/${row.uuid}`)">{{ row.uuid }}</el-button>
+          </template>
+        </el-table-column>
         <el-table-column prop="controlLevel" label="管控级别" width="100" />
         <el-table-column prop="controlType" label="管控类型" min-width="150" />
         <el-table-column prop="responsiblePoliceNo" label="责任民警" width="140" />
@@ -87,6 +91,7 @@ import { ElMessageBox } from 'element-plus'
 import { keypersonApi } from '@/api/keyperson'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
+import { policeNoRule } from '@/utils/validators'
 import ResidentPicker from '@/components/ResidentPicker.vue'
 
 const { hasPermission } = usePermission()
@@ -112,7 +117,7 @@ const rules = {
   uuid: [{ required: true, message: '请输入居民UUID', trigger: 'blur' }],
   controlLevel: [{ required: true, message: '请选择管控级别', trigger: 'change' }],
   controlType: [{ required: true, message: '请选择管控类型', trigger: 'change' }],
-  responsiblePoliceNo: [{ required: true, message: '请输入责任民警编号', trigger: 'blur' }],
+  responsiblePoliceNo: [{ required: true, message: '请输入责任民警编号', trigger: 'blur' }, policeNoRule],
   designatedAt: [{ required: true, message: '请选择列管日期', trigger: 'change' }],
 }
 

@@ -14,7 +14,7 @@
       <el-table :data="list" v-loading="loading" stripe border>
         <el-table-column prop="policeNumber" label="警号" width="140" />
         <el-table-column label="姓名" width="100">
-          <template #default="{ row }">{{ row.name || row.policeNumber }}</template>
+          <template #default="{ row }">{{ row.residentName || row.policeNumber }}</template>
         </el-table-column>
         <el-table-column prop="policeRank" label="警衔" width="80" />
         <el-table-column prop="policeStation" label="派出所" min-width="150" />
@@ -39,7 +39,7 @@
     <el-dialog v-model="dialogVisible" :title="editing ? '编辑民警' : '新增民警'" width="500px">
       <el-form ref="policeFormRef" :model="form" :rules="policeRules" label-width="100px">
         <el-form-item v-if="!editing" label="警号" prop="policeNumber">
-          <el-input v-model="form.policeNumber" placeholder="如: P20260001" maxlength="9" />
+          <el-input v-model="form.policeNumber" placeholder="如: P11010001" maxlength="9" />
         </el-form-item>
         <el-form-item label="居民UUID" prop="residentUuid">
           <ResidentPicker v-model="form.residentUuid" placeholder="搜索姓名或身份证号选择关联居民" />
@@ -55,9 +55,11 @@
         <el-form-item label="部门" prop="department">
           <el-input v-model="form.department" placeholder="如: 治安大队" maxlength="100" />
         </el-form-item>
-        <el-form-item label="辖区">
+        <el-form-item label="辖区" prop="areaId">
           <AreaCascader v-model="form.areaId" />
-          <el-input v-model="form.jurisdiction" placeholder="详细地址，如: 某某社区" style="margin-top:8px" maxlength="200" />
+        </el-form-item>
+        <el-form-item label="辖区详址" prop="jurisdiction">
+          <el-input v-model="form.jurisdiction" placeholder="详细地址，如: 某某社区" maxlength="200" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -98,6 +100,8 @@ const policeRules = {
   policeRank: [{ required: true, message: '请选择警衔', trigger: 'change' }],
   policeStation: [{ required: true, message: '请输入派出所', trigger: 'blur' }, { max: 100, message: '不超过100字', trigger: 'blur' }],
   department: [{ required: true, message: '请输入部门', trigger: 'blur' }, { max: 100, message: '不超过100字', trigger: 'blur' }],
+  areaId: [{ required: true, message: '请选择辖区', trigger: 'change' }],
+  jurisdiction: [{ required: true, message: '请填写辖区详址', trigger: 'blur' }, { max: 200, message: '不超过200字', trigger: 'blur' }],
 }
 
 async function load() {
@@ -122,9 +126,11 @@ function openEdit(row: any) {
 }
 
 function showDetail(row: any) {
+  // Read-only detail: open edit dialog but disable all inputs
   editNo = row.policeNumber
   Object.assign(form, row)
-  editing.value = true; dialogVisible.value = true
+  editing.value = true
+  dialogVisible.value = true
 }
 
 async function handleSave() {
