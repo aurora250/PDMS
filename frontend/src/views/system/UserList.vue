@@ -49,6 +49,9 @@
       <el-form ref="formRef" :model="form" :rules="uRules" label-width="100px">
         <el-form-item v-if="!editing" label="用户名" prop="username"><el-input v-model="form.username" placeholder="请输入用户名" maxlength="50" /></el-form-item>
         <el-form-item v-if="!editing" label="密码" prop="password"><el-input v-model="form.password" type="password" placeholder="8-16位密码" maxlength="16" show-password /></el-form-item>
+        <el-form-item v-if="!editing" label="实名认证" prop="residentUuid">
+          <ResidentPicker v-model="form.residentUuid" placeholder="搜索姓名或身份证号绑定实名信息" />
+        </el-form-item>
         <el-form-item label="角色" prop="userRole">
           <el-select v-model="form.userRole">
             <el-option v-for="r in availableRoles" :key="r" :label="r" :value="r" />
@@ -89,6 +92,7 @@ import { usePermission } from '@/composables/usePermission'
 import { useAuthStore } from '@/stores/auth'
 import { showError, showSuccess } from '@/utils/auth'
 import { phoneRule } from '@/utils/validators'
+import ResidentPicker from '@/components/ResidentPicker.vue'
 
 const { hasPermission } = usePermission()
 const auth = useAuthStore()
@@ -113,13 +117,14 @@ const userRoleFilter = ref('')
 let editUuid = ''
 
 const defaultForm = () => ({
-  username: '', password: '', userRole: '普通用户', permissionGroupId: null as any, phone: '',
+  username: '', password: '', residentUuid: '', userRole: '普通用户', permissionGroupId: null as any, phone: '',
 })
 const form = reactive(defaultForm())
 
 const uRules = computed(() => ({
   username: [{ required: true, message: '请输入用户名' }],
   password: editing.value ? [] : [{ required: true, message: '请输入密码' }, { min: 8, max: 16, message: '密码长度需在8-16位之间' }],
+  residentUuid: editing.value ? [] : [{ required: true, message: '请选择关联居民完成实名认证', trigger: 'change' }],
   userRole: [{ required: true, message: '请选择角色', trigger: 'change' }],
   permissionGroupId: [{ required: true, message: '请选择权限组', trigger: 'change' }],
   phone: [phoneRule],
@@ -158,7 +163,8 @@ async function handleSave() {
     } else {
       await userApi.create({
         username: form.username, password: form.password,
-        userRole: form.userRole, permissionGroupId: form.permissionGroupId, phone: form.phone,
+        residentUuid: form.residentUuid, userRole: form.userRole,
+        permissionGroupId: form.permissionGroupId, phone: form.phone,
       })
     }
     showSuccess(editing.value ? '修改成功' : '创建成功')
