@@ -124,7 +124,7 @@ async function load() {
 }
 
 function openCreate() {
-  Object.assign(form, { policeNumber: '', residentUuid: '', policeRank: '警员', policeStation: '', department: '', jurisdiction: '', areaId: undefined })
+  Object.assign(form, { id: undefined, policeNumber: '', residentUuid: '', policeRank: '警员', policeStation: '', department: '', jurisdiction: '', areaId: undefined })
   editing.value = false; readonly.value = false; dialogVisible.value = true
 }
 

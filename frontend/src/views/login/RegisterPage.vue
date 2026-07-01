@@ -13,18 +13,18 @@
           <p class="login-subtitle">实名认证 · 审核通过后可登录</p>
         </div>
       </template>
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="0" @submit.prevent="handleRegister">
-        <el-form-item prop="username">
-          <el-input v-model="form.username" placeholder="用户名 (3-50位字母/数字/下划线)" size="large" maxlength="50" />
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" @submit.prevent="handleRegister">
+        <el-form-item label="用户名" prop="username">
+          <el-input v-model="form.username" placeholder="3-50位字母/数字/下划线" size="large" maxlength="50" />
         </el-form-item>
-        <el-form-item prop="password">
-          <el-input v-model="form.password" type="password" placeholder="密码 (8-16位，含大小写字母+数字+特殊字符)" size="large" show-password maxlength="16" />
+        <el-form-item label="密码" prop="password">
+          <el-input v-model="form.password" type="password" placeholder="8-16位，含大小写字母+数字+特殊字符" size="large" show-password maxlength="16" />
         </el-form-item>
-        <el-form-item prop="confirmPassword">
-          <el-input v-model="form.confirmPassword" type="password" placeholder="确认密码" size="large" show-password maxlength="16" />
+        <el-form-item label="确认密码" prop="confirmPassword">
+          <el-input v-model="form.confirmPassword" type="password" placeholder="请再次输入密码" size="large" show-password maxlength="16" />
         </el-form-item>
-        <el-form-item prop="phone">
-          <el-input v-model="form.phone" placeholder="手机号" size="large" maxlength="11" />
+        <el-form-item label="手机号" prop="phone">
+          <el-input v-model="form.phone" placeholder="请输入手机号" size="large" maxlength="11" />
         </el-form-item>
         <el-form-item label="实名认证" prop="residentUuid">
           <ResidentPicker v-model="form.residentUuid" placeholder="搜索姓名或身份证号绑定您的实名信息" />
@@ -40,11 +40,9 @@
           <AttachmentUploader v-model="form.registerMaterials" />
           <div style="color:#909399;font-size:12px;margin-top:4px">非群众角色需上传相关资质证明文件</div>
         </el-form-item>
-        <el-form-item>
-          <el-button type="primary" size="large" :loading="loading" native-type="submit" style="width:100%">
-            提 交 注 册
-          </el-button>
-        </el-form-item>
+        <el-button type="primary" size="large" :loading="loading" native-type="submit" style="width:100%;margin-top:8px">
+          提 交 注 册
+        </el-button>
         <div style="text-align:center">
           <el-button text size="small" @click="$router.push('/login')">已有账号？去登录</el-button>
         </div>
