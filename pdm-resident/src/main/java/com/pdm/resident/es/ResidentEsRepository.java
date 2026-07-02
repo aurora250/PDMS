@@ -32,12 +32,47 @@ public class ResidentEsRepository extends EsBaseRepository<Resident> {
         return Resident.class;
     }
 
+    /**
+     * 确保索引存在且日期字段有正确的 date 类型映射（兼容字符串和长整型时间戳）。
+     * 即使 ES 启动较晚导致 EsIndexInitializer 失败，首次 save/bulkSave 也会触发此方法。
+     */
+    private void ensureIndexWithMapping() throws IOException {
+        if (indexExists()) return;
+        synchronized (ResidentEsRepository.class) {
+            if (indexExists()) return; // double-check
+            esClient.indices().create(c -> c.index(getIndexName())
+                    .mappings(m -> m
+                            .properties("birthDate", p -> p.date(d -> d))
+                            .properties("createTime", p -> p.date(d -> d))
+                            .properties("updateTime", p -> p.date(d -> d))));
+        }
+    }
+
+    @Override
+    public void createIndex() throws IOException {
+        ensureIndexWithMapping();
+    }
+
+    /** 兜底：每次保存前确保索引映射正确 */
+    @Override
+    public void save(String id, Resident document) throws IOException {
+        ensureIndexWithMapping();
+        super.save(id, document);
+    }
+
+    /** 兜底：批量保存前同样确保映射正确 */
+    public void bulkSave(List<Resident> documents, java.util.function.Function<Resident, String> idExtractor)
+            throws IOException {
+        ensureIndexWithMapping();
+        super.bulkSave(documents, idExtractor);
+    }
+
     public List<Resident> multiConditionSearch(String name, String gender, String nation, String nationCode,
             String educationLevel, String educationCode, String maritalStatus, String householdStatus, String province,
             int from, int size) throws IOException {
         BoolQuery.Builder boolBuilder = new BoolQuery.Builder();
         if (StringUtils.hasText(name)) {
-            boolBuilder.must(Query.of(q -> q.match(m -> m.field("name").query(name))));
+            boolBuilder.must(Query.of(q -> q.matchPhrase(m -> m.field("name").query(name))));
         }
         if (StringUtils.hasText(gender)) {
             boolBuilder.must(Query.of(q -> q.term(t -> t.field("gender").value(gender))));
@@ -70,7 +105,7 @@ public class ResidentEsRepository extends EsBaseRepository<Resident> {
             String educationCode, String maritalStatus, String householdStatus, String province) throws IOException {
         BoolQuery.Builder boolBuilder = new BoolQuery.Builder();
         if (StringUtils.hasText(name)) {
-            boolBuilder.must(Query.of(q -> q.match(m -> m.field("name").query(name))));
+            boolBuilder.must(Query.of(q -> q.matchPhrase(m -> m.field("name").query(name))));
         }
         if (StringUtils.hasText(gender)) {
             boolBuilder.must(Query.of(q -> q.term(t -> t.field("gender").value(gender))));

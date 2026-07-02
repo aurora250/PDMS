@@ -36,7 +36,7 @@
       <el-form-item label="电话" prop="phone"><el-input v-model="form.phone" /></el-form-item>
 
       <!-- 居住地址: 省市区级联 + 详细地址 -->
-      <el-form-item label="居住地区" prop="areaId">
+      <el-form-item label="居住地区" required>
         <AreaCascader v-model="addressForm.areaId" placeholder="选择居住地省市区" />
       </el-form-item>
       <el-form-item label="居住详址">
@@ -65,7 +65,7 @@
       </el-form-item>
 
       <!-- 户籍地址: 省市区级联 + 详细地址 -->
-      <el-form-item label="户籍地区" prop="householdAreaId">
+      <el-form-item label="户籍地区" required>
         <AreaCascader v-model="addressForm.householdAreaId" placeholder="选择户籍地省市区" />
       </el-form-item>
       <el-form-item label="户籍详址">
@@ -135,9 +135,7 @@ const rules = {
   educationLevel: [{ required: true, message: '请选择学历', trigger: 'change' }],
   maritalStatus: [{ required: true, message: '请选择婚姻状况', trigger: 'change' }],
   phone: [{ required: true, message: '请输入电话', trigger: 'blur' }, phoneRule],
-  areaId: [{ required: true, message: '请选择居住地区', trigger: 'change' }],
   householdType: [{ required: true, message: '请选择户口类型', trigger: 'change' }],
-  householdAreaId: [{ required: true, message: '请选择户籍地区', trigger: 'change' }],
 }
 
 function onNationChange() { form.nationCode = nationCode(form.nation) }
@@ -247,7 +245,7 @@ async function handleSave() {
     }
 
     if (isEdit.value) {
-      // 编辑模式：提交变更申请（需审批后生效）
+      // 编辑模式：计算差异并提交变更申请（需审批后生效）
       const changedFields: string[] = []
       const orig: Record<string, any> = {}
       const mod: Record<string, any> = {}
@@ -277,8 +275,17 @@ async function handleSave() {
       })
       showSuccess('变更申请已提交，请等待审核')
     } else {
-      await residentApi.create(payload)
-      showSuccess('新增成功')
+      // 新增模式：也提交变更申请（审批通过后才正式创建居民）
+      const newUuid = crypto.randomUUID()
+      const fullData: Record<string, any> = { ...payload, uuid: newUuid }
+      await residentApi.submitChangeRequest({
+        applicantUuid: newUuid,
+        changeField: '新增人口',
+        originalData: '{}',
+        modifiedData: JSON.stringify(fullData),
+        status: '请求',
+      })
+      showSuccess('新增申请已提交，请等待审核')
     }
     visible.value = false
     emit('saved')

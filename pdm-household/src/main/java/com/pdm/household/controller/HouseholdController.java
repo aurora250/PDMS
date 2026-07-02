@@ -78,6 +78,12 @@ public class HouseholdController {
         return Result.success(householdService.renewBook(body.get("bookNo")));
     }
 
+    @PutMapping("/api/household/book/{id}/approve")
+    public Result<HouseholdRegister> approveBook(@PathVariable Long id, @RequestBody Map<String, String> body,
+            @RequestHeader("X-User-Uuid") String handlerUuid) {
+        return Result.success(householdService.approveBook(id, body.get("status"), handlerUuid));
+    }
+
     /** 按居民UUID查询其户口簿 */
     @GetMapping("/api/household/book/by-resident/{residentUuid}")
     public Result<Map<String, Object>> getBookByResident(@PathVariable String residentUuid) {

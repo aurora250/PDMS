@@ -63,8 +63,8 @@ public class ResidentServiceImpl implements ResidentService {
         // Auto-fill birth date and gender from ID card
         resident.setBirthDate(IdCardValidator.extractBirthDate(resident.getIdCardNo()));
         resident.setGender(IdCardValidator.extractGender(resident.getIdCardNo()));
-        if (resident.getUuid() == null) {
-            resident.setUuid("test-uuid");
+        if (resident.getUuid() == null || resident.getUuid().isBlank()) {
+            resident.setUuid(java.util.UUID.randomUUID().toString());
         }
         if (resident.getHouseholdStatus() == null) {
             resident.setHouseholdStatus("正常");
@@ -159,18 +159,41 @@ public class ResidentServiceImpl implements ResidentService {
                     request.getNation(), request.getNationCode(), request.getEducationLevel(),
                     request.getEducationCode(), request.getMaritalStatus(), request.getHouseholdStatus(),
                     request.getProvince(), request.getOffset(), request.getSize());
-            long total = residentEsRepository.multiConditionCount(request.getName(), request.getGender(),
+            long esTotal = residentEsRepository.multiConditionCount(request.getName(), request.getGender(),
                     request.getNation(), request.getNationCode(), request.getEducationLevel(),
                     request.getEducationCode(), request.getMaritalStatus(), request.getHouseholdStatus(),
                     request.getProvince());
-            if (total == 0) {
+            if (esTotal == 0) {
                 return searchFromDb(request);
             }
-            return PageResult.of(residents, total, request.getPage(), request.getSize());
+            // 无筛选条件时，如果 ES 数据量明显少于 DB，说明全量同步未完成，自动触发重索引并降级到 DB
+            if (!StringUtils.hasText(request.getName()) && !StringUtils.hasText(request.getProvince())) {
+                long dbTotal = residentMapper.selectCount(new LambdaQueryWrapper<>());
+                if (dbTotal > 0 && esTotal < dbTotal / 2) {
+                    log.warn("ES data incomplete: ES={} vs DB={}, triggering reindex and falling back to DB",
+                            esTotal, dbTotal);
+                    triggerAsyncReindex();
+                    return searchFromDb(request);
+                }
+            }
+            return PageResult.of(residents, esTotal, request.getPage(), request.getSize());
         } catch (Exception e) {
             log.warn("ES search failed, fallback to DB: {}", e.getMessage());
             return searchFromDb(request);
         }
+    }
+
+    /** 异步触发全量重索引（不阻塞当前请求） */
+    private void triggerAsyncReindex() {
+        new Thread(() -> {
+            try {
+                residentEsRepository.createIndex();
+                int count = reindexAllResidents();
+                log.info("Async reindex complete: {} residents synced to ES", count);
+            } catch (Exception e) {
+                log.error("Async reindex failed", e);
+            }
+        }, "es-reindex").start();
     }
 
     private PageResult<Resident> searchFromDb(ResidentSearchRequest request) {
@@ -423,6 +446,7 @@ public class ResidentServiceImpl implements ResidentService {
                 Map<String, Object> modifiedData = objectMapper.readValue(request.getModifiedData(), Map.class);
                 Resident resident = residentMapper.selectByUuid(request.getApplicantUuid());
                 if (resident != null) {
+                    // 修改已有居民：逐字段更新
                     if (modifiedData.containsKey("name"))
                         resident.setName((String) modifiedData.get("name"));
                     if (modifiedData.containsKey("formerName"))
@@ -447,14 +471,65 @@ public class ResidentServiceImpl implements ResidentService {
                         resident.setPhone((String) modifiedData.get("phone"));
                     if (modifiedData.containsKey("residence"))
                         resident.setResidence((String) modifiedData.get("residence"));
+                    if (modifiedData.containsKey("areaId"))
+                        resident.setAreaId(toLong(modifiedData.get("areaId")));
                     if (modifiedData.containsKey("householdType"))
                         resident.setHouseholdType((String) modifiedData.get("householdType"));
                     if (modifiedData.containsKey("householdAddress"))
                         resident.setHouseholdAddress((String) modifiedData.get("householdAddress"));
+                    if (modifiedData.containsKey("householdAreaId"))
+                        resident.setHouseholdAreaId(toLong(modifiedData.get("householdAreaId")));
                     residentMapper.updateById(resident);
+                    try { residentEsRepository.save(resident.getUuid(), resident); } catch (Exception e) { log.warn("Failed to sync updated resident to ES: {}", e.getMessage()); }
+                } else {
+                    // 新增居民：从 modifiedData 构建新 Resident 并插入
+                    Resident newResident = new Resident();
+                    newResident.setUuid(request.getApplicantUuid());
+                    newResident.setName((String) modifiedData.get("name"));
+                    newResident.setFormerName((String) modifiedData.get("formerName"));
+                    newResident.setGender((String) modifiedData.get("gender"));
+                    newResident.setIdCardNo((String) modifiedData.get("idCardNo"));
+                    newResident.setNation((String) modifiedData.get("nation"));
+                    newResident.setNationCode((String) modifiedData.get("nationCode"));
+                    newResident.setEducationLevel((String) modifiedData.get("educationLevel"));
+                    newResident.setEducationCode((String) modifiedData.get("educationCode"));
+                    newResident.setBloodType((String) modifiedData.get("bloodType"));
+                    newResident.setMaritalStatus((String) modifiedData.get("maritalStatus"));
+                    newResident.setOccupation((String) modifiedData.get("occupation"));
+                    newResident.setPhone((String) modifiedData.get("phone"));
+                    newResident.setResidence((String) modifiedData.get("residence"));
+                    newResident.setAreaId(toLong(modifiedData.get("areaId")));
+                    newResident.setHouseholdType((String) modifiedData.get("householdType"));
+                    newResident.setHouseholdStatus(
+                            modifiedData.containsKey("householdStatus") ? (String) modifiedData.get("householdStatus")
+                                    : "正常");
+                    newResident.setHouseholdAddress((String) modifiedData.get("householdAddress"));
+                    newResident.setHouseholdAreaId(toLong(modifiedData.get("householdAreaId")));
+
+                    // Auto-fill birth date and gender from ID card
+                    if (newResident.getIdCardNo() != null && IdCardValidator.isValid(newResident.getIdCardNo())) {
+                        newResident.setBirthDate(IdCardValidator.extractBirthDate(newResident.getIdCardNo()));
+                        newResident.setGender(IdCardValidator.extractGender(newResident.getIdCardNo()));
+                    }
+                    // Validate ID card
+                    if (!IdCardValidator.isValid(newResident.getIdCardNo())) {
+                        throw new BusinessException(ErrorCode.ID_CARD_INVALID);
+                    }
+                    if (residentMapper.selectByIdCardNo(newResident.getIdCardNo()) != null) {
+                        throw new BusinessException(ErrorCode.ID_CARD_DUPLICATE);
+                    }
+
+                    residentMapper.insert(newResident);
+                    try {
+                        residentEsRepository.save(newResident.getUuid(), newResident);
+                    } catch (Exception e) {
+                        log.warn("Failed to sync new resident to ES: {}", e.getMessage());
+                    }
                 }
             } catch (Exception e) {
                 log.error("Failed to apply change request", e);
+                throw e instanceof BusinessException ? (BusinessException) e
+                        : new BusinessException(ErrorCode.SYSTEM_ERROR, "变更应用失败: " + e.getMessage());
             }
         }
 
@@ -515,5 +590,12 @@ public class ResidentServiceImpl implements ResidentService {
         wrapper.eq(Resident::getIsDeleted, 0);
         List<Resident> residents = residentMapper.selectList(wrapper);
         EasyExcel.write(outputStream, Resident.class).sheet("常住人口").doWrite(residents);
+    }
+
+    /** 安全地将 Object 转为 Long */
+    private static Long toLong(Object val) {
+        if (val == null) return null;
+        if (val instanceof Number n) return n.longValue();
+        try { return Long.parseLong(val.toString()); } catch (NumberFormatException e) { return null; }
     }
 }

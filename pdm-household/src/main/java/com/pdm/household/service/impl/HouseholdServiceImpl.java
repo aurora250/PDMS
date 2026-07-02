@@ -28,14 +28,33 @@ public class HouseholdServiceImpl implements HouseholdService {
     private final MigrationPermitMapper migrationPermitMapper;
     private final AreaMapper areaMapper;
     private final ResidentMapper residentMapper;
+    private final PoliceMapper policeMapper;
 
     @Override
     @Transactional
     public HouseholdRegister applyBook(HouseholdRegister book) {
-        if (book.getHouseholdBookNo() == null) {
-            book.setHouseholdBookNo("HB" + IdUtil.fastSimpleUUID().substring(0, 20));
+        if (book.getHouseholdBookNo() == null || book.getHouseholdBookNo().isBlank()) {
+            book.setEstablishDate(LocalDate.now());
+            // 生成户口簿号: 地区码(6位) + 年份(4位) + 序号(8位零填充)
+            String areaCode = "000000";
+            if (book.getHukouAreaId() != null) {
+                Area area = areaMapper.selectById(book.getHukouAreaId());
+                if (area != null && area.getAreaCode() != null) {
+                    areaCode = area.getAreaCode();
+                }
+            }
+            String year = String.valueOf(book.getEstablishDate().getYear());
+            String prefix = areaCode + year;
+            String maxNo = bookMapper.selectMaxBookNoByPrefix(prefix + "%");
+            long seq = 1L;
+            if (maxNo != null && maxNo.length() >= 18) {
+                try { seq = Long.parseLong(maxNo.substring(10)) + 1; } catch (NumberFormatException e) { /* use 1 */ }
+            }
+            book.setHouseholdBookNo(prefix + String.format("%08d", seq));
         }
-        book.setEstablishDate(LocalDate.now());
+        if (book.getEstablishDate() == null) {
+            book.setEstablishDate(LocalDate.now());
+        }
         book.setStatus("审批中");
         bookMapper.insert(book);
         return book;
@@ -55,6 +74,29 @@ public class HouseholdServiceImpl implements HouseholdService {
     @Transactional
     public HouseholdRegister renewBook(String bookNo) {
         return reissueBook(bookNo);
+    }
+
+    @Override
+    @Transactional
+    public HouseholdRegister approveBook(Long id, String action, String handlerUuid) {
+        HouseholdRegister book = bookMapper.selectById(id);
+        if (book == null)
+            throw new BusinessException(ErrorCode.HOUSEHOLD_BOOK_NOT_FOUND);
+
+        String current = book.getStatus();
+        if ("通过".equals(action)) {
+            if (!"审批中".equals(current))
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "当前状态不允许审批通过: " + current);
+            book.setStatus("有效");
+        } else if ("驳回".equals(action)) {
+            if (!"审批中".equals(current))
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "当前状态不允许驳回: " + current);
+            book.setStatus("已驳回");
+        } else {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "未知审批操作: " + action);
+        }
+        bookMapper.updateById(book);
+        return book;
     }
 
     @Override
@@ -224,6 +266,9 @@ public class HouseholdServiceImpl implements HouseholdService {
         if (request.getHandleDate() == null) {
             request.setHandleDate(LocalDate.now());
         }
+        if (request.getAttachment() == null) {
+            request.setAttachment("");
+        }
         request.setStatus("准迁证审批中");
         migrationMapper.insert(request);
         return request;
@@ -236,6 +281,14 @@ public class HouseholdServiceImpl implements HouseholdService {
         HouseholdMigrationRequest req = migrationMapper.selectById(rid);
         if (req == null)
             throw new BusinessException(ErrorCode.MIGRATION_NOT_FOUND);
+
+        // 查询处理民警信息（含辖区和派出所名称）
+        java.util.Map<String, Object> handlerPolice = policeMapper.selectByUserUuid(handlerUuid);
+        if (handlerPolice == null)
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "当前用户不是民警，无权审批迁移");
+
+        Long handlerAreaId = (Long) handlerPolice.get("area_id");
+        String handlerStation = (String) handlerPolice.get("police_station");
 
         String current = req.getStatus();
 
@@ -255,25 +308,43 @@ public class HouseholdServiceImpl implements HouseholdService {
             if (nextStatus == null) {
                 throw new BusinessException(ErrorCode.PARAM_ERROR, "当前状态不允许审批通过: " + current);
             }
+
+            // === 辖区校验 ===
+            if ("准迁证审批中".equals(current)) {
+                // 准迁证：民警辖区必须与迁入地匹配
+                checkJurisdiction(handlerAreaId, req.getIncomingAreaId(), "迁入地");
+            } else if ("准迁证已批准".equals(current)) {
+                // 迁移证：民警辖区必须与迁出地匹配
+                checkJurisdiction(handlerAreaId, req.getOutgoingAreaId(), "迁出地");
+            }
+
             req.setStatus(nextStatus);
 
-            // 自动签发证件并回填证号
+            // 自动签发准迁证（准迁证审批中 → 准迁证已批准）
             if ("准迁证已批准".equals(nextStatus) && req.getApprovalPermitNo() == null) {
+                String incomingAreaCode = getAreaCode(req.getIncomingAreaId());
                 ApprovalPermit approvalPermit = new ApprovalPermit();
                 approvalPermit.setUuid(req.getApplicantUuid());
-                approvalPermit.setPermitNo(PermitNumberGenerator.approvalPermit(null, LocalDate.now(),
+                approvalPermit.setPermitNo(PermitNumberGenerator.approvalPermit(incomingAreaCode, LocalDate.now(),
                         System.currentTimeMillis() % 1_000_000));
                 approvalPermit.setIssueDate(LocalDate.now());
+                approvalPermit.setExpiryDate(LocalDate.now().plusDays(30));
+                approvalPermit.setIssuingAuthority(handlerStation != null ? handlerStation : "公安机关");
                 approvalPermit.setStatus("有效");
                 approvalPermitMapper.insert(approvalPermit);
                 req.setApprovalPermitNo(approvalPermit.getPermitNo());
             }
+
+            // 自动签发迁移证（准迁证已批准 → 迁移证已批准）
             if ("迁移证已批准".equals(nextStatus) && req.getMigrationPermitNo() == null) {
+                String outgoingAreaCode = getAreaCode(req.getOutgoingAreaId());
                 MigrationPermit migrationPermit = new MigrationPermit();
                 migrationPermit.setUuid(req.getApplicantUuid());
-                migrationPermit.setPermitNo(PermitNumberGenerator.migrationPermit(null, LocalDate.now(),
+                migrationPermit.setPermitNo(PermitNumberGenerator.migrationPermit(outgoingAreaCode, LocalDate.now(),
                         System.currentTimeMillis() % 1_000_000));
                 migrationPermit.setIssueDate(LocalDate.now());
+                migrationPermit.setExpiryDate(LocalDate.now().plusDays(30));
+                migrationPermit.setOutgoingPoliceStation(handlerStation != null ? handlerStation : "公安机关");
                 migrationPermit.setStatus("有效");
                 migrationPermitMapper.insert(migrationPermit);
                 req.setMigrationPermitNo(migrationPermit.getPermitNo());
@@ -285,6 +356,29 @@ public class HouseholdServiceImpl implements HouseholdService {
             req.setRejectReason(rejectReason);
         migrationMapper.updateById(req);
         return req;
+    }
+
+    /** 校验民警辖区与迁移目标地区是否匹配（至少同市，area_code前4位一致） */
+    private void checkJurisdiction(Long handlerAreaId, Long targetAreaId, String label) {
+        if (handlerAreaId == null || targetAreaId == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "缺少辖区或" + label + "地区信息，无法校验辖区权限");
+        }
+        String handlerCode = getAreaCode(handlerAreaId);
+        String targetCode = getAreaCode(targetAreaId);
+        if (handlerCode == null || targetCode == null || handlerCode.length() < 4 || targetCode.length() < 4) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "无法获取辖区或" + label + "的地区编码");
+        }
+        if (!handlerCode.substring(0, 4).equals(targetCode.substring(0, 4))) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR,
+                    String.format("当前民警辖区与%s不匹配，无权审批此迁移", label));
+        }
+    }
+
+    /** 安全获取 area_code */
+    private String getAreaCode(Long areaId) {
+        if (areaId == null) return null;
+        Area area = areaMapper.selectById(areaId);
+        return area != null ? area.getAreaCode() : null;
     }
 
     @Override
@@ -302,6 +396,10 @@ public class HouseholdServiceImpl implements HouseholdService {
             permit.setPermitNo(PermitNumberGenerator.approvalPermit(null, LocalDate.now(),
                     System.currentTimeMillis() % 1_000_000));
         permit.setIssueDate(LocalDate.now());
+        if (permit.getExpiryDate() == null)
+            permit.setExpiryDate(LocalDate.now().plusDays(30));
+        if (permit.getIssuingAuthority() == null)
+            permit.setIssuingAuthority("公安机关");
         permit.setStatus("有效");
         approvalPermitMapper.insert(permit);
         return permit;
@@ -314,6 +412,10 @@ public class HouseholdServiceImpl implements HouseholdService {
             permit.setPermitNo(PermitNumberGenerator.migrationPermit(null, LocalDate.now(),
                     System.currentTimeMillis() % 1_000_000));
         permit.setIssueDate(LocalDate.now());
+        if (permit.getExpiryDate() == null)
+            permit.setExpiryDate(LocalDate.now().plusDays(30));
+        if (permit.getOutgoingPoliceStation() == null)
+            permit.setOutgoingPoliceStation("公安机关");
         permit.setStatus("有效");
         migrationPermitMapper.insert(permit);
         return permit;

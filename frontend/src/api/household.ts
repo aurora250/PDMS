@@ -6,6 +6,7 @@ export const householdApi = {
   applyBook: (data: any) => request.post('/household/book/apply', data),
   reissueBook: (data: any) => request.post('/household/book/reissue', data),
   renewBook: (data: any) => request.post('/household/book/renew', data),
+  approveBook: (id: number, action: string) => request.put(`/household/book/${id}/approve`, { status: action }),
   /** 按居民UUID查询户口簿 */
   getBookByResident: (residentUuid: string, config?: any) => request.get(`/household/book/by-resident/${residentUuid}`, config),
   // 业务

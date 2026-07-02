@@ -570,7 +570,7 @@ DROP TABLE IF EXISTS _area_ids;
 
 
 -- ============================================================
--- 2. 警员 (80人) — 放在常住人口之后以便关联真实居民
+-- 2. 警员 — police_station 与 area_id 一致，动态数量
 -- ============================================================
 DO $$
 DECLARE
@@ -578,45 +578,52 @@ DECLARE
     idx INT;
     seq_map INT[];
     selected_pfx TEXT;
+    v_area_name TEXT;
     ranks TEXT[] := ARRAY['警员','警司','警督','警监'];
     r_weights FLOAT[] := ARRAY[0.55,0.30,0.12,0.03];
     cum_r FLOAT[];
-    stations TEXT[] := ARRAY['东城分局','西城分局','朝阳分局','海淀分局','丰台分局',
-                              '石景山分局','通州分局','大兴分局','顺义分局','昌平分局'];
     depts TEXT[] := ARRAY['治安大队','刑侦大队','户政科','社区警务队','巡逻队','指挥中心'];
     user_uuids VARCHAR(36)[];
     resident_uuids VARCHAR(36)[];
     area_ids BIGINT[];
     area_prefixes TEXT[];
+    area_names TEXT[];
+    n INT;
+    r_len INT;
 BEGIN
     cum_r := r_weights;
     FOR i IN 2..4 LOOP cum_r[i] := cum_r[i] + cum_r[i-1]; END LOOP;
 
-    -- 构建 area_id 与 area_code 前4位的映射数组（只含市级区域）
+    -- 构建 area_id / area_code前4位 / area_name 的映射数组（只含市级区域）
     WITH district_data AS (
-        SELECT a.area_id, LEFT(a.area_code, 4) AS pfx
+        SELECT a.area_id, LEFT(a.area_code, 4) AS pfx, a.area_name
         FROM area a JOIN (SELECT unnest(ids) AS area_id FROM _area_districts) d USING (area_id)
     )
-    SELECT array_agg(area_id), array_agg(pfx) INTO area_ids, area_prefixes FROM district_data;
+    SELECT array_agg(area_id), array_agg(pfx), array_agg(area_name)
+    INTO area_ids, area_prefixes, area_names FROM district_data;
 
     -- 初始化序号数组
     seq_map := ARRAY(SELECT 0 FROM generate_series(1, array_length(area_ids, 1)));
 
-    SELECT array_agg(user_uuid) INTO user_uuids FROM sys_user WHERE user_role = '民警' LIMIT 80;
-    SELECT array_agg(uuid) INTO resident_uuids FROM (SELECT uuid FROM resident ORDER BY random() LIMIT 80) sub;
+    SELECT array_agg(user_uuid) INTO user_uuids FROM sys_user WHERE user_role = '民警';
+    SELECT array_agg(uuid) INTO resident_uuids FROM resident;
+    n := array_length(user_uuids, 1);
+    r_len := array_length(resident_uuids, 1);
 
-    FOR i IN 1..80 LOOP
+    FOR i IN 1..n LOOP
         idx := floor(random() * array_length(area_ids, 1) + 1)::INT;
         seq_map[idx] := seq_map[idx] + 1;
         selected_pfx := area_prefixes[idx];
+        v_area_name := area_names[idx];
 
         INSERT INTO police (police_number, user_uuid, resident_uuid,
                            police_station, jurisdiction, area_id, department,
                            police_rank, duty_status, is_deleted)
         VALUES ('P' || selected_pfx || LPAD(seq_map[idx]::TEXT, 4, '0'),
-                user_uuids[i],
-                resident_uuids[i],
-                arr_rand(stations), gen_address(area_ids[idx], i + 600000),
+                CASE WHEN i % 2 = 1 THEN user_uuids[i] ELSE NULL END,
+                resident_uuids[(i - 1) % r_len + 1],
+                v_area_name || '公安分局',
+                gen_address(area_ids[idx], i + 600000),
                 area_ids[idx],
                 arr_rand(depts),
                 weighted_pick(ranks, cum_r),
@@ -647,10 +654,10 @@ BEGIN
                 est_d,
                 gen_address(hukou_aid, i),
                 hukou_aid,
-                CASE WHEN random() < 0.90 THEN '有效'
-                     WHEN random() < 0.55 THEN '审批中'
+                CASE WHEN random() < 0.70 THEN '有效'
+                     WHEN random() < 0.60 THEN '审批中'
                      WHEN random() < 0.50 THEN '冻结'
-                     ELSE '无效' END,
+                     ELSE '已驳回' END,
                 '[' || res_uuids[i] || ']',
                 0);
     END LOOP;

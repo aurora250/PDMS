@@ -48,7 +48,8 @@ public abstract class EsBaseRepository<T> {
     }
 
     public void save(String id, T document) throws IOException {
-        esClient.index(IndexRequest.of(i -> i.index(getIndexName()).id(id).document(document)));
+        esClient.index(IndexRequest.of(i -> i.index(getIndexName()).id(id).document(document)
+                .refresh(co.elastic.clients.elasticsearch._types.Refresh.True)));
     }
 
     public void delete(String id) throws IOException {

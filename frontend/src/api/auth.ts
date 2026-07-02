@@ -17,6 +17,8 @@ export const policeApi = {
   create: (data: any) => request.post('/auth/police', data),
   update: (no: string, data: any) => request.put(`/auth/police/${no}`, data),
   updateStatus: (no: string, dutyStatus: string) => request.put(`/auth/police/${no}/status`, { dutyStatus }),
+  /** 查询未关联系统用户的民警列表（供创建民警用户时选择实名认证） */
+  listUnassociated: (config?: any) => request.get('/auth/police/unassociated', config),
 }
 
 /** 权限组 */

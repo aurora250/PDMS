@@ -135,7 +135,10 @@
                 <el-timeline-item
                   v-for="(m, i) in migrationRoutes" :key="i"
                   :timestamp="m.date" placement="top"
-                  :type="m.status?.includes('通过') ? 'success' : m.status?.includes('驳回') ? 'danger' : 'primary'"
+                  :type="migrationTimelineType(m.status)"
+                  :class="{ 'trace-hovered': hoveredMigrationIdx === i }"
+                  @mouseenter="hoveredMigrationIdx = i"
+                  @mouseleave="hoveredMigrationIdx = null"
                 >
                   <el-card shadow="hover" size="small" class="trace-card">
                     <div class="trace-route">
@@ -156,7 +159,10 @@
               </el-timeline>
             </div>
             <div class="split-right">
-              <MigrationRouteMap :routes="migrationRoutes" height="100%" />
+              <MigrationRouteMap :routes="migrationRoutes" height="100%"
+                :hovered-index="hoveredMigrationIdx"
+                @hover="hoveredMigrationIdx = $event"
+                @click="onMigrationRouteClick" />
             </div>
           </div>
           <el-empty v-else description="暂无迁移记录" />
@@ -188,7 +194,10 @@
                 <el-timeline-item
                   v-for="(r, i) in floatingRoutes" :key="i"
                   :timestamp="r.date" placement="top"
-                  :type="i === 0 ? 'success' : 'primary'"
+                  type="primary"
+                  :class="{ 'trace-hovered': hoveredFloatingIdx === i }"
+                  @mouseenter="hoveredFloatingIdx = i"
+                  @mouseleave="hoveredFloatingIdx = null"
                 >
                   <el-card shadow="hover" size="small" class="trace-card">
                     <div class="trace-route">
@@ -201,12 +210,19 @@
                       <el-tag size="small" type="warning">{{ r.purpose }}</el-tag>
                       <span v-if="r.workUnit" style="font-size:12px;color:#909399">{{ r.workUnit }}</span>
                     </div>
+                    <el-button text size="small" type="primary" style="margin-top:4px"
+                      @click="$router.push(`/floating/residence?keyword=${encodeURIComponent(r.toAddress)}`)">
+                      查看居住地记录
+                    </el-button>
                   </el-card>
                 </el-timeline-item>
               </el-timeline>
             </div>
             <div class="split-right">
-              <MigrationRouteMap :routes="floatingRoutes" height="100%" />
+              <MigrationRouteMap :routes="floatingRoutes" height="100%"
+                :hovered-index="hoveredFloatingIdx"
+                @hover="hoveredFloatingIdx = $event"
+                @click="onFloatingRouteClick" />
             </div>
           </div>
           <el-empty v-else description="暂无流动记录" />
@@ -287,12 +303,14 @@ const extendedRelations = reactive({
   grandchildren: [] as { uuid: string; name: string; gender: string; parentName: string }[],
 })
 const floatingRecords = ref<any[]>([])
+const hoveredMigrationIdx = ref<number | null>(null)
+const hoveredFloatingIdx = ref<number | null>(null)
 
-// 将流动记录转换为迁移轨迹格式（按时间排序，相邻记录串联为路径）
+// 将流动记录转换为迁移轨迹格式（每条记录：原地址 → 现地址）
 const floatingRoutes = computed(() => {
   const sorted = [...floatingRecords.value].sort((a, b) => (a.registerDate || '').localeCompare(b.registerDate || ''))
-  return sorted.map((r, i) => ({
-    fromAddress: i > 0 ? sorted[i - 1].currentAddress || '' : '',
+  return sorted.map((r) => ({
+    fromAddress: r.originalAddress || '',
     toAddress: r.currentAddress || '',
     date: r.registerDate || '',
     type: '居住登记',
@@ -492,6 +510,28 @@ function bookStatusType(status: string): string {
   return map[status] || 'info'
 }
 
+/** 迁移轨迹 timeline 节点颜色：驳回=红，通过=绿，中间=蓝 */
+function migrationTimelineType(status?: string): 'danger' | 'success' | 'primary' {
+  if (!status) return 'primary'
+  if (status.includes('驳回')) return 'danger'
+  if (status.includes('通过')) return 'success'
+  return 'primary'
+}
+
+function onMigrationRouteClick(idx: number) {
+  const m = migrationRoutes.value[idx]
+  if (m) {
+    router.push(`/household/migration?fromAddress=${encodeURIComponent(m.fromAddress)}&toAddress=${encodeURIComponent(m.toAddress)}`)
+  }
+}
+
+function onFloatingRouteClick(idx: number) {
+  const r = floatingRoutes.value[idx]
+  if (r) {
+    router.push(`/floating/residence?keyword=${encodeURIComponent(r.toAddress)}`)
+  }
+}
+
 onMounted(loadAll)
 
 // 点击家庭关系成员跳转时，路由参数变化需重新加载
@@ -534,4 +574,15 @@ watch(() => route.params.uuid, (newUuid) => {
   padding: 8px 0; justify-content: flex-start;
 }
 .trace-meta { display: flex; gap: 8px; align-items: center; }
+.split-left :deep(.el-timeline-item.trace-hovered) .el-timeline-item__node {
+  animation: pulse-node 0.6s ease-in-out infinite alternate;
+}
+.split-left :deep(.el-timeline-item.trace-hovered) .el-card {
+  box-shadow: 0 2px 12px rgba(64,158,255,0.3) !important;
+  border-color: #409EFF;
+}
+@keyframes pulse-node {
+  from { transform: scale(1); }
+  to { transform: scale(1.3); }
+}
 </style>

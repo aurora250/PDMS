@@ -343,7 +343,7 @@ CREATE TABLE IF NOT EXISTS household_register (
     establish_date DATE NOT NULL,
     hukou_address VARCHAR(200) NOT NULL,
     hukou_area_id BIGINT,
-    status VARCHAR(10) NOT NULL DEFAULT '审批中' CHECK (status IN ('审批中','有效','冻结','无效')),
+    status VARCHAR(10) NOT NULL DEFAULT '审批中' CHECK (status IN ('审批中','有效','冻结','无效','已驳回')),
     member_uuid_list TEXT,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP,

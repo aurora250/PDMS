@@ -14,6 +14,8 @@ import com.pdm.household.mapper.HouseholdBusinessRequestMapper;
 import com.pdm.household.mapper.HouseholdMigrationRequestMapper;
 import com.pdm.household.mapper.HouseholdRegisterMapper;
 import com.pdm.household.mapper.MigrationPermitMapper;
+import com.pdm.household.mapper.PoliceMapper;
+import com.pdm.household.mapper.ResidentMapper;
 import com.pdm.household.service.impl.HouseholdServiceImpl;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -51,12 +53,18 @@ class HouseholdServiceImplTest {
     private MigrationPermitMapper migrationPermitMapper;
     @Mock
     private AreaMapper areaMapper;
+    @Mock
+    private PoliceMapper policeMapper;
+    @Mock
+    private ResidentMapper residentMapper;
     @InjectMocks
     private HouseholdServiceImpl householdService;
 
     private HouseholdRegister testBook;
     private HouseholdBusinessRequest testBusiness;
     private HouseholdMigrationRequest testMigration;
+    private Area testArea;
+    private java.util.Map<String, Object> testPolice;
 
     @BeforeEach
     void setUp() {
@@ -74,11 +82,23 @@ class HouseholdServiceImplTest {
         testBusiness.setBusinessType("登记");
         testBusiness.setStatus("审批中");
 
+        testArea = new Area();
+        testArea.setAreaId(1L);
+        testArea.setAreaCode("110105"); // 北京市朝阳区
+
         testMigration = new HouseholdMigrationRequest();
         testMigration.setRid(401L);
         testMigration.setApplicantUuid("00000000-0000-0000-0000-000000000001");
-        testMigration.setBusinessType("迁入");
+        testMigration.setBusinessType("市内");
+        testMigration.setIncomingAreaId(1L);
+        testMigration.setOutgoingAreaId(1L);
         testMigration.setStatus("准迁证审批中");
+
+        testPolice = new java.util.HashMap<>();
+        testPolice.put("area_id", 1L);
+        testPolice.put("police_station", "朝阳分局");
+        testPolice.put("police_number", "P11010001");
+        testPolice.put("area_code", "110105");
     }
 
     @Nested
@@ -96,7 +116,7 @@ class HouseholdServiceImplTest {
 
             assertNotNull(result);
             assertNotNull(result.getHouseholdBookNo());
-            assertTrue(result.getHouseholdBookNo().startsWith("HB"));
+            assertFalse(result.getHouseholdBookNo().isBlank());
             assertEquals("审批中", result.getStatus());
             assertNotNull(result.getEstablishDate());
             verify(bookMapper).insert(book);
@@ -207,9 +227,11 @@ class HouseholdServiceImplTest {
         }
 
         @Test
-        @DisplayName("审批通过迁移申请")
+        @DisplayName("审批通过迁移申请（准迁证阶段）")
         void shouldApproveMigration() {
             when(migrationMapper.selectById(401L)).thenReturn(testMigration);
+            when(policeMapper.selectByUserUuid("admin-uuid")).thenReturn(testPolice);
+            when(areaMapper.selectById(1L)).thenReturn(testArea);
 
             HouseholdMigrationRequest result = householdService.approveMigration(401L, "通过", "admin-uuid", null);
 
@@ -222,6 +244,7 @@ class HouseholdServiceImplTest {
         @DisplayName("驳回迁移申请")
         void shouldRejectMigration() {
             when(migrationMapper.selectById(401L)).thenReturn(testMigration);
+            when(policeMapper.selectByUserUuid("admin-uuid")).thenReturn(testPolice);
 
             HouseholdMigrationRequest result = householdService.approveMigration(401L, "驳回", "admin-uuid", "不符合迁移条件");
 

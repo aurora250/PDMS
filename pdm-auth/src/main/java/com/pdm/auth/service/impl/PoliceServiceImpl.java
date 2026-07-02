@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 import lombok.RequiredArgsConstructor;
@@ -101,5 +102,10 @@ public class PoliceServiceImpl implements PoliceService {
         }
         police.setDutyStatus(dutyStatus);
         policeMapper.updateById(police);
+    }
+
+    @Override
+    public List<Map<String, Object>> listUnassociated() {
+        return policeMapper.selectUnassociated();
     }
 }

@@ -45,10 +45,8 @@
         <el-table-column label="操作" width="300">
           <template #default="{ row }">
             <el-button text size="small" @click="$router.push(`/resident/${row.applicantUuid}?tab=migration`)">轨迹</el-button>
-            <!-- 民警：按阶段逐步审批 -->
             <el-button v-if="hasPermission('household:approve') && (row.status === '准迁证审批中' || row.status === '准迁证已批准' || row.status === '迁移证已批准')" text size="small" type="success" @click="showApprove(row, '通过')">通过</el-button>
             <el-button v-if="hasPermission('household:approve') && !row.status?.includes('驳回') && row.status !== '迁移审批通过'" text size="small" type="danger" @click="showApprove(row, '驳回')">驳回</el-button>
-            <!-- 街道办：附加材料（不审批） -->
             <el-button v-if="hasPermission('household:material:attach')" text size="small" @click="openAttach(row)">附加材料</el-button>
           </template>
         </el-table-column>
@@ -60,34 +58,56 @@
     </el-card>
 
     <!-- 新增迁移对话框 -->
-    <el-dialog v-model="dialogVisible" title="新增迁移申请" width="600px" @close="resetForm">
+    <el-dialog v-model="dialogVisible" title="新增迁移申请" width="650px" @close="resetForm">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
         <el-form-item label="申请人UUID" prop="applicantUuid">
-          <ResidentPicker v-model="form.applicantUuid" placeholder="搜索姓名或身份证号选择申请人" />
+          <ResidentPicker v-model="form.applicantUuid" placeholder="搜索姓名或身份证号选择申请人"
+            @pick="onApplicantPicked" />
         </el-form-item>
-        <el-form-item label="迁出地址" prop="outgoingAddress">
-          <el-input v-model="form.outgoingAddress" placeholder="原户籍地址" />
+
+        <!-- 迁出地址: 级联菜单 + 详细地址 + 预览 -->
+        <el-form-item label="迁出地区" required>
+          <AreaCascader v-model="form.outgoingAreaId" placeholder="选择迁出省市区" />
         </el-form-item>
-        <el-form-item label="迁出区域">
-          <AreaCascader v-model="form.outgoingAreaId" placeholder="选择迁出区域" />
+        <el-form-item label="迁出详址">
+          <el-input v-model="form.outgoingDetail" placeholder="街道/路/号/楼/室" />
+          <span class="form-tip">选择申请人后自动填充现居住地，可手动修改</span>
         </el-form-item>
-        <el-form-item label="迁入地址" prop="incomingAddress">
-          <el-input v-model="form.incomingAddress" placeholder="新户籍地址" />
+        <div v-if="outgoingPreview" class="address-preview">
+          <el-text type="info" size="small">迁出预览: {{ outgoingPreview }}</el-text>
+        </div>
+
+        <!-- 迁入地址: 级联菜单 + 详细地址 + 预览 -->
+        <el-form-item label="迁入地区" required>
+          <AreaCascader v-model="form.incomingAreaId" placeholder="选择迁入省市区" />
         </el-form-item>
-        <el-form-item label="迁入区域">
-          <AreaCascader v-model="form.incomingAreaId" placeholder="选择迁入区域" />
+        <el-form-item label="迁入详址">
+          <el-input v-model="form.incomingDetail" placeholder="街道/路/号/楼/室" />
         </el-form-item>
+        <div v-if="incomingPreview" class="address-preview">
+          <el-text type="info" size="small">迁入预览: {{ incomingPreview }}</el-text>
+        </div>
+
         <el-form-item label="迁移类型" prop="businessType">
-          <el-select v-model="form.businessType" style="width:100%">
+          <el-select v-model="form.businessType" style="width:100%" disabled>
             <el-option label="市内" value="市内" /><el-option label="省内" value="省内" />
             <el-option label="跨省" value="跨省" />
           </el-select>
+          <span class="form-tip">根据迁出/迁入地区自动判定</span>
         </el-form-item>
         <el-form-item label="办理日期" prop="handleDate">
           <el-date-picker v-model="form.handleDate" type="date" value-format="YYYY-MM-DD" style="width:100%" />
         </el-form-item>
         <el-form-item label="办理依据">
-          <el-input v-model="form.handleBasis" placeholder="法规依据" />
+          <div style="display:flex;gap:6px;width:100%">
+            <el-select v-model="form.handleBasis" style="flex:1" clearable filterable allow-create
+              placeholder="选择或自行输入法规依据">
+              <el-option v-for="r in MIGRATION_REGULATIONS" :key="r.name" :label="r.name" :value="r.name" />
+            </el-select>
+            <el-button v-if="selectedRegulationUrl" type="primary" link size="small" @click="openRegulationUrl">
+              <el-icon><Link /></el-icon> 查看原文
+            </el-button>
+          </div>
         </el-form-item>
         <el-form-item label="附件">
           <AttachmentUploader v-model="form.attachment" />
@@ -134,10 +154,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import { householdApi } from '@/api/household'
+import { residentApi } from '@/api/resident'
+import { areaApi } from '@/api/area'
 import { usePermission } from '@/composables/usePermission'
 import { showError, showSuccess } from '@/utils/auth'
 import AreaCascader from '@/components/AreaCascader.vue'
@@ -145,6 +167,7 @@ import ApprovalBadge from '@/components/ApprovalBadge.vue'
 import AttachmentUploader from '@/components/AttachmentUploader.vue'
 import ResidentPicker from '@/components/ResidentPicker.vue'
 import { PROVINCES } from '@/utils/constants'
+import { Link } from '@element-plus/icons-vue'
 
 const { hasPermission } = usePermission()
 const route = useRoute()
@@ -155,22 +178,122 @@ const fromFilter = ref('')
 const toFilter = ref('')
 const page = reactive({ current: 1, size: 20, total: 0 })
 
+/** 户籍迁移办理依据法规列表（含官方链接） */
+const MIGRATION_REGULATIONS = [
+  { name: '《中华人民共和国户口登记条例》第十条（迁出登记）',
+    url: 'https://flk.npc.gov.cn/detail?id=2c909fdd678bf17901678bf8a7250b77&fileId=&type=&title=%E4%B8%AD%E5%8D%8E%E4%BA%BA%E6%B0%91%E5%85-%B1%E5%92%8C%E5%9B%BD%E6%88%B7%E5%8F%A3%E7%99%BB%E8%AE%B0%E6%9D%A1%E4%BE%8B' },
+  { name: '《中华人民共和国户口登记条例》第十三条（迁入登记）',
+    url: 'https://flk.npc.gov.cn/detail?id=2c909fdd678bf17901678bf8a7250b77&fileId=&type=&title=%E4%B8%AD%E5%8D%8E%E4%BA%BA%E6%B0%91%E5%85-%B1%E5%92%8C%E5%9B%BD%E6%88%B7%E5%8F%A3%E7%99%BB%E8%AE%B0%E6%9D%A1%E4%BE%8B' },
+  { name: '《公安部关于解决当前户口管理工作中几个突出问题意见的通知》（国发〔1998〕24号）',
+    url: 'https://www.gov.cn/gongbao/content/1998/content_61770.htm' },
+  { name: '《关于进一步深化户籍制度改革的意见》（国发〔2014〕25号）',
+    url: 'https://www.gov.cn/zhengce/content/2014-07/30/content_8944.htm' },
+  { name: '《关于解决无户口人员登记户口问题的意见》（国办发〔2015〕96号）',
+    url: 'https://www.gov.cn/gongbao/content/2016/content_5036272.htm' },
+]
+const selectedRegulationUrl = computed(() => {
+  const found = MIGRATION_REGULATIONS.find(r => r.name === form.handleBasis)
+  return found ? found.url : null
+})
+function openRegulationUrl() {
+  if (selectedRegulationUrl.value) window.open(selectedRegulationUrl.value, '_blank')
+}
+
+// Area code cache: area_id → area_code (from tree data)
+const areaCodeMap = ref<Map<number, string>>(new Map())
+
+/** 构建 area_id → area_code 缓存 */
+async function loadAreaCodeMap() {
+  try {
+    const all: any[] = await areaApi.tree()
+    for (const a of all) {
+      if (a.areaId && a.areaCode) {
+        areaCodeMap.value.set(a.areaId, String(a.areaCode).trim())
+      }
+    }
+  } catch { /* ignore */ }
+}
+
+/** 获取区域路径前缀 */
+async function getAreaPath(areaId: number | null | undefined): Promise<string> {
+  if (!areaId) return ''
+  try { return await areaApi.getPath(areaId) } catch { return '' }
+}
+
 // Create dialog
 const dialogVisible = ref(false)
 const submitting = ref(false)
 const formRef = ref()
 const form = reactive({
-  applicantUuid: '', outgoingAddress: '', outgoingAreaId: undefined as number | undefined,
-  incomingAddress: '', incomingAreaId: undefined as number | undefined,
+  applicantUuid: '', outgoingDetail: '', outgoingAreaId: undefined as number | undefined,
+  incomingDetail: '', incomingAreaId: undefined as number | undefined,
   businessType: '市内', handleDate: new Date().toISOString().slice(0, 10),
   handleBasis: '', fee: 0, remark: '', attachment: [] as string[],
 })
 const rules = {
-  applicantUuid: [{ required: true, message: '请输入申请人UUID', trigger: 'blur' }],
-  outgoingAddress: [{ required: true, message: '请输入迁出地址', trigger: 'blur' }],
-  incomingAddress: [{ required: true, message: '请输入迁入地址', trigger: 'blur' }],
+  applicantUuid: [{ required: true, message: '请选择申请人', trigger: 'blur' }],
   businessType: [{ required: true, message: '请选择迁移类型', trigger: 'change' }],
   handleDate: [{ required: true, message: '请选择办理日期', trigger: 'change' }],
+}
+
+// 地址预览
+const outgoingPreview = ref('')
+const incomingPreview = ref('')
+
+watch(
+  () => [form.outgoingAreaId, form.outgoingDetail],
+  async () => { outgoingPreview.value = await getAreaPath(form.outgoingAreaId) + (form.outgoingDetail || '') }
+)
+watch(
+  () => [form.incomingAreaId, form.incomingDetail],
+  async () => { incomingPreview.value = await getAreaPath(form.incomingAreaId) + (form.incomingDetail || '') }
+)
+
+/** 根据迁出/迁入 area_code 自动判定迁移类型 */
+watch(
+  () => [form.outgoingAreaId, form.incomingAreaId],
+  async () => {
+    const outId = form.outgoingAreaId
+    const inId = form.incomingAreaId
+    if (!outId || !inId || areaCodeMap.value.size === 0) return
+    const outCode = areaCodeMap.value.get(outId) || ''
+    const inCode = areaCodeMap.value.get(inId) || ''
+    if (outCode.length < 4 || inCode.length < 4) return
+    if (outCode.substring(0, 4) === inCode.substring(0, 4)) {
+      form.businessType = '市内'
+    } else if (outCode.substring(0, 2) === inCode.substring(0, 2)) {
+      form.businessType = '省内'
+    } else {
+      form.businessType = '跨省'
+    }
+  }
+)
+
+/** 选择申请人后自动填充迁出地址为现居住地 */
+async function onApplicantPicked(_resident: { uuid: string }) {
+  try {
+    const detail = await residentApi.getByUuid(_resident.uuid)
+    if (detail) {
+      if (detail.areaId != null) {
+        form.outgoingAreaId = detail.areaId
+      }
+      if (detail.residence) {
+        form.outgoingDetail = await stripAreaPrefix(detail.residence, detail.areaId)
+      }
+    }
+  } catch { /* ignore */ }
+}
+
+async function stripAreaPrefix(fullAddress: string, areaId: number | null | undefined): Promise<string> {
+  if (!fullAddress || !areaId) return fullAddress
+  try {
+    const path: string = await areaApi.getPath(areaId)
+    if (path && fullAddress.startsWith(path)) {
+      const stripped = fullAddress.substring(path.length)
+      return stripped.trim() || fullAddress
+    }
+  } catch { /* ignore */ }
+  return fullAddress
 }
 
 // Approve dialog
@@ -197,22 +320,42 @@ async function load() {
 
 function openCreate() {
   Object.assign(form, {
-    applicantUuid: '', outgoingAddress: '', outgoingAreaId: undefined,
-    incomingAddress: '', incomingAreaId: undefined,
+    applicantUuid: '', outgoingDetail: '', outgoingAreaId: undefined,
+    incomingDetail: '', incomingAreaId: undefined,
     businessType: '市内', handleDate: new Date().toISOString().slice(0, 10),
     handleBasis: '', fee: 0, remark: '', attachment: [],
   })
+  outgoingPreview.value = ''
+  incomingPreview.value = ''
   dialogVisible.value = true
 }
 
-function resetForm() { formRef.value?.resetFields() }
+function resetForm() { formRef.value?.resetFields(); outgoingPreview.value = ''; incomingPreview.value = '' }
 
 async function handleCreate() {
+  if (!form.outgoingAreaId) { showError('请选择迁出地区'); return }
+  if (!form.outgoingDetail.trim()) { showError('请填写迁出详址'); return }
+  if (!form.incomingAreaId) { showError('请选择迁入地区'); return }
+  if (!form.incomingDetail.trim()) { showError('请填写迁入详址'); return }
+
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
+
   submitting.value = true
   try {
-    await householdApi.createMigration({ ...form })
+    await householdApi.createMigration({
+      applicantUuid: form.applicantUuid,
+      outgoingAddress: outgoingPreview.value || form.outgoingDetail,
+      outgoingAreaId: form.outgoingAreaId,
+      incomingAddress: incomingPreview.value || form.incomingDetail,
+      incomingAreaId: form.incomingAreaId,
+      businessType: form.businessType,
+      handleDate: form.handleDate,
+      handleBasis: form.handleBasis,
+      fee: form.fee,
+      remark: form.remark,
+      attachment: form.attachment?.length ? form.attachment.join(',') : '',
+    })
     showSuccess('提交成功')
     dialogVisible.value = false
     load()
@@ -234,7 +377,6 @@ async function handleApprove() {
   } catch { showApproveDialog.value = false; return }
   approving.value = true
   try {
-    // 直接发送审批动作（通过/驳回），后端状态机决定下一阶段
     await householdApi.approveMigration(approveRid, approveAction.value, rejectReason.value || undefined)
     showSuccess(approveAction.value === '驳回' ? '已驳回' : '已通过')
     showApproveDialog.value = false
@@ -261,12 +403,8 @@ async function handleAttach() {
   attaching.value = true
   try {
     const fd = new FormData()
-    if (attachFile.value.length > 0) {
-      fd.append('attachmentPath', attachFile.value.join(','))
-    }
-    if (attachRemark.value) {
-      fd.append('remark', attachRemark.value)
-    }
+    if (attachFile.value.length > 0) fd.append('attachmentPath', attachFile.value.join(','))
+    if (attachRemark.value) fd.append('remark', attachRemark.value)
     await householdApi.attachMigrationMaterial(attachRid, fd)
     showSuccess('材料已附加')
     showAttachDialog.value = false
@@ -275,7 +413,8 @@ async function handleAttach() {
   finally { attaching.value = false }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await loadAreaCodeMap()
   if (route.query.fromAddress) fromFilter.value = route.query.fromAddress as string
   if (route.query.toAddress) toFilter.value = route.query.toAddress as string
   if (route.query.from) fromFilter.value = route.query.from as string
@@ -287,4 +426,11 @@ onMounted(() => {
 <style scoped>
 .page-header { margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
 .page-header h3 { margin: 0; }
+.form-tip { display: block; font-size: 11px; color: #909399; line-height: 1.5; }
+.address-preview {
+  margin: -8px 0 12px 110px;
+  padding: 4px 8px;
+  background: #f5f7fa;
+  border-radius: 4px;
+}
 </style>

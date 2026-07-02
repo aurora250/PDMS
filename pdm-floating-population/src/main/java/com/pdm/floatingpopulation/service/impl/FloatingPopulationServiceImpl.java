@@ -8,6 +8,7 @@ import com.pdm.floatingpopulation.entity.ResidentPermit;
 import com.pdm.floatingpopulation.entity.ResidentPermitRenewal;
 import com.pdm.floatingpopulation.entity.ResidentRegistration;
 import com.pdm.floatingpopulation.mapper.FpRegisterRecordMapper;
+import com.pdm.floatingpopulation.mapper.ResidentMapper;
 import com.pdm.floatingpopulation.mapper.ResidentPermitMapper;
 import com.pdm.floatingpopulation.mapper.ResidentPermitRenewalMapper;
 import com.pdm.floatingpopulation.mapper.ResidentRegistrationMapper;
@@ -33,6 +34,7 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
     private final ResidentPermitMapper residentPermitMapper;
     private final ResidentPermitRenewalMapper residentPermitRenewalMapper;
     private final ResidentRegistrationMapper residentRegistrationMapper;
+    private final ResidentMapper residentMapper;
 
     @Override
     @Transactional
@@ -186,7 +188,16 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
             registration.setRegisterDate(LocalDate.now());
         }
         residentRegistrationMapper.insert(registration);
+
+        // 同步更新居民表的居住地信息
+        syncResidentResidence(registration.getUuid(), registration.getCurrentAddress(), registration.getAreaId());
+
         return registration;
+    }
+
+    private void syncResidentResidence(String uuid, String residence, Long areaId) {
+        if (uuid == null || residence == null) return;
+        residentMapper.updateResidenceByUuid(uuid, residence, areaId);
     }
 
     @Override
@@ -216,6 +227,10 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
         if (registration.getRegisterDate() != null)
             existing.setRegisterDate(registration.getRegisterDate());
         residentRegistrationMapper.updateById(existing);
+
+        // 同步更新居民表的居住地信息
+        syncResidentResidence(existing.getUuid(), existing.getCurrentAddress(), existing.getAreaId());
+
         return existing;
     }
 

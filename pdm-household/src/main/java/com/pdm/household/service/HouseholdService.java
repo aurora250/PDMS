@@ -13,6 +13,8 @@ public interface HouseholdService {
 
     HouseholdRegister renewBook(String bookNo);
 
+    HouseholdRegister approveBook(Long id, String action, String handlerUuid);
+
     /** 按居民UUID查询户口簿信息（含成员列表） */
     Map<String, Object> getBookByResident(String residentUuid);
 

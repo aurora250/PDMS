@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 import lombok.RequiredArgsConstructor;
@@ -47,5 +48,11 @@ public class PoliceController {
     public Result<Void> updateStatus(@PathVariable String policeNumber, @RequestBody Map<String, String> body) {
         policeService.updatePoliceStatus(policeNumber, body.get("dutyStatus"));
         return Result.success();
+    }
+
+    /** 查询未关联系统用户的民警列表（供创建民警用户时选择实名认证） */
+    @GetMapping("/unassociated")
+    public Result<List<Map<String, Object>>> listUnassociated() {
+        return Result.success(policeService.listUnassociated());
     }
 }

@@ -50,10 +50,17 @@
         <el-form-item v-if="!editing" label="用户名" prop="username"><el-input v-model="form.username" placeholder="请输入用户名" maxlength="50" /></el-form-item>
         <el-form-item v-if="!editing" label="密码" prop="password"><el-input v-model="form.password" type="password" placeholder="8-16位密码" maxlength="16" show-password /></el-form-item>
         <el-form-item v-if="!editing" label="实名认证" prop="residentUuid">
-          <ResidentPicker v-model="form.residentUuid" placeholder="搜索姓名或身份证号绑定实名信息" />
+          <!-- 民警/市局负责人：从未关联的 police 列表中选择 -->
+          <el-select v-if="isPoliceRole" v-model="form.residentUuid" placeholder="选择未关联的民警" filterable
+            value-key="resident_uuid" style="width:100%">
+            <el-option v-for="p in unassociatedPolice" :key="p.resident_uuid"
+              :label="`${p.police_number} - ${p.resident_name} - ${p.police_station}`"
+              :value="p.resident_uuid" />
+          </el-select>
+          <ResidentPicker v-else v-model="form.residentUuid" placeholder="搜索姓名或身份证号绑定实名信息" />
         </el-form-item>
         <el-form-item label="角色" prop="userRole">
-          <el-select v-model="form.userRole">
+          <el-select v-model="form.userRole" @change="onRoleChange">
             <el-option v-for="r in availableRoles" :key="r" :label="r" :value="r" />
           </el-select>
         </el-form-item>
@@ -87,7 +94,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessageBox } from 'element-plus'
-import { userApi, permissionGroupApi } from '@/api/auth'
+import { userApi, permissionGroupApi, policeApi } from '@/api/auth'
 import { usePermission } from '@/composables/usePermission'
 import { useAuthStore } from '@/stores/auth'
 import { showError, showSuccess } from '@/utils/auth'
@@ -104,6 +111,33 @@ const USER_ADMIN_ROLES = ['普通用户', '采集员', '街道办']
 const availableRoles = computed(() =>
   auth.role === '用户管理员' ? USER_ADMIN_ROLES : ALL_ROLES
 )
+
+/** 角色→权限组ID 映射（与 init-schema.sql 权限组定义一致） */
+const ROLE_TO_PG: Record<string, number> = {
+  '系统管理员': 1, '民警': 2, '采集员': 3, '街道办': 4,
+  '数据审查员': 5, '市局负责人': 6, '用户管理员': 7, '普通用户': 8,
+}
+
+/** 需要关联已有民警记录的角色 */
+const POLICE_ROLES = ['民警', '市局负责人']
+const isPoliceRole = computed(() => POLICE_ROLES.includes(form.userRole))
+
+/** 未关联的民警列表（供创建时选择） */
+const unassociatedPolice = ref<any[]>([])
+async function loadUnassociatedPolice() {
+  try { unassociatedPolice.value = await policeApi.listUnassociated({ silent: true } as any) } catch { unassociatedPolice.value = [] }
+}
+
+/** 角色变更 → 自动填充权限组，并刷新民警选择列表 */
+function onRoleChange() {
+  if (ROLE_TO_PG[form.userRole]) {
+    form.permissionGroupId = ROLE_TO_PG[form.userRole]
+  }
+  if (POLICE_ROLES.includes(form.userRole)) {
+    form.residentUuid = '' // 清空之前的居民选择
+    loadUnassociatedPolice()
+  }
+}
 
 const list = ref<any[]>([])
 const groups = ref<any[]>([])
