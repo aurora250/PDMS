@@ -74,8 +74,17 @@
         <el-form-item label="成立日期" prop="establishDate">
           <el-date-picker v-model="applyForm.establishDate" type="date" value-format="YYYY-MM-DD" style="width:100%" />
         </el-form-item>
-        <el-form-item label="成员UUID列表" prop="memberUuidList">
-          <el-input v-model="applyForm.memberUuidList" type="textarea" placeholder="逗号分隔，如: uuid1,uuid2" />
+        <el-form-item label="家庭成员">
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+            <el-tag v-for="(mid, idx) in applyForm.memberUuids" :key="mid" closable @close="applyForm.memberUuids.splice(idx, 1)" type="info">
+              {{ getMemberLabel(mid) }}
+            </el-tag>
+          </div>
+          <ResidentPicker v-if="showMemberPicker" v-model="pickedMemberUuid" placeholder="搜索姓名或身份证号添加成员"
+            @pick="onMemberPicked" style="width:100%" />
+          <el-button text size="small" type="primary" @click="showMemberPicker = !showMemberPicker">
+            {{ showMemberPicker ? '取消' : '+ 添加成员' }}
+          </el-button>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -114,21 +123,27 @@ const applyFormRef = ref()
 const applyForm = reactive({
   householdBookNo: '', householderUuid: '', hukouAddressDetail: '',
   hukouAreaId: undefined as number | undefined, establishDate: new Date().toISOString().slice(0, 10),
-  memberUuidList: '',
+  memberUuids: [] as string[],
 })
+const showMemberPicker = ref(false)
+const pickedMemberUuid = ref('')
+const memberNames = reactive<Record<string, string>>({})
+
+function getMemberLabel(uuid: string): string {
+  return memberNames[uuid] || uuid.substring(0, 8) + '...'
+}
+function onMemberPicked(_resident: { uuid: string; name: string }) {
+  if (!applyForm.memberUuids.includes(_resident.uuid)) {
+    applyForm.memberUuids.push(_resident.uuid)
+    memberNames[_resident.uuid] = _resident.name
+  }
+  pickedMemberUuid.value = ''
+  showMemberPicker.value = false
+}
 
 const applyRules = {
   householderUuid: [{ required: true, message: '请选择户主', trigger: 'blur' }],
   establishDate: [{ required: true, message: '请选择成立日期', trigger: 'change' }],
-  memberUuidList: [{
-    validator: (_rule: any, value: string, cb: (err?: Error) => void) => {
-      if (!value || !value.trim()) { cb(); return }
-      const uuids = value.split(',').map(s => s.trim()).filter(Boolean)
-      const allValid = uuids.every((u: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(u))
-      cb(allValid ? undefined : new Error('UUID格式不正确，应为逗号分隔的标准UUID'))
-    },
-    trigger: 'blur',
-  }],
 }
 
 // 地址预览（地区路径 + 详细地址）
@@ -207,8 +222,10 @@ async function handleRenew(row: any) {
 function openApply() {
   Object.assign(applyForm, {
     householdBookNo: '', householderUuid: '', hukouAddressDetail: '',
-    hukouAreaId: undefined, establishDate: new Date().toISOString().slice(0, 10), memberUuidList: '',
+    hukouAreaId: undefined, establishDate: new Date().toISOString().slice(0, 10), memberUuids: [],
   })
+  showMemberPicker.value = false
+  pickedMemberUuid.value = ''
   addressPreview.value = ''
   showApply.value = true
 }
@@ -235,7 +252,7 @@ async function handleApply() {
       hukouAddress: fullAddress,
       hukouAreaId: applyForm.hukouAreaId,
       establishDate: applyForm.establishDate,
-      memberUuidList: applyForm.memberUuidList,
+      memberUuidList: applyForm.memberUuids.join(','),
     })
     showSuccess('申领成功，请等待审批')
     showApply.value = false

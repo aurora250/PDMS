@@ -67,10 +67,11 @@
         <el-table-column prop="phone" label="电话" width="120" />
         <el-table-column prop="householdStatus" label="户口状态" width="100" />
         <el-table-column prop="residence" label="居住地址" min-width="180" show-overflow-tooltip />
-        <el-table-column label="操作" width="160">
+        <el-table-column label="操作" width="210">
           <template #default="{ row }">
             <el-button v-if="hasPermission('resident:read')" text size="small" @click="openDetail(row)">详情</el-button>
             <el-button v-if="hasPermission('resident:write')" text size="small" type="primary" @click="openEdit(row)">编辑</el-button>
+            <el-button v-if="hasPermission('resident:write')" text size="small" type="warning" @click="$router.push(`/resident/${row.uuid}/relations`)">关系</el-button>
             <el-button v-if="hasPermission('resident:delete')" text size="small" type="danger" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>

@@ -10,14 +10,6 @@
           <el-option label="重点人员" value="keyperson" />
         </el-select>
         <el-divider direction="vertical" />
-        <span class="filter-label">性别</span>
-        <el-select v-model="genderFilter" size="small" style="width:80px" clearable placeholder="全部">
-          <el-option label="男" value="男" /><el-option label="女" value="女" />
-        </el-select>
-        <span class="filter-label">省份</span>
-        <el-select v-model="provinceFilter" size="small" style="width:140px" clearable filterable placeholder="全部">
-          <el-option v-for="p in provinceNames" :key="p" :label="p" :value="p" />
-        </el-select>
         <el-button size="small" @click="resetFilters">重置</el-button>
       </div>
       <div class="filter-title"><h3>仪表盘</h3></div>
@@ -38,15 +30,6 @@
               <el-radio label="flow">流向图</el-radio>
               <el-radio label="mixed">混合模式</el-radio>
             </el-radio-group>
-          </div>
-          <div class="filter-group">
-            <h4>数据指标</h4>
-            <el-checkbox-group v-model="selectedMetrics" size="small">
-              <el-checkbox label="total">总人口</el-checkbox>
-              <el-checkbox label="male">男性</el-checkbox>
-              <el-checkbox label="female">女性</el-checkbox>
-              <el-checkbox label="density">人口密度</el-checkbox>
-            </el-checkbox-group>
           </div>
           <div class="filter-group">
             <h4>颜色方案</h4>
@@ -78,14 +61,12 @@
           :display-mode="displayMode"
           :color-scheme="mapColorScheme"
           :selected-province="selectedProvince"
-          :province-highlight="provinceFilter"
           :loading="mapLoading"
           :overlay-keyperson="overlayKeyperson"
           :overlay-missing="overlayMissing"
           :keyperson-data="kpMapData"
           :missing-data="missingMapData"
           :flow-threshold="flowThreshold"
-          :gender-filter="genderFilter"
           @province-click="onProvinceClick"
           @province-dblclick="onProvinceDblClick"
           @drill-down="onDrillDown"
@@ -251,14 +232,11 @@ const panelMode = ref('overview')
 
 // 筛选
 const dataDimension = ref<'resident' | 'floating' | 'keyperson'>('resident')
-const genderFilter = ref('')
-const provinceFilter = ref('')
 const displayMode = ref<'heatmap' | 'flow' | 'mixed'>('heatmap')
 const colorScheme = ref<'blue' | 'red' | 'green' | 'orange' | 'purple'>('blue')
 const overlayKeyperson = ref(false)
 const overlayMissing = ref(false)
 const flowThreshold = ref(0)
-const selectedMetrics = ref<string[]>(['total'])
 
 const colorSchemes = [
   { key: 'blue' as const, label: '蓝白' }, { key: 'red' as const, label: '红白' },
@@ -284,7 +262,6 @@ const kpMapData = ref<Array<{ name: string; value: [number, number]; level?: num
 const missingMapData = ref<Array<{ name: string; value: [number, number] }>>([])
 
 const mapData = computed(() => provinceData.value)
-const provinceNames = computed(() => provinceData.value.map(d => d.name))
 const provinceDetail = computed(() =>
   selectedProvince.value ? provinceData.value.find(d => d.name === selectedProvince.value) || null : null
 )
@@ -468,8 +445,6 @@ function goToBookList() { router.push({ path: '/household/book', query: { provin
 
 function resetFilters() {
   dataDimension.value = 'resident'
-  genderFilter.value = ''
-  provinceFilter.value = ''
   displayMode.value = 'heatmap'
   selectedProvince.value = ''
   selectedFlow.value = null

@@ -67,11 +67,44 @@ public class HouseholdServiceImpl implements HouseholdService {
     @Override
     @Transactional
     public HouseholdRegister reissueBook(String bookNo) {
-        HouseholdRegister book = bookMapper.selectByBookNo(bookNo);
-        if (book == null)
+        HouseholdRegister oldBook = bookMapper.selectByBookNo(bookNo);
+        if (oldBook == null)
             throw new BusinessException(ErrorCode.HOUSEHOLD_BOOK_NOT_FOUND);
-        // In production, generate new book number and copy data
-        return book;
+
+        // 生成新户口簿号
+        String areaCode = "000000";
+        if (oldBook.getHukouAreaId() != null) {
+            Area area = areaMapper.selectById(oldBook.getHukouAreaId());
+            if (area != null && area.getAreaCode() != null) areaCode = area.getAreaCode();
+        }
+        String year = String.valueOf(LocalDate.now().getYear());
+        String prefix = areaCode + year;
+        String maxNo = bookMapper.selectMaxBookNoByPrefix(prefix + "%");
+        long seq = 1L;
+        if (maxNo != null && maxNo.length() >= 18) {
+            try { seq = Long.parseLong(maxNo.substring(10)) + 1; } catch (NumberFormatException e) { /* use 1 */ }
+        }
+        String newBookNo = prefix + String.format("%08d", seq);
+
+        // 创建新户口簿，复制原数据
+        HouseholdRegister newBook = new HouseholdRegister();
+        newBook.setHouseholdBookNo(newBookNo);
+        newBook.setHouseholderUuid(oldBook.getHouseholderUuid());
+        newBook.setEstablishDate(LocalDate.now());
+        newBook.setHukouAddress(oldBook.getHukouAddress());
+        newBook.setHukouAreaId(oldBook.getHukouAreaId());
+        newBook.setMemberUuidList(oldBook.getMemberUuidList());
+        newBook.setStatus("有效");
+        bookMapper.insert(newBook);
+
+        // 原户口簿标记作废，清空关联防止查询时误返回旧记录
+        oldBook.setStatus("无效");
+        oldBook.setHouseholderUuid(null);
+        oldBook.setMemberUuidList(null);
+        bookMapper.updateById(oldBook);
+        log.info("补办户口簿: 旧号={} 已作废, 新号={}", bookNo, newBookNo);
+
+        return newBook;
     }
 
     @Override

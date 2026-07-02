@@ -13,8 +13,8 @@ public interface HouseholdRegisterMapper extends BaseMapper<HouseholdRegister> {
     @Select("SELECT * FROM household_register WHERE household_book_no = #{no} AND is_deleted = 0")
     HouseholdRegister selectByBookNo(@Param("no") String bookNo);
 
-    /** 按居民UUID查询其所属户口簿（户主或成员列表匹配均可） */
-    @Select("SELECT * FROM household_register WHERE (householder_uuid = #{residentUuid} OR member_uuid_list LIKE CONCAT('%', #{residentUuid}, '%')) AND is_deleted = 0")
+    /** 按居民UUID查询其所属户口簿（户主或成员匹配，优先返回有效/审批中的，最新的排在前面） */
+    @Select("SELECT * FROM household_register WHERE (householder_uuid = #{residentUuid} OR member_uuid_list LIKE CONCAT('%', #{residentUuid}, '%')) AND is_deleted = 0 AND status IN ('有效','审批中') ORDER BY create_time DESC LIMIT 1")
     HouseholdRegister selectByResidentUuid(@Param("residentUuid") String residentUuid);
 
     /** 按前缀查询最大户口簿号（用于自增序号） */

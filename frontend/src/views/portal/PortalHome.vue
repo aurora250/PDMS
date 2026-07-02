@@ -21,21 +21,21 @@
     <!-- 快捷操作 -->
     <el-row :gutter="16" style="margin-top:20px">
       <el-col :span="8">
-        <el-card shadow="hover" class="quick-card" @click="$router.push('/portal/self-fp')">
-          <el-icon :size="32"><Plus /></el-icon>
-          <div class="quick-title">流动人口申报</div>
+        <el-card shadow="hover" class="quick-card" @click="$router.push('/portal/profile')">
+          <el-icon :size="32"><User /></el-icon>
+          <div class="quick-title">个人信息</div>
         </el-card>
       </el-col>
       <el-col :span="8">
-        <el-card shadow="hover" class="quick-card" @click="$router.push('/portal/self-recovery')">
-          <el-icon :size="32"><Search /></el-icon>
-          <div class="quick-title">寻回线索登记</div>
+        <el-card shadow="hover" class="quick-card" @click="$router.push('/portal/migration')">
+          <el-icon :size="32"><Right /></el-icon>
+          <div class="quick-title">户口迁移</div>
         </el-card>
       </el-col>
       <el-col :span="8">
-        <el-card shadow="hover" class="quick-card" @click="$router.push('/portal/applications')">
-          <el-icon :size="32"><List /></el-icon>
-          <div class="quick-title">查看全部申请</div>
+        <el-card shadow="hover" class="quick-card" @click="$router.push('/portal/permit-apply')">
+          <el-icon :size="32"><Document /></el-icon>
+          <div class="quick-title">居住证申领</div>
         </el-card>
       </el-col>
     </el-row>

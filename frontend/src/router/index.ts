@@ -22,6 +22,11 @@ const router = createRouter({
       children: [
         { path: '', name: 'PortalHome', component: () => import('@/views/portal/PortalHome.vue') },
         { path: 'applications', name: 'MyApplications', component: () => import('@/views/portal/MyApplications.vue') },
+        { path: 'profile', name: 'PortalProfile', component: () => import('@/views/portal/PortalProfile.vue') },
+        { path: 'edit-profile', name: 'PortalEditProfile', component: () => import('@/views/portal/PortalEditProfile.vue') },
+        { path: 'household-split', name: 'PortalHouseholdSplit', component: () => import('@/views/portal/PortalHouseholdSplit.vue') },
+        { path: 'migration', name: 'PortalMigration', component: () => import('@/views/portal/PortalMigration.vue') },
+        { path: 'permit-apply', name: 'PortalPermitApply', component: () => import('@/views/portal/PortalPermitApply.vue') },
         { path: 'self-fp', name: 'SelfRegisterFp', component: () => import('@/views/portal/SelfRegisterFp.vue') },
         { path: 'self-recovery', name: 'SelfReportRecovery', component: () => import('@/views/portal/SelfReportRecovery.vue') },
       ],

@@ -9,9 +9,19 @@
     <el-main>
       <el-menu mode="horizontal" :default-active="route.path" router>
         <el-menu-item index="/portal">首页</el-menu-item>
+        <el-menu-item index="/portal/profile">个人信息</el-menu-item>
+        <el-sub-menu index="household">
+          <template #title>户籍业务</template>
+          <el-menu-item index="/portal/household-split">分户立户</el-menu-item>
+          <el-menu-item index="/portal/migration">户口迁移</el-menu-item>
+        </el-sub-menu>
+        <el-sub-menu index="floating">
+          <template #title>流动人口</template>
+          <el-menu-item index="/portal/permit-apply">居住证申领</el-menu-item>
+          <el-menu-item index="/portal/self-fp">居住登记</el-menu-item>
+        </el-sub-menu>
         <el-menu-item index="/portal/applications">我的申请</el-menu-item>
-        <el-menu-item index="/portal/self-fp">流动人口申报</el-menu-item>
-        <el-menu-item index="/portal/self-recovery">寻回线索登记</el-menu-item>
+        <el-menu-item index="/portal/self-recovery">寻回线索</el-menu-item>
       </el-menu>
       <div class="portal-content">
         <router-view />

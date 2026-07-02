@@ -125,12 +125,26 @@ class HouseholdServiceImplTest {
         @Test
         @DisplayName("补办户口簿")
         void shouldReissueBook() {
+            testBook.setHukouAreaId(1L);
+            testBook.setMemberUuidList("uuid-1,uuid-2");
+            String oldHolderUuid = testBook.getHouseholderUuid();
+            String oldMemberList = testBook.getMemberUuidList();
             when(bookMapper.selectByBookNo("HB202606000001")).thenReturn(testBook);
+            when(areaMapper.selectById(1L)).thenReturn(testArea);
+            when(bookMapper.selectMaxBookNoByPrefix("1101052026%")).thenReturn(null);
 
             HouseholdRegister result = householdService.reissueBook("HB202606000001");
 
             assertNotNull(result);
-            assertEquals("HB202606000001", result.getHouseholdBookNo());
+            assertEquals("110105202600000001", result.getHouseholdBookNo());
+            assertEquals("有效", result.getStatus());
+            assertEquals(oldHolderUuid, result.getHouseholderUuid());
+            assertEquals(oldMemberList, result.getMemberUuidList());
+            // 旧户口簿应被标记无效并清空关联
+            verify(bookMapper).updateById(testBook);
+            assertEquals("无效", testBook.getStatus());
+            assertNull(testBook.getHouseholderUuid());
+            assertNull(testBook.getMemberUuidList());
         }
 
         @Test

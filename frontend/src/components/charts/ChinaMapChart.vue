@@ -42,9 +42,9 @@ const COLOR_SCHEMES: Record<string, string[]> = {
 
 // 公安系统红黄蓝三级管控
 const KP_LEVEL_COLORS: Record<string, string> = {
-  '红': '#F56C6C', '1': '#F56C6C', '一级': '#F56C6C',
-  '黄': '#E6A23C', '2': '#E6A23C', '二级': '#E6A23C',
-  '蓝': '#409EFF', '3': '#409EFF', '三级': '#409EFF',
+  '红': '#FF1744', '1': '#FF1744', '一级': '#FF1744',
+  '黄': '#FFD600', '2': '#FFD600', '二级': '#FFD600',
+  '蓝': '#00E5FF', '3': '#00E5FF', '三级': '#00E5FF',
 }
 
 const props = withDefaults(defineProps<{
@@ -246,7 +246,7 @@ const chartOption = computed(() => {
       type: 'scatter', coordinateSystem: 'geo', geoIndex: 0, zlevel: 5,
       symbol: 'triangle', symbolSize: 20,
       silent: false,
-      itemStyle: { color: '#409eff' },
+      itemStyle: { color: '#E040FB' },
       data: props.missingData,
       name: '失踪人员',
     })
