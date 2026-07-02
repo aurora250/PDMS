@@ -1,9 +1,9 @@
 # 人口数据库管理系统 — Postman API 测试列表
 
-> **统一网关入口:** `http://localhost:8080`  
-> **通用响应格式:** `{ "code": 200, "message": "success", "data": ..., "timestamp": 1719123456789 }`  
-> **分页响应格式:** `{ "code": 200, "data": { "records": [...], "total": 100, "page": 1, "size": 20, "totalPages": 5 } }`  
-> **认证方式:** Bearer Token (`Authorization: Bearer <accessToken>`)  
+> **统一网关入口:** `http://localhost:8080`
+> **通用响应格式:** `{ "code": 200, "message": "success", "data": ..., "timestamp": 1719123456789 }`
+> **分页响应格式:** `{ "code": 200, "data": { "records": [...], "total": 100, "page": 1, "size": 20, "totalPages": 5 } }`
+> **认证方式:** Bearer Token (`Authorization: Bearer <accessToken>`)
 > **⚠ 启动前:** 确保所有模块已重新编译 (`mvn compile -pl pdm-gateway -am`)
 
 ---
@@ -28,7 +28,9 @@
 6. [pdm-missingperson — 失踪人口管理 (8086)](#6-pdm-missingperson--失踪人口管理-8086)
 7. [pdm-log — 日志审计 (8087)](#7-pdm-log--日志审计-8087)
 8. [pdm-notification — 通知预警 (8088)](#8-pdm-notification--通知预警-8088)
-9. [全局变量与测试流程建议](#9-全局变量与测试流程建议)
+9. [文件服务](#9-文件服务)
+10. [统计服务](#10-统计服务)
+11. [全局变量与测试流程建议](#11-全局变量与测试流程建议)
 
 ---
 
@@ -138,7 +140,33 @@ POST /api/auth/refresh
 
 ---
 
-### 1.4 修改密码
+### 1.4 注册用户
+
+```
+POST /api/auth/register
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 注册新用户账号 |
+| **认证** | 无（或 `Authorization: Bearer {{accessToken}}`） |
+
+**Request Body:**
+```json
+{
+    "userUuid": "550e8400-e29b-41d4-a716-446655440100",
+    "username": "newuser",
+    "password": "User@123",
+    "phone": "13800138000",
+    "residentUuid": "550e8400-e29b-41d4-a716-446655440001",
+    "userRole": "采集员",
+    "registerMaterials": "[]"
+}
+```
+
+---
+
+### 1.5 修改密码
 
 ```
 PUT /api/auth/change-password
@@ -168,7 +196,7 @@ PUT /api/auth/change-password
 
 ---
 
-### 1.5 获取权限组列表
+### 1.6 获取权限组列表
 
 ```
 GET /api/auth/permission-groups
@@ -198,7 +226,7 @@ GET /api/auth/permission-groups
 
 ---
 
-### 1.6 创建权限组
+### 1.7 创建权限组
 
 ```
 POST /api/auth/permission-groups
@@ -220,7 +248,7 @@ POST /api/auth/permission-groups
 
 ---
 
-### 1.7 修改权限组
+### 1.8 修改权限组
 
 ```
 PUT /api/auth/permission-groups/{id}
@@ -243,7 +271,7 @@ PUT /api/auth/permission-groups/{id}
 
 ---
 
-### 1.8 删除权限组
+### 1.9 删除权限组
 
 ```
 DELETE /api/auth/permission-groups/{id}
@@ -257,7 +285,142 @@ DELETE /api/auth/permission-groups/{id}
 
 ---
 
-### 1.9 新增民警
+### 1.10 分页查询用户列表
+
+```
+GET /api/auth/users?page=1&size=20&keyword=&userRole=&status=
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 分页查询系统用户 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **查询参数** | `page`(默认1), `size`(默认20), `keyword`(可选), `userRole`(可选), `status`(可选) |
+
+---
+
+### 1.11 新增用户
+
+```
+POST /api/auth/users
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 创建系统用户 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+
+**Request Body:**
+```json
+{
+    "userUuid": "550e8400-e29b-41d4-a716-446655440100",
+    "username": "newuser",
+    "password": "User@123",
+    "phone": "13800138000",
+    "residentUuid": "550e8400-e29b-41d4-a716-446655440001",
+    "userRole": "采集员",
+    "permissionGroupId": 2,
+    "accountStatus": "有效"
+}
+```
+
+---
+
+### 1.12 根据UUID查询用户
+
+```
+GET /api/auth/users/{uuid}
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 获取用户详情 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **路径参数** | `uuid` — 用户UUID |
+
+---
+
+### 1.13 修改用户信息
+
+```
+PUT /api/auth/users/{uuid}
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 更新用户信息 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **路径参数** | `uuid` — 用户UUID |
+
+**Request Body:**
+```json
+{
+    "phone": "13800138000",
+    "email": "user@example.com",
+    "userRole": "采集员",
+    "permissionGroupId": 2
+}
+```
+
+---
+
+### 1.14 修改用户状态
+
+```
+PUT /api/auth/users/{uuid}/status
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 修改用户账户状态(有效/冻结/注销/锁定) |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **路径参数** | `uuid` — 用户UUID |
+
+**Request Body:**
+```json
+{
+    "status": "冻结"
+}
+```
+
+---
+
+### 1.15 重置用户密码
+
+```
+PUT /api/auth/users/{uuid}/password
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 管理员重置指定用户的密码 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **路径参数** | `uuid` — 用户UUID |
+
+**Request Body:**
+```json
+{
+    "password": "NewPass@123"
+}
+```
+
+---
+
+### 1.16 删除用户
+
+```
+DELETE /api/auth/users/{uuid}
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 删除指定用户 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **路径参数** | `uuid` — 用户UUID |
+
+---
+
+### 1.17 新增民警
 
 ```
 POST /api/auth/police
@@ -285,21 +448,21 @@ POST /api/auth/police
 
 ---
 
-### 1.10 分页查询民警列表
+### 1.18 分页查询民警列表
 
 ```
-GET /api/auth/police?page=1&size=20&keyword=张三
+GET /api/auth/police?page=1&size=20&keyword=张三&residentUuid=
 ```
 
 | 项目 | 内容 |
 |------|------|
-| **描述** | 分页查询民警，支持关键词搜索 |
+| **描述** | 分页查询民警，支持关键词搜索和居民UUID筛选 |
 | **认证** | `Authorization: Bearer {{accessToken}}` |
-| **查询参数** | `page` — 页码(默认1), `size` — 每页数(默认20), `keyword` — 搜索关键词(可选) |
+| **查询参数** | `page` — 页码(默认1), `size` — 每页数(默认20), `keyword` — 搜索关键词(可选), `residentUuid` — 居民UUID(可选) |
 
 ---
 
-### 1.11 根据警号查询民警
+### 1.19 根据警号查询民警
 
 ```
 GET /api/auth/police/{policeNumber}
@@ -313,7 +476,7 @@ GET /api/auth/police/{policeNumber}
 
 ---
 
-### 1.12 修改民警信息
+### 1.20 修改民警信息
 
 ```
 PUT /api/auth/police/{policeNumber}
@@ -338,7 +501,7 @@ PUT /api/auth/police/{policeNumber}
 
 ---
 
-### 1.13 修改民警执勤状态
+### 1.21 修改民警执勤状态
 
 ```
 PUT /api/auth/police/{policeNumber}/status
@@ -356,93 +519,6 @@ PUT /api/auth/police/{policeNumber}/status
     "dutyStatus": "调岗"
 }
 ```
-
----
-
-### 1.14 分页查询用户列表
-
-```
-GET /api/auth/users?page=1&size=20&keyword=&role=&status=
-```
-
-| 项目 | 内容 |
-|------|------|
-| **描述** | 分页查询系统用户 |
-| **认证** | `Authorization: Bearer {{accessToken}}` |
-| **查询参数** | `page`(默认1), `size`(默认20), `keyword`(可选), `role`(可选), `status`(可选) |
-
----
-
-### 1.15 根据UUID查询用户
-
-```
-GET /api/auth/users/{uuid}
-```
-
-| 项目 | 内容 |
-|------|------|
-| **描述** | 获取用户详情 |
-| **认证** | `Authorization: Bearer {{accessToken}}` |
-| **路径参数** | `uuid` — 用户UUID |
-
----
-
-### 1.16 修改用户信息
-
-```
-PUT /api/auth/users/{uuid}
-```
-
-| 项目 | 内容 |
-|------|------|
-| **描述** | 更新用户信息 |
-| **认证** | `Authorization: Bearer {{accessToken}}` |
-| **路径参数** | `uuid` — 用户UUID |
-
-**Request Body:**
-```json
-{
-    "phone": "13800138000",
-    "email": "user@example.com",
-    "userRole": "采集员",
-    "permissionGroupId": 2
-}
-```
-
----
-
-### 1.17 修改用户状态
-
-```
-PUT /api/auth/users/{uuid}/status
-```
-
-| 项目 | 内容 |
-|------|------|
-| **描述** | 修改用户账户状态(有效/冻结/注销/锁定) |
-| **认证** | `Authorization: Bearer {{accessToken}}` |
-| **路径参数** | `uuid` — 用户UUID |
-
-**Request Body:**
-```json
-{
-    "status": "冻结"
-}
-```
-
----
-
-### 1.18 删除用户
-
-```
-DELETE /api/auth/users/{uuid}
-```
-
-| 项目 | 内容 |
-|------|------|
-| **描述** | 删除指定用户 |
-| **认证** | `Authorization: Bearer {{accessToken}}` |
-| **路径参数** | `uuid` — 用户UUID |
 
 ---
 
@@ -608,7 +684,49 @@ POST /api/resident/{uuid}/relations
 
 ---
 
-### 2.8 提交人口变更申请
+### 2.8 查询人口家庭关系详情
+
+```
+GET /api/resident/{uuid}/relations-detail
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 获取该人口的完整家庭关系详情(含关系人基本信息) |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **路径参数** | `uuid` — 人口UUID |
+
+---
+
+### 2.9 查询人口子女
+
+```
+GET /api/resident/{uuid}/children
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 获取该人口的所有子女信息 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **路径参数** | `uuid` — 人口UUID |
+
+---
+
+### 2.10 分页查询变更申请列表
+
+```
+GET /api/resident/change-request?status=请求&page=1&size=20
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 分页查询常住人口信息变更申请列表 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **查询参数** | `status`(可选: 请求/通过/驳回), `page`(默认1), `size`(默认20) |
+
+---
+
+### 2.11 提交人口变更申请
 
 ```
 POST /api/resident/change-request
@@ -632,7 +750,7 @@ POST /api/resident/change-request
 
 ---
 
-### 2.9 审批人口变更申请
+### 2.12 审批人口变更申请
 
 ```
 PUT /api/resident/change-request/{rid}/approve?status=通过
@@ -648,7 +766,7 @@ PUT /api/resident/change-request/{rid}/approve?status=通过
 
 ---
 
-### 2.10 批量导入人口数据
+### 2.13 批量导入人口数据
 
 ```
 POST /api/resident/import
@@ -681,11 +799,41 @@ POST /api/resident/import
 
 ---
 
+### 2.14 导出人口数据
+
+```
+GET /api/resident/export?name=张三&gender=男
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 按条件导出常住人口数据为Excel文件(直接下载) |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **查询参数** | 任意搜索条件字段作为查询参数(可选) |
+
+**Postman 配置:** Send and Download → 发送请求后保存文件
+
+---
+
 ## 3. pdm-household — 户籍管理 (8083)
 
 > **直接地址:** `http://localhost:8083` | **网关地址:** `http://localhost:8080`
 
-### 3.1 申请户口簿
+### 3.1 分页查询户口簿
+
+```
+GET /api/household/book/search?keyword=&status=&page=1&size=20
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 分页搜索户口簿列表 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **查询参数** | `keyword`(可选), `status`(可选: 有效/注销), `page`(默认1), `size`(默认20) |
+
+---
+
+### 3.2 申请户口簿
 
 ```
 POST /api/household/book/apply
@@ -711,7 +859,7 @@ POST /api/household/book/apply
 
 ---
 
-### 3.2 补办户口簿
+### 3.3 补办户口簿
 
 ```
 POST /api/household/book/reissue
@@ -731,7 +879,7 @@ POST /api/household/book/reissue
 
 ---
 
-### 3.3 换发户口簿
+### 3.4 换发户口簿
 
 ```
 POST /api/household/book/renew
@@ -751,7 +899,35 @@ POST /api/household/book/renew
 
 ---
 
-### 3.4 提交户籍业务申请
+### 3.5 根据居民UUID查询户口簿
+
+```
+GET /api/household/book/by-resident/{residentUuid}
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 查询指定居民所属的户口簿 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **路径参数** | `residentUuid` — 居民UUID |
+
+---
+
+### 3.6 分页查询户籍业务申请
+
+```
+GET /api/household/business?status=审批中&businessType=登记&page=1&size=20
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 分页查询户籍业务申请列表 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **查询参数** | `status`(可选), `businessType`(可选: 登记/注销/迁入/迁出), `page`(默认1), `size`(默认20) |
+
+---
+
+### 3.7 提交户籍业务申请
 
 ```
 POST /api/household/business
@@ -780,7 +956,7 @@ POST /api/household/business
 
 ---
 
-### 3.5 审批户籍业务
+### 3.8 审批户籍业务
 
 ```
 PUT /api/household/business/{rid}/approve
@@ -802,7 +978,37 @@ PUT /api/household/business/{rid}/approve
 
 ---
 
-### 3.6 提交户籍迁移申请
+### 3.9 上传户籍业务附件
+
+```
+POST /api/household/business/{rid}/material
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 为户籍业务申请上传/关联附件材料 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **路径参数** | `rid` — 业务申请ID |
+| **Content-Type** | `multipart/form-data` |
+| **表单字段** | `file` — 附件文件(可选), `attachmentPath` — 附件路径(可选), `remark` — 备注(可选) |
+
+---
+
+### 3.10 分页查询户籍迁移申请
+
+```
+GET /api/household/migration?status=准迁证审批中&businessType=市内&fromAddress=&toAddress=&page=1&size=20
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 分页查询户籍迁移申请列表 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **查询参数** | `status`(可选), `businessType`(可选: 市内/跨市/跨省), `fromAddress`(可选), `toAddress`(可选), `page`(默认1), `size`(默认20) |
+
+---
+
+### 3.11 提交户籍迁移申请
 
 ```
 POST /api/household/migration
@@ -837,7 +1043,7 @@ POST /api/household/migration
 
 ---
 
-### 3.7 审批户籍迁移
+### 3.12 审批户籍迁移
 
 ```
 PUT /api/household/migration/{rid}/approve
@@ -859,7 +1065,23 @@ PUT /api/household/migration/{rid}/approve
 
 ---
 
-### 3.8 查询人口迁移轨迹
+### 3.13 上传户籍迁移附件
+
+```
+POST /api/household/migration/{rid}/material
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 为户籍迁移申请上传/关联附件材料 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **路径参数** | `rid` — 迁移申请ID |
+| **Content-Type** | `multipart/form-data` |
+| **表单字段** | `file` — 附件文件(可选), `attachmentPath` — 附件路径(可选), `remark` — 备注(可选) |
+
+---
+
+### 3.14 查询人口迁移轨迹
 
 ```
 GET /api/household/migration/trace/{uuid}
@@ -873,7 +1095,21 @@ GET /api/household/migration/trace/{uuid}
 
 ---
 
-### 3.9 申领准迁证
+### 3.15 分页查询准迁证
+
+```
+GET /api/household/approval-permit?keyword=&status=&page=1&size=20
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 分页查询准迁证列表 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **查询参数** | `keyword`(可选), `status`(可选: 有效/作废/已使用), `page`(默认1), `size`(默认20) |
+
+---
+
+### 3.16 申领准迁证
 
 ```
 POST /api/household/approval-permit
@@ -897,7 +1133,35 @@ POST /api/household/approval-permit
 
 ---
 
-### 3.10 申领迁移证
+### 3.17 作废准迁证
+
+```
+PUT /api/household/approval-permit/{id}/void
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 作废指定的准迁证 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **路径参数** | `id` — 准迁证ID |
+
+---
+
+### 3.18 分页查询迁移证
+
+```
+GET /api/household/migration-permit?keyword=&status=&page=1&size=20
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 分页查询迁移证列表 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **查询参数** | `keyword`(可选), `status`(可选: 有效/作废/已使用), `page`(默认1), `size`(默认20) |
+
+---
+
+### 3.19 申领迁移证
 
 ```
 POST /api/household/migration-permit
@@ -921,7 +1185,21 @@ POST /api/household/migration-permit
 
 ---
 
-### 3.11 查询行政区划
+### 3.20 作废迁移证
+
+```
+PUT /api/household/migration-permit/{id}/void
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 作废指定的迁移证 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **路径参数** | `id` — 迁移证ID |
+
+---
+
+### 3.21 查询行政区划
 
 ```
 GET /api/area?parentId=110000
@@ -932,6 +1210,47 @@ GET /api/area?parentId=110000
 | **描述** | 查询行政区划树，parentId为空查省级 |
 | **认证** | `Authorization: Bearer {{accessToken}}` |
 | **查询参数** | `parentId` — 父级区划ID(可选，为空查顶级) |
+
+---
+
+### 3.22 查询区划祖先
+
+```
+GET /api/area/{areaId}/ancestors
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 获取指定区划的所有上级区划 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **路径参数** | `areaId` — 区划ID |
+
+---
+
+### 3.23 查询区划路径
+
+```
+GET /api/area/{areaId}/path
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 获取指定区划的完整路径(省/市/区) |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **路径参数** | `areaId` — 区划ID |
+
+---
+
+### 3.24 查询完整区划树
+
+```
+GET /api/area/tree
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 获取完整的行政区划树结构 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
 
 ---
 
@@ -979,7 +1298,8 @@ PUT /api/keyperson/{uuid}
 **Request Body:**
 ```json
 {
-    "controlLevel": "二级"
+    "controlLevel": "二级",
+    "controlType": "刑事重点人员"
 }
 ```
 
@@ -1002,18 +1322,32 @@ DELETE /api/keyperson/{uuid}
 ### 4.4 多条件搜索重点人员
 
 ```
-GET /api/keyperson/search?controlLevel=一级&controlType=信访重点人员
+GET /api/keyperson/search?controlLevel=一级&controlType=信访重点人员&keyword=&page=1&size=20
 ```
 
 | 项目 | 内容 |
 |------|------|
-| **描述** | 根据多条件查询重点人员列表 |
+| **描述** | 根据多条件分页查询重点人员列表 |
 | **认证** | `Authorization: Bearer {{accessToken}}` |
-| **查询参数** | `controlLevel`, `controlType`, 或其他条件 (Map<String, Object>) |
+| **查询参数** | `controlLevel`(可选), `controlType`(可选), `keyword`(可选, 按姓名搜索), `page`(默认1), `size`(默认20) |
 
 ---
 
-### 4.5 制定走访计划
+### 4.5 分页查询走访计划
+
+```
+GET /api/keyperson/visit-plan?keyPersonUuid=&status=待走访&startDate=2026-06-01&endDate=2026-07-01&page=1&size=20
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 分页查询走访计划列表 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **查询参数** | `keyPersonUuid`(可选), `status`(可选: 待走访/已走访/逾期), `startDate`(可选), `endDate`(可选), `page`(默认1), `size`(默认20) |
+
+---
+
+### 4.6 制定走访计划
 
 ```
 POST /api/keyperson/visit-plan
@@ -1039,7 +1373,7 @@ POST /api/keyperson/visit-plan
 
 ---
 
-### 4.6 执行走访计划
+### 4.7 执行走访计划
 
 ```
 PUT /api/keyperson/visit-plan/{id}
@@ -1061,7 +1395,21 @@ PUT /api/keyperson/visit-plan/{id}
 
 ---
 
-### 4.7 登记信访记录
+### 4.8 分页查询信访记录
+
+```
+GET /api/keyperson/petition?keyPersonUuid=&page=1&size=20
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 分页查询信访记录列表 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **查询参数** | `keyPersonUuid`(可选), `page`(默认1), `size`(默认20) |
+
+---
+
+### 4.9 登记信访记录
 
 ```
 POST /api/keyperson/petition
@@ -1086,7 +1434,7 @@ POST /api/keyperson/petition
 
 ---
 
-### 4.8 GIS地图数据
+### 4.10 GIS地图数据
 
 ```
 GET /api/keyperson/gis
@@ -1103,7 +1451,21 @@ GET /api/keyperson/gis
 
 > **直接地址:** `http://localhost:8085` | **网关地址:** `http://localhost:8080/api/fp`
 
-### 5.1 流动人口登记
+### 5.1 分页查询流动人口登记列表
+
+```
+GET /api/fp/register?keyword=&page=1&size=20
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 分页查询流动人口登记记录 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **查询参数** | `keyword`(可选), `page`(默认1), `size`(默认20) |
+
+---
+
+### 5.2 流动人口登记
 
 ```
 POST /api/fp/register
@@ -1130,7 +1492,7 @@ POST /api/fp/register
 
 ---
 
-### 5.2 修改流动人口登记
+### 5.3 修改流动人口登记
 
 ```
 PUT /api/fp/register/{rid}
@@ -1152,7 +1514,7 @@ PUT /api/fp/register/{rid}
 
 ---
 
-### 5.3 删除流动人口登记
+### 5.4 删除流动人口登记
 
 ```
 DELETE /api/fp/register/{rid}
@@ -1166,7 +1528,21 @@ DELETE /api/fp/register/{rid}
 
 ---
 
-### 5.4 申领居住证
+### 5.5 分页查询居住证列表
+
+```
+GET /api/fp/permit?status=有效&keyword=&page=1&size=20
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 分页查询居住证列表 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **查询参数** | `status`(可选), `keyword`(可选), `page`(默认1), `size`(默认20) |
+
+---
+
+### 5.6 申领居住证
 
 ```
 POST /api/fp/permit/apply
@@ -1188,11 +1564,11 @@ POST /api/fp/permit/apply
 }
 ```
 
-> **说明**: `rid` 为数据库自动生成的 BIGSERIAL 主键，无需手动设置。
+> **说明**: `id` 为数据库自动生成的 BIGSERIAL 主键，无需手动设置。
 
 ---
 
-### 5.5 审批居住证
+### 5.7 审批居住证
 
 ```
 PUT /api/fp/permit/{id}/approve
@@ -1206,7 +1582,7 @@ PUT /api/fp/permit/{id}/approve
 
 ---
 
-### 5.6 制发居住证
+### 5.8 制发居住证
 
 ```
 PUT /api/fp/permit/{id}/issue
@@ -1220,7 +1596,7 @@ PUT /api/fp/permit/{id}/issue
 
 ---
 
-### 5.7 续期居住证
+### 5.9 续期居住证
 
 ```
 POST /api/fp/permit/{id}/renew
@@ -1229,7 +1605,7 @@ POST /api/fp/permit/{id}/renew
 | 项目 | 内容 |
 |------|------|
 | **描述** | 续期居住证 |
-| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **认证** | `Authorization: Bearer {{accessToken}}`, `X-User-Uuid`(可选) |
 | **路径参数** | `id` — 居住证ID |
 
 **Request Body:**
@@ -1246,7 +1622,21 @@ POST /api/fp/permit/{id}/renew
 
 ---
 
-### 5.8 居住登记
+### 5.10 分页查询居住登记列表
+
+```
+GET /api/fp/residence?keyword=&page=1&size=20
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 分页查询居住登记记录 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **查询参数** | `keyword`(可选), `page`(默认1), `size`(默认20) |
+
+---
+
+### 5.11 居住登记
 
 ```
 POST /api/fp/residence/register
@@ -1275,7 +1665,7 @@ POST /api/fp/residence/register
 
 ---
 
-### 5.9 修改居住登记
+### 5.12 修改居住登记
 
 ```
 PUT /api/fp/residence/{rid}
@@ -1289,7 +1679,7 @@ PUT /api/fp/residence/{rid}
 
 ---
 
-### 5.10 删除居住登记
+### 5.13 删除居住登记
 
 ```
 DELETE /api/fp/residence/{rid}
@@ -1303,7 +1693,7 @@ DELETE /api/fp/residence/{rid}
 
 ---
 
-### 5.11 流动人口热力图
+### 5.14 流动人口热力图
 
 ```
 GET /api/fp/statistics/heatmap
@@ -1326,7 +1716,7 @@ GET /api/fp/statistics/heatmap
 
 ---
 
-### 5.12 流动人口趋势统计
+### 5.15 流动人口趋势统计
 
 ```
 GET /api/fp/statistics/trend
@@ -1420,14 +1810,14 @@ POST /api/missing/recovery
 ### 6.4 搜索失踪人口
 
 ```
-GET /api/missing/search?name=张三&status=失踪中&page=1&size=20
+GET /api/missing/search?residentUuid=&status=失踪中&name=张三&province=&page=1&size=20
 ```
 
 | 项目 | 内容 |
 |------|------|
 | **描述** | 多条件分页搜索失踪人口 |
 | **认证** | `Authorization: Bearer {{accessToken}}` |
-| **查询参数** | `residentUuid`(可选), `status`(可选: 失踪中/已经寻回), `name`(可选), `page`(默认1), `size`(默认20) |
+| **查询参数** | `residentUuid`(可选), `status`(可选: 失踪中/已经寻回), `name`(可选), `province`(可选), `page`(默认1), `size`(默认20) |
 
 ---
 
@@ -1465,7 +1855,7 @@ GET /api/missing/statistics
 ### 7.1 查询审计日志
 
 ```
-GET /api/log/audit?page=1&size=20&startTime=2026-06-01T00:00:00&endTime=2026-06-23T23:59:59&operationType=修改
+GET /api/log/audit?page=1&size=20&startTime=2026-06-01T00:00:00&endTime=2026-06-23T23:59:59&operationType=修改&operatorUuid=
 ```
 
 | 项目 | 内容 |
@@ -1493,7 +1883,7 @@ GET /api/log/login?page=1&size=20&userUuid=uuid-xxx&isSuccess=1&startTime=2026-0
 ### 7.3 导出审计日志
 
 ```
-GET /api/log/export?startTime=2026-06-01T00:00:00&endTime=2026-06-23T23:59:59
+GET /api/log/export?startTime=2026-06-01T00:00:00&endTime=2026-06-23T23:59:59&operatorUuid=&operationType=
 ```
 
 | 项目 | 内容 |
@@ -1573,9 +1963,127 @@ GET /api/alert/search?alertType=走访逾期&severity=高&isHandled=0&page=1&siz
 
 ---
 
-## 9. 全局变量与测试流程建议
+## 9. 文件服务
 
-### 9.1 Postman Collection Variables
+> **网关地址:** `http://localhost:8080/api/file` | **由 pdm-resident 模块提供**
+
+### 9.1 上传文件
+
+```
+POST /api/file/upload
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 上传文件到服务器 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **Content-Type** | `multipart/form-data` |
+| **表单字段** | `file` — 要上传的文件, `type` — 文件类型(可选, 默认 "attachment") |
+
+**Response:**
+```json
+{
+    "code": 200,
+    "data": {
+        "filePath": "/uploads/2026/06/abc123.pdf",
+        "fileName": "abc123.pdf",
+        "fileSize": 102400
+    }
+}
+```
+
+---
+
+### 9.2 下载/访问文件
+
+```
+GET /api/file/{*path}
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 通过文件路径下载或访问文件(支持子路径) |
+| **认证** | 无(或 `Authorization: Bearer {{accessToken}}`) |
+| **路径参数** | `path` — 文件相对路径(支持多级子目录) |
+
+> **示例:** `GET /api/file/uploads/2026/06/abc123.pdf`
+
+---
+
+### 9.3 删除文件
+
+```
+DELETE /api/file?path=/uploads/2026/06/abc123.pdf
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 删除服务器上的指定文件 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **查询参数** | `path` — 要删除的文件路径 |
+
+---
+
+## 10. 统计服务
+
+> **网关地址:** `http://localhost:8080/api/statistics` | **由 pdm-resident 模块提供**
+
+### 10.1 省份人口统计
+
+```
+GET /api/statistics/province-population
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 获取各省份人口统计数据 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+
+---
+
+### 10.2 仪表盘统计
+
+```
+GET /api/statistics/dashboard
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 获取系统仪表盘综合统计数据(人口总数/流动人口/重点人员/预警等) |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+
+---
+
+### 10.3 人口迁移流向
+
+```
+GET /api/statistics/migration-flows
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 获取人口迁移流向统计数据 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+
+---
+
+### 10.4 城市人口统计
+
+```
+GET /api/statistics/city-population?province=北京市
+```
+
+| 项目 | 内容 |
+|------|------|
+| **描述** | 根据省份获取该省下各城市人口统计 |
+| **认证** | `Authorization: Bearer {{accessToken}}` |
+| **查询参数** | `province` — 省份名称 |
+
+---
+
+## 11. 全局变量与测试流程建议
+
+### 11.1 Postman Collection Variables
 
 在 Postman Collection 中设置以下变量：
 
@@ -1587,7 +2095,7 @@ GET /api/alert/search?alertType=走访逾期&severity=高&isHandled=0&page=1&siz
 | `userUuid` | (登录后自动设置) | 当前登录用户UUID |
 | `handlerUuid` | (登录后自动设置) | 审批人UUID |
 
-### 9.2 Pre-request Script (自动添加Token)
+### 11.2 Pre-request Script (自动添加Token)
 
 ```javascript
 // 对所有需要认证的请求自动添加 Authorization Header
@@ -1599,7 +2107,7 @@ if (pm.collectionVariables.get('accessToken')) {
 }
 ```
 
-### 9.3 登录后自动设置变量 (Tests Script)
+### 11.3 登录后自动设置变量 (Tests Script)
 
 ```javascript
 // 在 Login 请求的 Tests 标签中添加
@@ -1613,7 +2121,7 @@ if (pm.response.code === 200) {
 }
 ```
 
-### 9.4 推荐测试流程
+### 11.4 推荐测试流程
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -1623,55 +2131,82 @@ if (pm.response.code === 200) {
 │  Step 2: 基础数据准备                                │
 │          - 新建民警 (POST /api/auth/police)          │
 │          - 查询行政区划 (GET /api/area)              │
+│          - 查询区划树 (GET /api/area/tree)           │
 ├─────────────────────────────────────────────────────┤
 │  Step 3: 常住人口管理                                │
 │          - 新增人口 (POST /api/resident)             │
 │          - 多条件搜索 (POST /api/resident/search)    │
 │          - 建立家庭关系 (POST /api/resident/../relations)│
+│          - 查询关系详情 (GET /api/resident/../relations-detail)│
+│          - 查询子女 (GET /api/resident/../children)  │
 │          - 提交变更申请 (POST /api/resident/change-request)│
 │          - 审批变更 (PUT /api/resident/change-request/../approve)│
+│          - 批量导入 (POST /api/resident/import)      │
+│          - 导出数据 (GET /api/resident/export)       │
 ├─────────────────────────────────────────────────────┤
 │  Step 4: 户籍管理                                    │
+│          - 查询户口簿 (GET /api/household/book/search)│
 │          - 申请户口簿 (POST /api/household/book/apply)│
+│          - 提交业务申请 (POST /api/household/business)│
+│          - 审批业务 (PUT /api/household/business/../approve)│
 │          - 提交迁移申请 (POST /api/household/migration)│
 │          - 审批迁移 (PUT /api/household/migration/../approve)│
 │          - 查询迁移轨迹 (GET /api/household/migration/trace/..)│
+│          - 申领准迁证 (POST /api/household/approval-permit)│
+│          - 申领迁移证 (POST /api/household/migration-permit)│
 ├─────────────────────────────────────────────────────┤
 │  Step 5: 重点人员管理                                │
 │          - 新增重点人员 (POST /api/keyperson)        │
+│          - 搜索 (GET /api/keyperson/search)          │
 │          - 制定走访计划 (POST /api/keyperson/visit-plan)│
+│          - 查询走访计划 (GET /api/keyperson/visit-plan)│
 │          - 执行走访 (PUT /api/keyperson/visit-plan/..)│
 │          - 登记信访 (POST /api/keyperson/petition)   │
+│          - GIS数据 (GET /api/keyperson/gis)          │
 ├─────────────────────────────────────────────────────┤
 │  Step 6: 流动人口管理                                │
+│          - 登记列表 (GET /api/fp/register)           │
 │          - 登记 (POST /api/fp/register)              │
 │          - 居住登记 (POST /api/fp/residence/register)│
+│          - 居住证列表 (GET /api/fp/permit)           │
 │          - 申领居住证 (POST /api/fp/permit/apply)    │
-│          - 审批制发 (PUT /api/fp/permit/../approve)  │
+│          - 审批 (PUT /api/fp/permit/../approve)      │
+│          - 制发 (PUT /api/fp/permit/../issue)        │
+│          - 续期 (POST /api/fp/permit/../renew)       │
 │          - 统计查询 (GET /api/fp/statistics/*)       │
 ├─────────────────────────────────────────────────────┤
 │  Step 7: 失踪人口管理                                │
 │          - 登记失踪 (POST /api/missing)              │
 │          - 搜索 (GET /api/missing/search)            │
 │          - 登记找回 (POST /api/missing/recovery)     │
+│          - 统计 (GET /api/missing/statistics)        │
 ├─────────────────────────────────────────────────────┤
 │  Step 8: 日志与预警                                  │
 │          - 审计日志 (GET /api/log/audit)             │
 │          - 登录日志 (GET /api/log/login)             │
+│          - 导出日志 (GET /api/log/export)            │
 │          - 待处理预警 (GET /api/alert/pending)       │
+│          - 搜索预警 (GET /api/alert/search)          │
 │          - 处理预警 (PUT /api/alert/../handle)       │
+├─────────────────────────────────────────────────────┤
+│  Step 9: 统计与文件                                  │
+│          - 仪表盘 (GET /api/statistics/dashboard)    │
+│          - 省份统计 (GET /api/statistics/province-population)│
+│          - 迁移流向 (GET /api/statistics/migration-flows)│
+│          - 上传文件 (POST /api/file/upload)          │
+│          - 下载文件 (GET /api/file/{path})           │
 └─────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### 9.5 服务端口映射总表
+### 11.5 服务端口映射总表
 
 | 模块 | 直接端口 | 网关路由前缀 |
 |------|----------|-------------|
 | pdm-gateway | 8080 | — |
 | pdm-auth | 8081 | `/api/auth/**` |
-| pdm-resident | 8082 | `/api/resident/**` |
+| pdm-resident | 8082 | `/api/resident/**`, `/api/statistics/**`, `/api/file/**` |
 | pdm-household | 8083 | `/api/household/**`, `/api/area/**` |
 | pdm-keyperson | 8084 | `/api/keyperson/**` |
 | pdm-floating-population | 8085 | `/api/fp/**` |
