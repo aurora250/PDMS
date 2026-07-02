@@ -108,4 +108,22 @@ public class PoliceServiceImpl implements PoliceService {
     public List<Map<String, Object>> listUnassociated() {
         return policeMapper.selectUnassociated();
     }
+
+    @Override
+    public Police getCurrentPolice() {
+        String userUuid = com.pdm.common.security.UserContextHolder.getUserUuid();
+        if (userUuid == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "无法获取当前用户信息");
+        }
+        Police police = policeMapper.selectByUserUuid(userUuid);
+        if (police == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "当前用户不是民警");
+        }
+        return police;
+    }
+
+    @Override
+    public List<String> getAllPoliceResidentUuids() {
+        return policeMapper.selectAllActiveResidentUuids();
+    }
 }

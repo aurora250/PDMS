@@ -71,7 +71,7 @@
         </el-form-item>
         <el-form-item label="迁出详址">
           <el-input v-model="form.outgoingDetail" placeholder="街道/路/号/楼/室" />
-          <span class="form-tip">选择申请人后自动填充现居住地，可手动修改</span>
+          <span class="form-tip">选择申请人后自动填充户籍地址，可手动修改</span>
         </el-form-item>
         <div v-if="outgoingPreview" class="address-preview">
           <el-text type="info" size="small">迁出预览: {{ outgoingPreview }}</el-text>
@@ -269,16 +269,16 @@ watch(
   }
 )
 
-/** 选择申请人后自动填充迁出地址为现居住地 */
+/** 选择申请人后自动填充迁出地址为户籍地址 */
 async function onApplicantPicked(_resident: { uuid: string }) {
   try {
     const detail = await residentApi.getByUuid(_resident.uuid)
     if (detail) {
-      if (detail.areaId != null) {
-        form.outgoingAreaId = detail.areaId
+      if (detail.householdAreaId != null) {
+        form.outgoingAreaId = detail.householdAreaId
       }
-      if (detail.residence) {
-        form.outgoingDetail = await stripAreaPrefix(detail.residence, detail.areaId)
+      if (detail.householdAddress) {
+        form.outgoingDetail = await stripAreaPrefix(detail.householdAddress, detail.householdAreaId)
       }
     }
   } catch { /* ignore */ }
@@ -371,10 +371,6 @@ function showApprove(row: any, action: string) {
 }
 
 async function handleApprove() {
-  try {
-    const actionText = approveAction.value === '驳回' ? '确认驳回该迁移申请？' : '确认通过该迁移申请？'
-    await ElMessageBox.confirm(actionText, '确认操作', { type: 'warning' })
-  } catch { showApproveDialog.value = false; return }
   approving.value = true
   try {
     await householdApi.approveMigration(approveRid, approveAction.value, rejectReason.value || undefined)

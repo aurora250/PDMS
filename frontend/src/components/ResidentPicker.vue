@@ -30,13 +30,16 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { residentApi } from '@/api/resident'
+import { policeApi } from '@/api/auth'
 
 const props = withDefaults(
   defineProps<{
     modelValue?: string
     placeholder?: string
+    nonPoliceOnly?: boolean
+    gender?: string
   }>(),
-  { placeholder: '输入姓名或身份证号搜索居民' }
+  { placeholder: '输入姓名或身份证号搜索居民', nonPoliceOnly: false }
 )
 
 const emit = defineEmits<{
@@ -49,6 +52,23 @@ const options = ref<Array<{ uuid: string; name: string; idCardNo: string; gender
 const loading = ref(false)
 let timer: ReturnType<typeof setTimeout> | null = null
 
+/** 缓存民警 UUID 列表，避免每次搜索都请求 */
+let policeUuidsCache: string[] | null = null
+async function getPoliceUuids(): Promise<string[]> {
+  if (policeUuidsCache !== null) return policeUuidsCache
+  try {
+    policeUuidsCache = await policeApi.getAllResidentUuids({ silent: true } as any)
+  } catch {
+    policeUuidsCache = []
+  }
+  return policeUuidsCache
+}
+
+/** 清除缓存（可在需要刷新时调用） */
+function clearPoliceUuidsCache() {
+  policeUuidsCache = null
+}
+
 watch(() => props.modelValue, (v) => { selectedUuid.value = v || '' })
 
 async function remoteSearch(query: string) {
@@ -57,14 +77,20 @@ async function remoteSearch(query: string) {
   timer = setTimeout(async () => {
     loading.value = true
     try {
-      const res = await residentApi.search({ page: 1, size: 10, name: query.trim() })
+      const res = await residentApi.search({ page: 1, size: 10, name: query.trim(), gender: props.gender || undefined })
       const data = Array.isArray(res) ? res : (res.records || [])
-      options.value = (data as any[]).map((r: any) => ({
+      let mapped = (data as any[]).map((r: any) => ({
         uuid: r.uuid || r.userUuid || '',
         name: r.name || '未知',
         idCardNo: r.idCardNo || r.id_card_no || '',
         gender: r.gender || '',
       }))
+      // 排除民警身份的居民
+      if (props.nonPoliceOnly) {
+        const excludeSet = new Set(await getPoliceUuids())
+        mapped = mapped.filter(r => !excludeSet.has(r.uuid))
+      }
+      options.value = mapped
     } catch { options.value = [] }
     finally { loading.value = false }
   }, 300)

@@ -236,10 +236,12 @@ DECLARE
     area_arr BIGINT[];
     district_arr BIGINT[];
 BEGIN
-    -- 将市级 area_id 存入临时表（市级别覆盖全国34省，区县级仅4个直辖市有数据）
+    -- 收集实际行政区划（区/县级），排除直辖市下的"市辖区"占位条目
     DROP TABLE IF EXISTS _area_districts;
     CREATE TEMP TABLE _area_districts AS
-    SELECT array_agg(area_id) AS ids FROM area WHERE area_level = '市';
+    SELECT array_agg(area_id) AS ids FROM area
+    WHERE area_level IN ('市','区','县')
+      AND area_name NOT IN ('市辖区','县','市');
 END $$;
 
 -- ============================================================
@@ -570,58 +572,70 @@ DROP TABLE IF EXISTS _area_ids;
 
 
 -- ============================================================
--- 2. 警员 — police_station 与 area_id 一致，动态数量
+-- 2. 警员 — 每个区至少2名，多出的民警用户随机分配区域
 -- ============================================================
 DO $$
 DECLARE
-    i INT;
-    idx INT;
-    seq_map INT[];
-    selected_pfx TEXT;
-    v_area_name TEXT;
-    ranks TEXT[] := ARRAY['警员','警司','警督','警监'];
-    r_weights FLOAT[] := ARRAY[0.55,0.30,0.12,0.03];
-    cum_r FLOAT[];
-    depts TEXT[] := ARRAY['治安大队','刑侦大队','户政科','社区警务队','巡逻队','指挥中心'];
-    user_uuids VARCHAR(36)[];
-    resident_uuids VARCHAR(36)[];
     area_ids BIGINT[];
     area_prefixes TEXT[];
     area_names TEXT[];
-    n INT;
-    r_len INT;
+    user_uuids VARCHAR(36)[];
+    resident_uuids VARCHAR(36)[];
+    seq_map INT[];
+    n_areas INT; n_users INT; total INT; i INT;
+    idx INT; selected_pfx TEXT; v_area_name TEXT;
+    r_len INT; resid_idx INT;
+    ranks TEXT[] := ARRAY['警员','警司','警督','警监'];
+    depts TEXT[] := ARRAY['治安大队','刑侦大队','户政科','社区警务队','巡逻队','指挥中心'];
+    -- 随机挑选警衔的权重
+    r_weights FLOAT[] := ARRAY[0.45,0.32,0.18,0.05];
+    cum_r FLOAT[];
 BEGIN
     cum_r := r_weights;
     FOR i IN 2..4 LOOP cum_r[i] := cum_r[i] + cum_r[i-1]; END LOOP;
 
-    -- 构建 area_id / area_code前4位 / area_name 的映射数组（只含市级区域）
+    -- 构建市级区域映射
     WITH district_data AS (
         SELECT a.area_id, LEFT(a.area_code, 4) AS pfx, a.area_name
         FROM area a JOIN (SELECT unnest(ids) AS area_id FROM _area_districts) d USING (area_id)
     )
     SELECT array_agg(area_id), array_agg(pfx), array_agg(area_name)
     INTO area_ids, area_prefixes, area_names FROM district_data;
-
-    -- 初始化序号数组
-    seq_map := ARRAY(SELECT 0 FROM generate_series(1, array_length(area_ids, 1)));
+    n_areas := array_length(area_ids, 1);
 
     SELECT array_agg(user_uuid) INTO user_uuids FROM sys_user WHERE user_role = '民警';
+    n_users := COALESCE(array_length(user_uuids, 1), 0);
+
     SELECT array_agg(uuid) INTO resident_uuids FROM resident;
-    n := array_length(user_uuids, 1);
     r_len := array_length(resident_uuids, 1);
 
-    FOR i IN 1..n LOOP
-        idx := floor(random() * array_length(area_ids, 1) + 1)::INT;
+    -- 总数 = 每区保底2名 + 剩余民警用户（如果多于2*n_areas则全用，否则至少保底数）
+    total := GREATEST(n_users, n_areas * 2);
+    seq_map := ARRAY(SELECT 0 FROM generate_series(1, n_areas));
+    resid_idx := 0;
+
+    FOR i IN 1..total LOOP
+        -- 前 n_areas*2 个：按区域轮流分配（保证每区至少2名）
+        IF i <= n_areas * 2 THEN
+            idx := (i - 1) % n_areas + 1;
+        ELSE
+            -- 多余的随机分配
+            idx := floor(random() * n_areas + 1)::INT;
+        END IF;
         seq_map[idx] := seq_map[idx] + 1;
         selected_pfx := area_prefixes[idx];
         v_area_name := area_names[idx];
+
+        -- 轮流取居民UUID
+        resid_idx := resid_idx + 1;
+        IF resid_idx > r_len THEN resid_idx := 1; END IF;
 
         INSERT INTO police (police_number, user_uuid, resident_uuid,
                            police_station, jurisdiction, area_id, department,
                            police_rank, duty_status, is_deleted)
         VALUES ('P' || selected_pfx || LPAD(seq_map[idx]::TEXT, 4, '0'),
-                CASE WHEN i % 2 = 1 THEN user_uuids[i] ELSE NULL END,
-                resident_uuids[(i - 1) % r_len + 1],
+                CASE WHEN i <= n_users THEN user_uuids[i] ELSE NULL END,
+                resident_uuids[resid_idx],
                 v_area_name || '公安分局',
                 gen_address(area_ids[idx], i + 600000),
                 area_ids[idx],
@@ -1066,21 +1080,55 @@ DO $$
 DECLARE
     pool VARCHAR(36)[]; pc INT; i INT;
     handlers VARCHAR(36)[];
+    v_bt VARCHAR(20);
+    v_father_uuid VARCHAR(36); v_mother_uuid VARCHAR(36);
+    v_detail JSONB;
+    v_surnames TEXT[] := ARRAY['张','李','王','陈','刘','黄','周','吴','杨','赵','孙','马','胡','郭','何','高','林','罗'];
+    v_given_names TEXT[] := ARRAY['伟','芳','秀英','敏','静','丽','强','磊','洋','勇','艳','涛','明','超','平','刚','华','飞'];
+    v_nations TEXT[] := ARRAY['汉族','蒙古族','回族','藏族','维吾尔族','苗族','彝族','壮族','满族'];
+    v_death_causes TEXT[] := ARRAY['自然死亡','疾病','意外','其他'];
 BEGIN
     SELECT array_agg(uuid) INTO pool FROM _res_pool; pc := array_length(pool,1);
     SELECT array_agg(user_uuid) INTO handlers FROM _user_pool WHERE user_role='民警';
     FOR i IN 1..800 LOOP
+        v_bt := CASE WHEN random()<0.34 THEN '出生登记' WHEN random()<0.67 THEN '死亡注销' ELSE '分户立户' END;
+        v_detail := NULL;
+        IF v_bt = '出生登记' THEN
+            v_father_uuid := pool[floor(random()*pc)::INT+1];
+            v_mother_uuid := pool[floor(random()*pc)::INT+1];
+            v_detail := jsonb_build_object(
+                'name', v_surnames[floor(random()*array_length(v_surnames,1))::INT+1] || v_given_names[floor(random()*array_length(v_given_names,1))::INT+1],
+                'gender', CASE WHEN random()<0.52 THEN '男' ELSE '女' END,
+                'birthDate', to_char(CURRENT_DATE - (floor(random()*30)::INT || ' days')::INTERVAL, 'YYYY-MM-DD'),
+                'fatherUuid', v_father_uuid,
+                'motherUuid', v_mother_uuid,
+                'nation', v_nations[floor(random()*array_length(v_nations,1))::INT+1],
+                'birthCertNo', 'B' || to_char(CURRENT_DATE,'YYYY') || lpad(i::TEXT, 8, '0')
+            );
+        ELSIF v_bt = '死亡注销' THEN
+            v_detail := jsonb_build_object(
+                'deathDate', to_char(CURRENT_DATE - (floor(random()*30)::INT || ' days')::INTERVAL, 'YYYY-MM-DD'),
+                'deathCause', v_death_causes[floor(random()*array_length(v_death_causes,1))::INT+1]
+            );
+        ELSIF v_bt = '分户立户' THEN
+            v_detail := jsonb_build_object(
+                'newHouseholderUuid', pool[floor(random()*pc)::INT+1],
+                'hukouAreaId', (SELECT area_id FROM area ORDER BY random() LIMIT 1),
+                'hukouAddressDetail', floor(random()*999+1)::TEXT||'号',
+                'memberUuids', jsonb_build_array(pool[floor(random()*pc)::INT+1], pool[floor(random()*pc)::INT+1])
+            );
+        END IF;
         INSERT INTO household_business_request (handler_uuid, applicant_uuid, attachment,
-            business_type, handle_date, handle_basis, fee, status, reject_reason, remark, is_deleted)
+            business_type, handle_date, handle_basis, fee, status, reject_reason, remark, detail_json, is_deleted)
         VALUES (CASE WHEN random()<0.70 AND handlers IS NOT NULL THEN handlers[floor(random()*array_length(handlers,1))::INT+1] ELSE NULL END,
-            pool[floor(random()*pc)::INT+1], 'attachment_biz_'||i||'.pdf',
-            CASE WHEN random()<0.20 THEN '出生登记' WHEN random()<0.40 THEN '死亡注销' WHEN random()<0.60 THEN '户口迁移' WHEN random()<0.80 THEN '登记项目变更' ELSE '分户立户' END,
+            pool[floor(random()*pc)::INT+1], 'attachment_biz_'||i||'.pdf', v_bt,
             CURRENT_DATE - (floor(random()*180)::INT || ' days')::INTERVAL,
             CASE WHEN random()<0.50 THEN '户籍管理条例第'||floor(random()*10+1)::TEXT||'条' ELSE NULL END,
             CASE WHEN random()<0.30 THEN (floor(random()*100)::INT)::NUMERIC(10,2) ELSE NULL END,
             CASE WHEN random()<0.35 THEN '已批准' WHEN random()<0.60 THEN '审批中' WHEN random()<0.75 THEN '已驳回' WHEN random()<0.85 THEN '市局审批中' ELSE '审批中' END,
             CASE WHEN random()<0.10 THEN '材料不全' ELSE NULL END,
-            CASE WHEN random()<0.20 THEN '备注信息'||i ELSE NULL END, 0);
+            CASE WHEN random()<0.20 THEN '备注信息'||i ELSE NULL END,
+            v_detail, 0);
     END LOOP;
 END $$;
 

@@ -39,13 +39,13 @@
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑登记' : '新增登记'" width="500px" @close="resetForm">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="居民UUID" prop="uuid">
-          <ResidentPicker v-model="form.uuid" placeholder="搜索姓名或身份证号选择居民" />
+          <ResidentPicker v-model="form.uuid" placeholder="搜索姓名或身份证号选择居民" @pick="onResidentPicked" />
         </el-form-item>
         <el-form-item label="登记日期" prop="registerDate">
           <el-date-picker v-model="form.registerDate" type="date" value-format="YYYY-MM-DD" style="width:100%" />
         </el-form-item>
         <el-form-item label="居住证号">
-          <el-input v-model="form.residencePermitNo" placeholder="可选" />
+          <el-input v-model="form.residencePermitNo" disabled placeholder="选择居民后若有有效居住证则自动填入" />
         </el-form-item>
         <el-form-item label="附件">
           <AttachmentUploader v-model="form.attachment" />
@@ -105,6 +105,16 @@ async function del(row: any) {
   try {
     await ElMessageBox.confirm('确认注销该流动人口登记？', '确认注销', { type: 'warning' })
     await floatingApi.deleteRegister(row.rid); showSuccess('已注销'); load()
+  } catch { /* ignore */ }
+}
+
+async function onResidentPicked(_resident: { uuid: string }) {
+  try {
+    const permits = await floatingApi.listPermit({ uuid: _resident.uuid, status: '有效' }, { silent: true } as any)
+    const validPermits = Array.isArray(permits) ? permits : (permits?.records || [])
+    if (validPermits.length > 0) {
+      form.residencePermitNo = validPermits[0].permitNo
+    }
   } catch { /* ignore */ }
 }
 

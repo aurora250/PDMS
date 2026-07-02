@@ -32,7 +32,7 @@
     <el-dialog v-model="dialogVisible" title="登记信访" width="550px" @close="resetForm">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="人员UUID" prop="keyPersonUuid">
-          <el-input v-model="form.keyPersonUuid" placeholder="请输入重点人员UUID" />
+          <ResidentPicker v-model="form.keyPersonUuid" placeholder="搜索姓名或身份证号选择重点人员" />
         </el-form-item>
         <el-form-item label="信访时间" prop="petitionTime">
           <el-date-picker v-model="form.petitionTime" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" style="width:100%" />
@@ -43,6 +43,7 @@
         <el-form-item label="处理民警" prop="handlerPoliceNo">
           <el-select v-model="form.handlerPoliceNo" placeholder="搜索民警姓名或警号选择" filterable remote
             :remote-method="searchPolice" :loading="policeSearching" clearable style="width:100%"
+            :disabled="!!autoFilledPoliceNo"
             @focus="searchPolice('')">
             <el-option v-for="p in policeOptions" :key="p.policeNumber" :label="`${p.residentName || p.policeNumber} (${p.policeNumber})`" :value="p.policeNumber" />
           </el-select>
@@ -71,10 +72,12 @@ import { useRoute } from 'vue-router'
 import { keypersonApi } from '@/api/keyperson'
 import { policeApi } from '@/api/auth'
 import { usePermission } from '@/composables/usePermission'
+import { useAuthStore } from '@/stores/auth'
 import { showError, showSuccess } from '@/utils/auth'
-import { uuidRule, policeNoRule } from '@/utils/validators'
+import ResidentPicker from '@/components/ResidentPicker.vue'
 
 const route = useRoute()
+const auth = useAuthStore()
 const { hasPermission } = usePermission()
 const list = ref<any[]>([])
 const loading = ref(false)
@@ -83,10 +86,12 @@ const page = reactive({ current: 1, size: 20, total: 0 })
 // 民警搜索
 const policeOptions = ref<any[]>([])
 const policeSearching = ref(false)
+const autoFilledPoliceNo = ref('')
+
 async function searchPolice(query: string) {
   policeSearching.value = true
   try {
-    const res = await policeApi.list({ keyword: query || undefined, page: 1, size: 50 })
+    const res = await policeApi.list({ keyword: query || undefined, page: 1, size: 50 }, { silent: true } as any)
     policeOptions.value = (res.records || []).map((p: any) => ({ ...p, label: `${p.residentName || p.policeNumber} (${p.policeNumber})`, value: p.policeNumber }))
   } catch { policeOptions.value = [] }
   finally { policeSearching.value = false }
@@ -100,10 +105,10 @@ const form = reactive({
   address: '', handlerPoliceNo: '', evaluation: '一般', remark: '',
 })
 const rules = {
-  keyPersonUuid: [{ required: true, message: '请输入人员UUID', trigger: 'blur' }, uuidRule],
+  keyPersonUuid: [{ required: true, message: '请选择重点人员', trigger: 'change' }],
   petitionTime: [{ required: true, message: '请选择信访时间', trigger: 'change' }],
   address: [{ required: true, message: '请输入信访地点', trigger: 'blur' }],
-  handlerPoliceNo: [{ required: true, message: '请输入处理民警编号', trigger: 'blur' }, policeNoRule],
+  handlerPoliceNo: [{ required: true, message: '请指定处理民警', trigger: 'change' }],
   remark: [{ required: true, message: '请输入备注', trigger: 'blur' }],
 }
 
@@ -117,13 +122,21 @@ async function load() {
   finally { loading.value = false }
 }
 
-function openCreate() {
+async function openCreate() {
   form.keyPersonUuid = ''
   form.petitionTime = new Date().toISOString().slice(0, 19)
   form.address = ''
   form.handlerPoliceNo = ''
   form.evaluation = '一般'
   form.remark = ''
+  autoFilledPoliceNo.value = ''
+  try {
+    const me = await policeApi.getMe({ silent: true } as any)
+    if (me && me.policeNumber) {
+      form.handlerPoliceNo = me.policeNumber
+      autoFilledPoliceNo.value = me.policeNumber
+    }
+  } catch { /* 非民警用户，保持手动选择 */ }
   dialogVisible.value = true
 }
 

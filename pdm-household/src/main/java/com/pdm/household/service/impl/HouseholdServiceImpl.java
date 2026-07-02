@@ -11,12 +11,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import cn.hutool.core.util.IdUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class HouseholdServiceImpl implements HouseholdService {
@@ -28,6 +31,7 @@ public class HouseholdServiceImpl implements HouseholdService {
     private final MigrationPermitMapper migrationPermitMapper;
     private final AreaMapper areaMapper;
     private final ResidentMapper residentMapper;
+    private final ResidentRelationMapper relationMapper;
     private final PoliceMapper policeMapper;
 
     @Override
@@ -153,7 +157,7 @@ public class HouseholdServiceImpl implements HouseholdService {
             request.setHandleDate(LocalDate.now());
         }
         request.setStatus("审批中");
-        businessMapper.insert(request);
+        businessMapper.insertBusiness(request);
         return request;
     }
 
@@ -197,8 +201,195 @@ public class HouseholdServiceImpl implements HouseholdService {
         req.setHandlerUuid(handlerUuid);
         if (rejectReason != null)
             req.setRejectReason(rejectReason);
-        businessMapper.updateById(req);
+        businessMapper.updateBusiness(req);
+
+        // 审批通过后执行业务落地操作
+        if ("已批准".equals(next)) {
+            executeBusinessEffect(req);
+        }
         return req;
+    }
+
+    /**
+     * 根据业务类型执行对应的数据变更。当前支持：出生登记、死亡注销、分户立户。
+     */
+    private void executeBusinessEffect(HouseholdBusinessRequest req) {
+        String biz = req.getBusinessType();
+        String json = req.getDetailJson();
+        if (biz == null || json == null || json.isEmpty()) {
+            log.warn("业务类型或 detailJson 为空，跳过落地: rid={}, biz={}", req.getRid(), biz);
+            return;
+        }
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> d = new com.fasterxml.jackson.databind.ObjectMapper().readValue(json, Map.class);
+            switch (biz) {
+                case "出生登记" -> executeBirthRegistration(req, d);
+                case "死亡注销" -> executeDeathCancellation(req, d);
+                case "分户立户" -> executeHouseholdSplit(req, d);
+                default -> log.info("业务类型 {} 暂无落地逻辑，跳过", biz);
+            }
+        } catch (Exception e) {
+            log.error("业务落地失败: rid={}, biz={}", req.getRid(), biz, e);
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "业务数据落地失败: " + e.getMessage());
+        }
+    }
+
+    /** 出生登记：创建新生儿居民记录，并加入户口簿成员列表 */
+    private void executeBirthRegistration(HouseholdBusinessRequest req, Map<String, Object> d) {
+        String name = (String) d.get("name");
+        String gender = (String) d.get("gender");
+        String birthDateStr = (String) d.get("birthDate");
+        String fatherUuid = (String) d.get("fatherUuid");
+        String motherUuid = (String) d.get("motherUuid");
+        String nation = (String) d.get("nation");
+        String birthCertNo = (String) d.get("birthCertNo");
+
+        if (name == null || gender == null || birthDateStr == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "新生儿姓名、性别、出生日期不能为空");
+        }
+        LocalDate birthDate = LocalDate.parse(birthDateStr, DateTimeFormatter.ISO_LOCAL_DATE);
+
+        // 以父亲（优先）或母亲的户籍信息作为新生儿的户籍地址
+        String parentUuid = fatherUuid != null ? fatherUuid : motherUuid;
+        Map<String, Object> parentInfo = null;
+        if (parentUuid != null) {
+            parentInfo = residentMapper.selectByUuid(parentUuid);
+        }
+        String residence = parentInfo != null ? (String) parentInfo.get("residence") : "";
+        Object parentAreaId = parentInfo != null ? parentInfo.get("area_id") : null;
+        String householdAddress = parentInfo != null ? (String) parentInfo.get("household_address") : "";
+        Object householdAreaId = parentInfo != null ? parentInfo.get("household_area_id") : null;
+
+        // 生成临时身份证号：区域码(6) + 日期(8) + 序号(4)
+        String areaCode = "000000";
+        if (parentAreaId != null) {
+            Area a = areaMapper.selectById((Long) parentAreaId);
+            if (a != null && a.getAreaCode() != null) areaCode = a.getAreaCode();
+        }
+        String birthPart = birthDate.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String seqPart = String.format("%04d", System.currentTimeMillis() % 10000);
+        String idCardNo = areaCode + birthPart + seqPart;
+
+        String newUuid = UUID.randomUUID().toString();
+        Map<String, Object> params = new HashMap<>();
+        params.put("uuid", newUuid);
+        params.put("name", name);
+        params.put("gender", gender);
+        params.put("idCardNo", idCardNo);
+        params.put("nation", nation != null ? nation : "汉族");
+        params.put("birthDate", birthDate);
+        params.put("phone", "");
+        params.put("residence", residence);
+        params.put("areaId", parentAreaId);
+        params.put("householdType", "居民户口");
+        params.put("householdStatus", "正常");
+        params.put("householdAddress", householdAddress);
+        params.put("householdAreaId", householdAreaId);
+        residentMapper.insertResident(params);
+        log.info("出生登记: 新生儿 {} (uuid={}) 已创建", name, newUuid);
+
+        // 同步家庭关系：为新生儿建立父子/母子关系
+        if (fatherUuid != null || motherUuid != null) {
+            relationMapper.upsertRelation(newUuid, fatherUuid, motherUuid);
+            log.info("出生登记: 新生儿 {} 的家庭关系已建立, father={}, mother={}", newUuid, fatherUuid, motherUuid);
+        }
+
+        // 将新生儿加入父/母的户口簿成员列表
+        if (parentUuid != null) {
+            HouseholdRegister book = bookMapper.selectByResidentUuid(parentUuid);
+            if (book != null) {
+                String existing = book.getMemberUuidList();
+                if (existing == null || existing.isEmpty()) {
+                    book.setMemberUuidList(newUuid);
+                } else {
+                    book.setMemberUuidList(existing + "," + newUuid);
+                }
+                bookMapper.updateById(book);
+            }
+        }
+    }
+
+    /** 死亡注销：将申请人的户籍状态标记为死亡注销，并从户口簿成员列表中移除 */
+    private void executeDeathCancellation(HouseholdBusinessRequest req, Map<String, Object> d) {
+        String applicantUuid = req.getApplicantUuid();
+        residentMapper.updateHouseholdStatus(applicantUuid, "死亡注销");
+        log.info("死亡注销: 居民 {} 户籍状态已更新为死亡注销", applicantUuid);
+
+        // 从户口簿成员列表中移除
+        HouseholdRegister book = bookMapper.selectByResidentUuid(applicantUuid);
+        if (book != null && book.getMemberUuidList() != null && !book.getMemberUuidList().isEmpty()) {
+            List<String> members = new ArrayList<>(Arrays.asList(book.getMemberUuidList().split(",")));
+            members.removeIf(m -> m.trim().equals(applicantUuid));
+            book.setMemberUuidList(members.isEmpty() ? null : String.join(",", members));
+            // 如果死亡者是户主，将户主设为第一个成员（或置空）
+            if (applicantUuid.equals(book.getHouseholderUuid()) && !members.isEmpty()) {
+                book.setHouseholderUuid(members.get(0).trim());
+            }
+            bookMapper.updateById(book);
+        }
+    }
+
+    /** 分户立户：创建新的户口簿 */
+    private void executeHouseholdSplit(HouseholdBusinessRequest req, Map<String, Object> d) {
+        String newHouseholderUuid = (String) d.get("newHouseholderUuid");
+        Object hukouAreaIdObj = d.get("hukouAreaId");
+        String hukouAddressDetail = (String) d.get("hukouAddressDetail");
+        @SuppressWarnings("unchecked")
+        List<String> memberUuids = (List<String>) d.get("memberUuids");
+
+        if (newHouseholderUuid == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "新户主UUID不能为空");
+        }
+        Long hukouAreaId = hukouAreaIdObj != null ? ((Number) hukouAreaIdObj).longValue() : null;
+
+        // 生成户口簿号
+        String areaCode = "000000";
+        if (hukouAreaId != null) {
+            Area a = areaMapper.selectById(hukouAreaId);
+            if (a != null && a.getAreaCode() != null) areaCode = a.getAreaCode();
+        }
+        String year = String.valueOf(LocalDate.now().getYear());
+        String prefix = areaCode + year;
+        String maxNo = bookMapper.selectMaxBookNoByPrefix(prefix + "%");
+        long seq = 1L;
+        if (maxNo != null && maxNo.length() >= 18) {
+            try { seq = Long.parseLong(maxNo.substring(10)) + 1; } catch (NumberFormatException e) { /* use 1 */ }
+        }
+
+        // 组装完整户籍地址
+        String fullAddress = hukouAddressDetail;
+        if (hukouAreaId != null) {
+            String path = areaMapper.selectAreaPath(hukouAreaId);
+            if (path != null && !path.isEmpty()) fullAddress = path + hukouAddressDetail;
+        }
+
+        HouseholdRegister newBook = new HouseholdRegister();
+        newBook.setHouseholdBookNo(prefix + String.format("%08d", seq));
+        newBook.setHouseholderUuid(newHouseholderUuid);
+        newBook.setEstablishDate(LocalDate.now());
+        newBook.setHukouAddress(fullAddress != null ? fullAddress : "");
+        newBook.setHukouAreaId(hukouAreaId);
+        newBook.setStatus("有效"); // 审批通过直接有效
+        if (memberUuids != null && !memberUuids.isEmpty()) {
+            newBook.setMemberUuidList(String.join(",", memberUuids));
+        }
+        bookMapper.insert(newBook);
+        log.info("分户立户: 新户口簿 {} 已创建，户主={}", newBook.getHouseholdBookNo(), newHouseholderUuid);
+
+        // 如果指定了成员UUID，从原户口簿中移除这些成员
+        if (memberUuids != null && !memberUuids.isEmpty()) {
+            HouseholdRegister oldBook = bookMapper.selectByResidentUuid(req.getApplicantUuid());
+            if (oldBook != null && oldBook.getMemberUuidList() != null && !oldBook.getMemberUuidList().isEmpty()) {
+                Set<String> toRemove = new HashSet<>(memberUuids);
+                List<String> remaining = Arrays.stream(oldBook.getMemberUuidList().split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty() && !toRemove.contains(s))
+                        .collect(Collectors.toList());
+                oldBook.setMemberUuidList(remaining.isEmpty() ? null : String.join(",", remaining));
+                bookMapper.updateById(oldBook);
+            }
+        }
     }
 
     @Override
@@ -224,7 +415,7 @@ public class HouseholdServiceImpl implements HouseholdService {
                 req.setRemark(existingRemark + " | [附加材料] " + remark);
             }
         }
-        businessMapper.updateById(req);
+        businessMapper.updateBusiness(req);
         return req;
     }
 
@@ -348,6 +539,15 @@ public class HouseholdServiceImpl implements HouseholdService {
                 migrationPermit.setStatus("有效");
                 migrationPermitMapper.insert(migrationPermit);
                 req.setMigrationPermitNo(migrationPermit.getPermitNo());
+            }
+
+            // 迁移审批通过：同步更新居民户籍地址
+            if ("迁移审批通过".equals(nextStatus)) {
+                if (req.getIncomingAddress() != null) {
+                    residentMapper.updateHouseholdAddress(req.getApplicantUuid(),
+                            req.getIncomingAddress(), req.getIncomingAreaId());
+                    log.info("迁移审批通过: 居民 {} 户籍地址已更新为迁入地", req.getApplicantUuid());
+                }
             }
         }
 

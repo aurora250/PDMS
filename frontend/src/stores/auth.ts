@@ -8,6 +8,7 @@ export const useAuthStore = defineStore('auth', () => {
   const refreshToken = ref('')
   const role = ref('')
   const residentUuid = ref('')
+  const userUuid = ref('')
   const permissions = ref<string[]>([])
   const username = ref('')
   const mustChangePassword = ref(false)
@@ -20,6 +21,7 @@ export const useAuthStore = defineStore('auth', () => {
     refreshToken.value = data.refreshToken
     role.value = data.role
     residentUuid.value = data.residentUuid || ''
+    userUuid.value = data.userUuid || ''
     permissions.value = data.permissions || []
     mustChangePassword.value = data.mustChangePassword || false
   }
@@ -47,6 +49,7 @@ export const useAuthStore = defineStore('auth', () => {
     refreshToken.value = ''
     role.value = ''
     residentUuid.value = ''
+    userUuid.value = ''
     permissions.value = []
     username.value = ''
     mustChangePassword.value = false
@@ -73,12 +76,13 @@ export const useAuthStore = defineStore('auth', () => {
       refreshToken: refreshToken.value,
       role: role.value,
       residentUuid: residentUuid.value,
+      userUuid: userUuid.value,
       permissions: permissions.value,
       mustChangePassword: mustChangePassword.value,
       username: username.value,
     }))
   }
 
-  return { token, refreshToken, role, residentUuid, permissions, username, mustChangePassword,
+  return { token, refreshToken, role, residentUuid, userUuid, permissions, username, mustChangePassword,
            isLoggedIn, isCitizen, login, refresh, logout, passwordChanged, restore, persist }
 })

@@ -169,7 +169,7 @@ class HouseholdServiceImplTest {
             assertNotNull(result);
             assertEquals("审批中", result.getStatus());
             assertNotNull(result.getHandleDate());
-            verify(businessMapper).insert(request);
+            verify(businessMapper).insertBusiness(request);
         }
 
         @Test
@@ -181,7 +181,7 @@ class HouseholdServiceImplTest {
 
             assertNotNull(result);
             assertEquals("已批准", result.getStatus());
-            verify(businessMapper).updateById(testBusiness);
+            verify(businessMapper).updateBusiness(testBusiness);
         }
 
         @Test
@@ -194,7 +194,7 @@ class HouseholdServiceImplTest {
             assertNotNull(result);
             assertEquals("已驳回", result.getStatus());
             assertEquals("材料不齐全", result.getRejectReason());
-            verify(businessMapper).updateById(testBusiness);
+            verify(businessMapper).updateBusiness(testBusiness);
         }
 
         @Test

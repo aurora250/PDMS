@@ -51,4 +51,7 @@ public class HouseholdBusinessRequest extends BaseNamedEntity {
 
     @TableField("remark")
     private String remark;
+
+    @TableField("detail_json")
+    private String detailJson;
 }

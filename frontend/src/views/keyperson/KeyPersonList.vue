@@ -54,7 +54,7 @@
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑重点人员' : '新增列管'" width="500px" @close="resetForm">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
         <el-form-item label="居民UUID" prop="uuid">
-          <ResidentPicker v-model="form.uuid" placeholder="搜索姓名或身份证号选择居民" />
+          <ResidentPicker v-model="form.uuid" placeholder="搜索姓名或身份证号选择居民" :nonPoliceOnly="true" />
         </el-form-item>
         <el-form-item label="管控级别" prop="controlLevel">
           <el-select v-model="form.controlLevel" style="width:100%">
@@ -75,6 +75,7 @@
         <el-form-item label="责任民警" prop="responsiblePoliceNo">
           <el-select v-model="form.responsiblePoliceNo" placeholder="搜索民警姓名或警号选择" filterable remote
             :remote-method="searchPolice" :loading="policeSearching" clearable style="width:100%"
+            :disabled="!!autoFilledPoliceNo"
             @focus="searchPolice('')">
             <el-option v-for="p in policeOptions" :key="p.policeNumber" :label="`${p.residentName || p.policeNumber} (${p.policeNumber})`" :value="p.policeNumber" />
           </el-select>
@@ -98,11 +99,13 @@ import { ElMessageBox } from 'element-plus'
 import { keypersonApi } from '@/api/keyperson'
 import { policeApi } from '@/api/auth'
 import { usePermission } from '@/composables/usePermission'
+import { useAuthStore } from '@/stores/auth'
 import { showError, showSuccess } from '@/utils/auth'
 import { policeNoRule } from '@/utils/validators'
 import ResidentPicker from '@/components/ResidentPicker.vue'
 
 const { hasPermission } = usePermission()
+const auth = useAuthStore()
 const route = useRoute()
 const list = ref<any[]>([])
 const loading = ref(false)
@@ -118,10 +121,13 @@ let editUuid = ''
 // 民警搜索
 const policeOptions = ref<any[]>([])
 const policeSearching = ref(false)
+/** 创建模式时自动填充的民警警号（非空表示已自动填充，应禁用选择器） */
+const autoFilledPoliceNo = ref('')
+
 async function searchPolice(query: string) {
   policeSearching.value = true
   try {
-    const res = await policeApi.list({ keyword: query || undefined, page: 1, size: 50 })
+    const res = await policeApi.list({ keyword: query || undefined, page: 1, size: 50 }, { silent: true } as any)
     policeOptions.value = (res.records || []).map((p: any) => ({
       ...p,
       label: `${p.residentName || p.policeNumber} (${p.policeNumber})`,
@@ -167,9 +173,18 @@ async function del(row: any) {
   } catch { /* ignore */ }
 }
 
-function openCreate() {
+async function openCreate() {
   Object.assign(form, defaultForm())
   isEdit.value = false
+  autoFilledPoliceNo.value = ''
+  // 尝试获取当前登录用户的民警信息并自动填充
+  try {
+    const me = await policeApi.getMe({ silent: true } as any)
+    if (me && me.policeNumber) {
+      form.responsiblePoliceNo = me.policeNumber
+      autoFilledPoliceNo.value = me.policeNumber
+    }
+  } catch { /* 非民警用户，保持手动选择 */ }
   dialogVisible.value = true
 }
 
@@ -178,6 +193,7 @@ function openEdit(row: any) {
   Object.assign(form, row)
   isEdit.value = true
   editUuid = row.uuid
+  autoFilledPoliceNo.value = ''
   dialogVisible.value = true
 }
 

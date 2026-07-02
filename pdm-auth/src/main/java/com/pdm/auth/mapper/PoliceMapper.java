@@ -39,4 +39,8 @@ public interface PoliceMapper extends BaseMapper<Police> {
             + " WHERE p.user_uuid IS NULL AND p.is_deleted = 0"
             + " ORDER BY p.police_number")
     List<Map<String, Object>> selectUnassociated();
+
+    /** 查询所有在岗民警的 resident_uuid 列表（用于排除民警身份的居民） */
+    @Select("SELECT resident_uuid FROM police WHERE is_deleted = 0")
+    List<String> selectAllActiveResidentUuids();
 }

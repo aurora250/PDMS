@@ -55,4 +55,16 @@ public class PoliceController {
     public Result<List<Map<String, Object>>> listUnassociated() {
         return Result.success(policeService.listUnassociated());
     }
+
+    /** 获取当前登录用户的民警信息 */
+    @GetMapping("/me")
+    public Result<Police> getCurrentPolice() {
+        return Result.success(policeService.getCurrentPolice());
+    }
+
+    /** 获取所有在岗民警的 resident_uuid 列表（供居民搜索时排除民警） */
+    @GetMapping("/resident-uuids")
+    public Result<List<String>> getPoliceResidentUuids() {
+        return Result.success(policeService.getAllPoliceResidentUuids());
+    }
 }

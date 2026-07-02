@@ -2,7 +2,7 @@
   <div>
     <div class="page-header">
       <h3>户籍业务</h3>
-      <el-button v-if="hasPermission('household:approve')" type="primary" @click="openCreate">新增业务</el-button>
+      <el-button v-if="hasPermission('household:write')" type="primary" @click="openCreate">新增业务</el-button>
     </div>
     <el-card>
       <el-form inline>
@@ -16,7 +16,6 @@
         <el-form-item label="业务类型">
           <el-select v-model="typeFilter" placeholder="全部" clearable @change="load">
             <el-option label="出生登记" value="出生登记" /><el-option label="死亡注销" value="死亡注销" />
-            <el-option label="户口迁移" value="户口迁移" /><el-option label="登记项目变更" value="登记项目变更" />
             <el-option label="分户立户" value="分户立户" />
           </el-select>
         </el-form-item>
@@ -37,9 +36,8 @@
         <el-table-column prop="handleDate" label="办理日期" width="120" />
         <el-table-column label="操作" width="320">
           <template #default="{ row }">
-            <!-- 民警：审批中可直接通过或提交市局 -->
+            <!-- 民警：审批中可直接通过 -->
             <el-button v-if="hasPermission('household:approve') && row.status === '审批中'" text size="small" type="success" @click="showApprove(row, '通过')">通过</el-button>
-            <el-button v-if="hasPermission('household:approve') && row.status === '审批中'" text size="small" type="warning" @click="showApprove(row, '提交市局')">提交市局</el-button>
             <el-button v-if="hasPermission('household:approve') && (row.status === '审批中' || row.status === '市局审批中')" text size="small" type="danger" @click="showApprove(row, '驳回')">驳回</el-button>
             <!-- 市局：市局审批中可最终通过/驳回 -->
             <el-button v-if="hasPermission('household:second-approve') && row.status === '市局审批中'" text size="small" type="success" @click="showApprove(row, '通过')">市局通过</el-button>
@@ -64,7 +62,6 @@
         <el-form-item label="业务类型" prop="businessType">
           <el-select v-model="form.businessType" style="width:100%">
             <el-option label="出生登记" value="出生登记" /><el-option label="死亡注销" value="死亡注销" />
-            <el-option label="户口迁移" value="户口迁移" /><el-option label="登记项目变更" value="登记项目变更" />
             <el-option label="分户立户" value="分户立户" />
           </el-select>
         </el-form-item>
@@ -83,6 +80,56 @@
         <el-form-item label="附件">
           <AttachmentUploader v-model="form.attachment" />
         </el-form-item>
+
+        <!-- === 出生登记特定字段 === -->
+        <template v-if="form.businessType === '出生登记'">
+          <el-form-item label="婴儿姓名" prop="birthName">
+            <el-input v-model="form.birthName" placeholder="请输入婴儿姓名" />
+          </el-form-item>
+          <el-form-item label="婴儿性别" prop="birthGender">
+            <el-radio-group v-model="form.birthGender"><el-radio value="男">男</el-radio><el-radio value="女">女</el-radio></el-radio-group>
+          </el-form-item>
+          <el-form-item label="出生日期" prop="birthDate">
+            <el-date-picker v-model="form.birthDate" type="date" value-format="YYYY-MM-DD" style="width:100%" />
+          </el-form-item>
+          <el-form-item label="父亲UUID">
+            <ResidentPicker v-model="form.fatherUuid" placeholder="搜索选择父亲" gender="男" />
+          </el-form-item>
+          <el-form-item label="母亲UUID">
+            <ResidentPicker v-model="form.motherUuid" placeholder="搜索选择母亲" gender="女" />
+          </el-form-item>
+          <el-form-item label="民族">
+            <el-select v-model="form.nation" placeholder="选择民族" clearable style="width:100%">
+              <el-option v-for="n in NATIONS" :key="n.code" :label="n.name" :value="n.name" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="出生证明编号">
+            <el-input v-model="form.birthCertNo" placeholder="出生医学证明编号（可选）" />
+          </el-form-item>
+        </template>
+
+        <!-- === 死亡注销特定字段 === -->
+        <template v-if="form.businessType === '死亡注销'">
+          <el-form-item label="死亡日期" prop="deathDate">
+            <el-date-picker v-model="form.deathDate" type="date" value-format="YYYY-MM-DD" style="width:100%" />
+          </el-form-item>
+          <el-form-item label="死亡原因">
+            <el-input v-model="form.deathCause" placeholder="死亡原因（可选）" />
+          </el-form-item>
+        </template>
+
+        <!-- === 分户立户特定字段 === -->
+        <template v-if="form.businessType === '分户立户'">
+          <el-form-item label="新户主UUID" prop="newHouseholderUuid">
+            <ResidentPicker v-model="form.newHouseholderUuid" placeholder="搜索选择新户主" />
+          </el-form-item>
+          <el-form-item label="户籍地区" prop="hukouAreaId">
+            <AreaCascader v-model="form.hukouAreaId" placeholder="选择新户籍地省市区" />
+          </el-form-item>
+          <el-form-item label="户籍详址" prop="hukouAddressDetail">
+            <el-input v-model="form.hukouAddressDetail" placeholder="街道/路/号/楼/室" />
+          </el-form-item>
+        </template>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -133,6 +180,8 @@ import { showError, showSuccess } from '@/utils/auth'
 import ApprovalBadge from '@/components/ApprovalBadge.vue'
 import AttachmentUploader from '@/components/AttachmentUploader.vue'
 import ResidentPicker from '@/components/ResidentPicker.vue'
+import AreaCascader from '@/components/AreaCascader.vue'
+import { NATIONS } from '@/constants/nations'
 
 const { hasPermission } = usePermission()
 const list = ref<any[]>([])
@@ -148,11 +197,24 @@ const formRef = ref()
 const form = reactive({
   applicantUuid: '', businessType: '出生登记', handleDate: new Date().toISOString().slice(0, 10),
   handleBasis: '', fee: 0, remark: '', attachment: [] as string[],
+  // 出生登记字段
+  birthName: '', birthGender: '男', birthDate: '', fatherUuid: '', motherUuid: '', nation: '汉族', birthCertNo: '',
+  // 死亡注销字段
+  deathDate: '', deathCause: '',
+  // 分户立户字段
+  newHouseholderUuid: '', hukouAreaId: undefined as number | undefined, hukouAddressDetail: '',
 })
 const rules = {
   applicantUuid: [{ required: true, message: '请输入申请人UUID', trigger: 'blur' }],
   businessType: [{ required: true, message: '请选择业务类型', trigger: 'change' }],
   handleDate: [{ required: true, message: '请选择办理日期', trigger: 'change' }],
+  birthName: [{ required: true, message: '请输入婴儿姓名', trigger: 'blur' }],
+  birthGender: [{ required: true, message: '请选择婴儿性别', trigger: 'change' }],
+  birthDate: [{ required: true, message: '请选择出生日期', trigger: 'change' }],
+  deathDate: [{ required: true, message: '请选择死亡日期', trigger: 'change' }],
+  newHouseholderUuid: [{ required: true, message: '请选择新户主', trigger: 'change' }],
+  hukouAreaId: [{ required: true, message: '请选择户籍地区', trigger: 'change' }],
+  hukouAddressDetail: [{ required: true, message: '请输入详细地址', trigger: 'blur' }],
 }
 
 // Approve dialog
@@ -187,7 +249,11 @@ function openCreate() {
   Object.assign(form, {
     applicantUuid: '', businessType: '出生登记', handleDate: new Date().toISOString().slice(0, 10),
     handleBasis: '', fee: 0, remark: '', attachment: [],
+    birthName: '', birthGender: '男', birthDate: '', fatherUuid: '', motherUuid: '', nation: '汉族', birthCertNo: '',
+    deathDate: '', deathCause: '',
+    newHouseholderUuid: '', hukouAreaId: undefined, hukouAddressDetail: '',
   })
+  formRef.value?.clearValidate()
   dialogVisible.value = true
 }
 
@@ -198,7 +264,32 @@ async function handleCreate() {
   if (!valid) return
   submitting.value = true
   try {
-    await householdApi.createBusiness({ ...form })
+    const payload: any = {
+      applicantUuid: form.applicantUuid, businessType: form.businessType,
+      handleDate: form.handleDate, handleBasis: form.handleBasis || undefined,
+      fee: form.fee, remark: form.remark || undefined,
+      attachment: form.attachment?.length ? form.attachment.join(',') : '',
+    }
+    // 构建类型特定的 detailJson
+    switch (form.businessType) {
+      case '出生登记':
+        payload.detailJson = JSON.stringify({
+          name: form.birthName, gender: form.birthGender, birthDate: form.birthDate,
+          fatherUuid: form.fatherUuid || undefined, motherUuid: form.motherUuid || undefined,
+          nation: form.nation || '汉族', birthCertNo: form.birthCertNo || undefined,
+        })
+        break
+      case '死亡注销':
+        payload.detailJson = JSON.stringify({ deathDate: form.deathDate, deathCause: form.deathCause || undefined })
+        break
+      case '分户立户':
+        payload.detailJson = JSON.stringify({
+          newHouseholderUuid: form.newHouseholderUuid, hukouAreaId: form.hukouAreaId,
+          hukouAddressDetail: form.hukouAddressDetail,
+        })
+        break
+    }
+    await householdApi.createBusiness(payload)
     showSuccess('提交成功')
     dialogVisible.value = false
     load()
@@ -214,17 +305,10 @@ function showApprove(row: any, action: string) {
 }
 
 async function handleApprove() {
-  try {
-    const actionText = approveAction.value === '驳回' ? '确认驳回该业务申请？'
-      : approveAction.value === '提交市局' ? '确认提交市局审批（特殊事项）？'
-      : '确认通过该业务申请？'
-    await ElMessageBox.confirm(actionText, '确认操作', { type: 'warning' })
-  } catch { showApproveDialog.value = false; return }
   approving.value = true
   try {
-    // 直接发送审批动作（通过/驳回/提交市局），后端状态机决定下一状态
     await householdApi.approveBusiness(approveRid, approveAction.value, rejectReason.value || undefined)
-    showSuccess(approveAction.value === '驳回' ? '已驳回' : approveAction.value === '提交市局' ? '已提交市局' : '已通过')
+    showSuccess(approveAction.value === '驳回' ? '已驳回' : '已通过')
     showApproveDialog.value = false
     load()
   } catch (e: any) { showError(e.message || '操作失败') }

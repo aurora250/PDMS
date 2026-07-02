@@ -32,7 +32,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/refresh", "/swagger-ui/**",
                                 "/v3/api-docs/**")
-                        .permitAll().requestMatchers("/api/auth/users/**").hasAnyAuthority("auth:user:read", "*")
+                        .permitAll()
+                        .requestMatchers("/api/auth/police/me", "/api/auth/police/resident-uuids").authenticated()
+                        .requestMatchers("/api/auth/users/**").hasAnyAuthority("auth:user:read", "*")
                         .requestMatchers("/api/auth/police/**").hasAnyAuthority("auth:police:read", "*")
                         .requestMatchers("/api/auth/permission-groups/**").hasAnyAuthority("auth:permission:write", "*")
                         .anyRequest().authenticated())

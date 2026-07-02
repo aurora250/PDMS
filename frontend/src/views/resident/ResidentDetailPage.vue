@@ -34,6 +34,10 @@
           @click="$router.push('/system/police')">
           警员: {{ identities.police.policeNumber }} {{ identities.police.policeRank || '' }}
         </el-tag>
+        <el-tag v-if="identities.floating" type="success" size="small" effect="dark" style="cursor:pointer"
+          @click="$router.push('/floating/register')">
+          流动人口
+        </el-tag>
         <el-button v-if="hasPermission('resident:write')" type="primary" size="small" @click="openEdit">
           编辑
         </el-button>
@@ -327,20 +331,23 @@ const identities = reactive<Record<string, any>>({
   keyPerson: null,
   missingPerson: null,
   police: null,
+  floating: null,
 })
 
 const uuid = computed(() => route.params.uuid as string)
 
 async function loadIdentities(residentUuid: string) {
   try {
-    const [kpRes, missRes, policeRes] = await Promise.all([
+    const [kpRes, missRes, policeRes, fpRes] = await Promise.all([
       keypersonApi.search({ keyword: residentUuid, page: 1, size: 1 }, { silent: true }).catch(() => null),
       missingApi.search({ residentUuid, page: 1, size: 1 }, { silent: true }).catch(() => null),
       policeApi.list({ residentUuid, page: 1, size: 1 }, { silent: true }).catch(() => null),
+      floatingApi.listRegister({ keyword: residentUuid, page: 1, size: 1 }, { silent: true }).catch(() => null),
     ])
     identities.keyPerson = kpRes?.records?.[0] || null
     identities.missingPerson = missRes?.records?.[0] || null
     identities.police = policeRes?.records?.[0] || null
+    identities.floating = fpRes?.records?.[0] || null
   } catch { /* ignore */ }
 }
 

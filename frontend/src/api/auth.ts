@@ -19,6 +19,10 @@ export const policeApi = {
   updateStatus: (no: string, dutyStatus: string) => request.put(`/auth/police/${no}/status`, { dutyStatus }),
   /** 查询未关联系统用户的民警列表（供创建民警用户时选择实名认证） */
   listUnassociated: (config?: any) => request.get('/auth/police/unassociated', config),
+  /** 获取当前登录用户的民警信息 */
+  getMe: (config?: any) => request.get('/auth/police/me', config),
+  /** 获取所有在岗民警的 resident_uuid 列表（供居民搜索时排除） */
+  getAllResidentUuids: (config?: any) => request.get('/auth/police/resident-uuids', config),
 }
 
 /** 权限组 */

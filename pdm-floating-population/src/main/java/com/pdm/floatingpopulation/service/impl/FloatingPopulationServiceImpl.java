@@ -187,6 +187,14 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
         if (registration.getRegisterDate() == null) {
             registration.setRegisterDate(LocalDate.now());
         }
+
+        // 校验最近一次居住地登记是否满半年
+        LocalDate latest = residentRegistrationMapper.selectLatestRegisterDate(registration.getUuid());
+        if (latest != null && latest.plusMonths(6).isAfter(LocalDate.now())) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR,
+                    String.format("该居民最近一次居住地登记未满半年（上次登记日期：%s），暂不允许登记", latest));
+        }
+
         residentRegistrationMapper.insert(registration);
 
         // 同步更新居民表的居住地信息
