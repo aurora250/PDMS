@@ -15,7 +15,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import cn.hutool.core.util.IdUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -52,7 +51,10 @@ public class HouseholdServiceImpl implements HouseholdService {
             String maxNo = bookMapper.selectMaxBookNoByPrefix(prefix + "%");
             long seq = 1L;
             if (maxNo != null && maxNo.length() >= 18) {
-                try { seq = Long.parseLong(maxNo.substring(10)) + 1; } catch (NumberFormatException e) { /* use 1 */ }
+                try {
+                    seq = Long.parseLong(maxNo.substring(10)) + 1;
+                } catch (NumberFormatException e) {
+                    /* use 1 */ }
             }
             book.setHouseholdBookNo(prefix + String.format("%08d", seq));
         }
@@ -75,14 +77,18 @@ public class HouseholdServiceImpl implements HouseholdService {
         String areaCode = "000000";
         if (oldBook.getHukouAreaId() != null) {
             Area area = areaMapper.selectById(oldBook.getHukouAreaId());
-            if (area != null && area.getAreaCode() != null) areaCode = area.getAreaCode();
+            if (area != null && area.getAreaCode() != null)
+                areaCode = area.getAreaCode();
         }
         String year = String.valueOf(LocalDate.now().getYear());
         String prefix = areaCode + year;
         String maxNo = bookMapper.selectMaxBookNoByPrefix(prefix + "%");
         long seq = 1L;
         if (maxNo != null && maxNo.length() >= 18) {
-            try { seq = Long.parseLong(maxNo.substring(10)) + 1; } catch (NumberFormatException e) { /* use 1 */ }
+            try {
+                seq = Long.parseLong(maxNo.substring(10)) + 1;
+            } catch (NumberFormatException e) {
+                /* use 1 */ }
         }
         String newBookNo = prefix + String.format("%08d", seq);
 
@@ -298,7 +304,8 @@ public class HouseholdServiceImpl implements HouseholdService {
         String areaCode = "000000";
         if (parentAreaId != null) {
             Area a = areaMapper.selectById((Long) parentAreaId);
-            if (a != null && a.getAreaCode() != null) areaCode = a.getAreaCode();
+            if (a != null && a.getAreaCode() != null)
+                areaCode = a.getAreaCode();
         }
         String birthPart = birthDate.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String seqPart = String.format("%04d", System.currentTimeMillis() % 10000);
@@ -380,21 +387,26 @@ public class HouseholdServiceImpl implements HouseholdService {
         String areaCode = "000000";
         if (hukouAreaId != null) {
             Area a = areaMapper.selectById(hukouAreaId);
-            if (a != null && a.getAreaCode() != null) areaCode = a.getAreaCode();
+            if (a != null && a.getAreaCode() != null)
+                areaCode = a.getAreaCode();
         }
         String year = String.valueOf(LocalDate.now().getYear());
         String prefix = areaCode + year;
         String maxNo = bookMapper.selectMaxBookNoByPrefix(prefix + "%");
         long seq = 1L;
         if (maxNo != null && maxNo.length() >= 18) {
-            try { seq = Long.parseLong(maxNo.substring(10)) + 1; } catch (NumberFormatException e) { /* use 1 */ }
+            try {
+                seq = Long.parseLong(maxNo.substring(10)) + 1;
+            } catch (NumberFormatException e) {
+                /* use 1 */ }
         }
 
         // 组装完整户籍地址
         String fullAddress = hukouAddressDetail;
         if (hukouAreaId != null) {
             String path = areaMapper.selectAreaPath(hukouAreaId);
-            if (path != null && !path.isEmpty()) fullAddress = path + hukouAddressDetail;
+            if (path != null && !path.isEmpty())
+                fullAddress = path + hukouAddressDetail;
         }
 
         HouseholdRegister newBook = new HouseholdRegister();
@@ -415,10 +427,8 @@ public class HouseholdServiceImpl implements HouseholdService {
             HouseholdRegister oldBook = bookMapper.selectByResidentUuid(req.getApplicantUuid());
             if (oldBook != null && oldBook.getMemberUuidList() != null && !oldBook.getMemberUuidList().isEmpty()) {
                 Set<String> toRemove = new HashSet<>(memberUuids);
-                List<String> remaining = Arrays.stream(oldBook.getMemberUuidList().split(","))
-                        .map(String::trim)
-                        .filter(s -> !s.isEmpty() && !toRemove.contains(s))
-                        .collect(Collectors.toList());
+                List<String> remaining = Arrays.stream(oldBook.getMemberUuidList().split(",")).map(String::trim)
+                        .filter(s -> !s.isEmpty() && !toRemove.contains(s)).collect(Collectors.toList());
                 oldBook.setMemberUuidList(remaining.isEmpty() ? null : String.join(",", remaining));
                 bookMapper.updateById(oldBook);
             }
@@ -577,8 +587,8 @@ public class HouseholdServiceImpl implements HouseholdService {
             // 迁移审批通过：同步更新居民户籍地址
             if ("迁移审批通过".equals(nextStatus)) {
                 if (req.getIncomingAddress() != null) {
-                    residentMapper.updateHouseholdAddress(req.getApplicantUuid(),
-                            req.getIncomingAddress(), req.getIncomingAreaId());
+                    residentMapper.updateHouseholdAddress(req.getApplicantUuid(), req.getIncomingAddress(),
+                            req.getIncomingAreaId());
                     log.info("迁移审批通过: 居民 {} 户籍地址已更新为迁入地", req.getApplicantUuid());
                 }
             }
@@ -602,14 +612,14 @@ public class HouseholdServiceImpl implements HouseholdService {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "无法获取辖区或" + label + "的地区编码");
         }
         if (!handlerCode.substring(0, 4).equals(targetCode.substring(0, 4))) {
-            throw new BusinessException(ErrorCode.PARAM_ERROR,
-                    String.format("当前民警辖区与%s不匹配，无权审批此迁移", label));
+            throw new BusinessException(ErrorCode.PARAM_ERROR, String.format("当前民警辖区与%s不匹配，无权审批此迁移", label));
         }
     }
 
     /** 安全获取 area_code */
     private String getAreaCode(Long areaId) {
-        if (areaId == null) return null;
+        if (areaId == null)
+            return null;
         Area area = areaMapper.selectById(areaId);
         return area != null ? area.getAreaCode() : null;
     }

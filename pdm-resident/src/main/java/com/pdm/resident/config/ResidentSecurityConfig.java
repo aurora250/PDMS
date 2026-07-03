@@ -28,14 +28,10 @@ public class ResidentSecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/resident/search")
-                        .hasAnyAuthority("resident:read", "*")
-                        .requestMatchers(HttpMethod.POST, "/api/resident")
-                        .hasAnyAuthority("resident:write", "*")
-                        .requestMatchers(HttpMethod.PUT, "/api/resident/**")
-                        .hasAnyAuthority("resident:write", "*")
-                        .requestMatchers(HttpMethod.DELETE, "/api/resident/**")
+                .authorizeHttpRequests(auth -> auth.requestMatchers("/api/resident/search")
+                        .hasAnyAuthority("resident:read", "*").requestMatchers(HttpMethod.POST, "/api/resident")
+                        .hasAnyAuthority("resident:write", "*").requestMatchers(HttpMethod.PUT, "/api/resident/**")
+                        .hasAnyAuthority("resident:write", "*").requestMatchers(HttpMethod.DELETE, "/api/resident/**")
                         .hasAnyAuthority("resident:delete", "*")
                         .requestMatchers("/api/resident/import", "/api/resident/export")
                         .hasAnyAuthority("resident:import", "resident:export", "*")
@@ -44,8 +40,7 @@ public class ResidentSecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/resident/change-request")
                         .hasAnyAuthority("resident:write", "*")
                         .requestMatchers(HttpMethod.PUT, "/api/resident/change-request/**")
-                        .hasAnyAuthority("resident:change-request:approve", "*")
-                        .anyRequest().authenticated())
+                        .hasAnyAuthority("resident:change-request:approve", "*").anyRequest().authenticated())
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
                         UsernamePasswordAuthenticationFilter.class);
         return http.build();

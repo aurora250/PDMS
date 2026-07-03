@@ -33,18 +33,20 @@ public class ResidentEsRepository extends EsBaseRepository<Resident> {
     }
 
     /**
-     * 确保索引存在且日期字段有正确的 date 类型映射（兼容字符串和长整型时间戳）。
-     * 即使 ES 启动较晚导致 EsIndexInitializer 失败，首次 save/bulkSave 也会触发此方法。
+     * 确保索引存在且日期字段有正确的 date 类型映射（兼容字符串和长整型时间戳）。 即使 ES 启动较晚导致 EsIndexInitializer
+     * 失败，首次 save/bulkSave 也会触发此方法。
      */
     private void ensureIndexWithMapping() throws IOException {
-        if (indexExists()) return;
+        if (indexExists())
+            return;
         synchronized (ResidentEsRepository.class) {
-            if (indexExists()) return; // double-check
-            esClient.indices().create(c -> c.index(getIndexName())
-                    .mappings(m -> m
-                            .properties("birthDate", p -> p.date(d -> d))
-                            .properties("createTime", p -> p.date(d -> d))
-                            .properties("updateTime", p -> p.date(d -> d))));
+            if (indexExists())
+                return; // double-check
+            esClient.indices()
+                    .create(c -> c.index(getIndexName())
+                            .mappings(m -> m.properties("birthDate", p -> p.date(d -> d))
+                                    .properties("createTime", p -> p.date(d -> d))
+                                    .properties("updateTime", p -> p.date(d -> d))));
         }
     }
 

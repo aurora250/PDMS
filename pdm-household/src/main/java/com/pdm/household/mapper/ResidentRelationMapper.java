@@ -11,7 +11,6 @@ public interface ResidentRelationMapper {
             + " VALUES (#{childUuid}, #{fatherUuid}, #{motherUuid})"
             + " ON CONFLICT (relation_person_uuid) WHERE is_deleted = 0"
             + " DO UPDATE SET father_uuid = #{fatherUuid}, mother_uuid = #{motherUuid}, update_time = CURRENT_TIMESTAMP")
-    int upsertRelation(@Param("childUuid") String childUuid,
-            @Param("fatherUuid") String fatherUuid,
+    int upsertRelation(@Param("childUuid") String childUuid, @Param("fatherUuid") String fatherUuid,
             @Param("motherUuid") String motherUuid);
 }

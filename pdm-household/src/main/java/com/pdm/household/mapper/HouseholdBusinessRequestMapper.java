@@ -16,8 +16,7 @@ public interface HouseholdBusinessRequestMapper extends BaseMapper<HouseholdBusi
     @Insert("INSERT INTO household_business_request (applicant_uuid, attachment, business_type, handle_date,"
             + " handle_basis, fee, status, reject_reason, remark, detail_json, is_deleted)"
             + " VALUES (#{applicantUuid}, #{attachment}, #{businessType}, #{handleDate},"
-            + " #{handleBasis}, #{fee}, #{status}, #{rejectReason}, #{remark},"
-            + " CAST(#{detailJson} AS jsonb), 0)")
+            + " #{handleBasis}, #{fee}, #{status}, #{rejectReason}, #{remark}," + " CAST(#{detailJson} AS jsonb), 0)")
     @Options(useGeneratedKeys = true, keyProperty = "rid")
     int insertBusiness(HouseholdBusinessRequest req);
 

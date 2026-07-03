@@ -170,8 +170,8 @@ public class ResidentServiceImpl implements ResidentService {
             if (!StringUtils.hasText(request.getName()) && !StringUtils.hasText(request.getProvince())) {
                 long dbTotal = residentMapper.selectCount(new LambdaQueryWrapper<>());
                 if (dbTotal > 0 && esTotal < dbTotal / 2) {
-                    log.warn("ES data incomplete: ES={} vs DB={}, triggering reindex and falling back to DB",
-                            esTotal, dbTotal);
+                    log.warn("ES data incomplete: ES={} vs DB={}, triggering reindex and falling back to DB", esTotal,
+                            dbTotal);
                     triggerAsyncReindex();
                     return searchFromDb(request);
                 }
@@ -480,7 +480,11 @@ public class ResidentServiceImpl implements ResidentService {
                     if (modifiedData.containsKey("householdAreaId"))
                         resident.setHouseholdAreaId(toLong(modifiedData.get("householdAreaId")));
                     residentMapper.updateById(resident);
-                    try { residentEsRepository.save(resident.getUuid(), resident); } catch (Exception e) { log.warn("Failed to sync updated resident to ES: {}", e.getMessage()); }
+                    try {
+                        residentEsRepository.save(resident.getUuid(), resident);
+                    } catch (Exception e) {
+                        log.warn("Failed to sync updated resident to ES: {}", e.getMessage());
+                    }
                 } else {
                     // 新增居民：从 modifiedData 构建新 Resident 并插入
                     Resident newResident = new Resident();
@@ -500,9 +504,9 @@ public class ResidentServiceImpl implements ResidentService {
                     newResident.setResidence((String) modifiedData.get("residence"));
                     newResident.setAreaId(toLong(modifiedData.get("areaId")));
                     newResident.setHouseholdType((String) modifiedData.get("householdType"));
-                    newResident.setHouseholdStatus(
-                            modifiedData.containsKey("householdStatus") ? (String) modifiedData.get("householdStatus")
-                                    : "正常");
+                    newResident.setHouseholdStatus(modifiedData.containsKey("householdStatus")
+                            ? (String) modifiedData.get("householdStatus")
+                            : "正常");
                     newResident.setHouseholdAddress((String) modifiedData.get("householdAddress"));
                     newResident.setHouseholdAreaId(toLong(modifiedData.get("householdAreaId")));
 
@@ -528,7 +532,8 @@ public class ResidentServiceImpl implements ResidentService {
                 }
             } catch (Exception e) {
                 log.error("Failed to apply change request", e);
-                throw e instanceof BusinessException ? (BusinessException) e
+                throw e instanceof BusinessException
+                        ? (BusinessException) e
                         : new BusinessException(ErrorCode.SYSTEM_ERROR, "变更应用失败: " + e.getMessage());
             }
         }
@@ -594,8 +599,14 @@ public class ResidentServiceImpl implements ResidentService {
 
     /** 安全地将 Object 转为 Long */
     private static Long toLong(Object val) {
-        if (val == null) return null;
-        if (val instanceof Number n) return n.longValue();
-        try { return Long.parseLong(val.toString()); } catch (NumberFormatException e) { return null; }
+        if (val == null)
+            return null;
+        if (val instanceof Number n)
+            return n.longValue();
+        try {
+            return Long.parseLong(val.toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

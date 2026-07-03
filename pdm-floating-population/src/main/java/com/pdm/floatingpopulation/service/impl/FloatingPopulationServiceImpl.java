@@ -204,7 +204,8 @@ public class FloatingPopulationServiceImpl implements FloatingPopulationService 
     }
 
     private void syncResidentResidence(String uuid, String residence, Long areaId) {
-        if (uuid == null || residence == null) return;
+        if (uuid == null || residence == null)
+            return;
         residentMapper.updateResidenceByUuid(uuid, residence, areaId);
     }
 

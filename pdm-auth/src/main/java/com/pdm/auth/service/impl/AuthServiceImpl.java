@@ -6,8 +6,6 @@ import com.pdm.auth.mapper.PoliceMapper;
 import com.pdm.auth.mapper.UserMapper;
 import com.pdm.auth.service.AuthService;
 import com.pdm.auth.service.PermissionGroupService;
-
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.pdm.common.core.constant.BaseConstants;
 import com.pdm.common.core.exception.BusinessException;
 import com.pdm.common.core.result.ErrorCode;
@@ -16,6 +14,8 @@ import com.pdm.common.dto.LoginResponse;
 import com.pdm.common.security.JwtTokenProvider;
 import com.pdm.log.entity.LoginLog;
 import com.pdm.log.service.LogService;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -180,11 +180,8 @@ public class AuthServiceImpl implements AuthService {
 
         // 民警/市局负责人：关联已有的未分配 police 记录
         if ("民警".equals(userRole) || "市局负责人".equals(userRole)) {
-            Police police = policeMapper.selectOne(
-                    new LambdaQueryWrapper<Police>()
-                            .eq(Police::getResidentUuid, residentUuid)
-                            .isNull(Police::getUserUuid)
-                            .eq(Police::getIsDeleted, 0));
+            Police police = policeMapper.selectOne(new LambdaQueryWrapper<Police>()
+                    .eq(Police::getResidentUuid, residentUuid).isNull(Police::getUserUuid).eq(Police::getIsDeleted, 0));
             if (police != null) {
                 police.setUserUuid(user.getUserUuid());
                 policeMapper.updateById(police);
